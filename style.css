@@ -62,6 +62,7 @@ body.dark .given{color:#fff}
 .snyder{width:100%;height:100%;padding:5px;display:grid;grid-template-columns:repeat(3,1fr);grid-template-rows:repeat(3,1fr);grid-template-areas:'a b c' 'd e f' 'g h i';place-items:center;font-size:clamp(10px,1.45vw,14px);line-height:1;color:#1c6fa1}
 .snyder i{font-style:normal}
 .snyder i.eliminated{color:var(--red);font-weight:600}
+.snyder i.emphasized{color:var(--select);font-weight:700}
 .candidate-1{grid-area:a}
 .candidate-2{grid-area:b}
 .candidate-3{grid-area:c}
@@ -80,7 +81,10 @@ body.dark .given{color:#fff}
 .guide h3{font:600 26px/1.1 'Playfair Display',serif;margin:4px 0 8px;color:var(--gold)}
 .guide p:last-child{margin:0}
 .guide .step-panel{flex:1;min-height:0;overflow-y:auto;padding-right:4px}
-.technique-tally{margin:4px 0 8px;font-size:11px;color:var(--gold);line-height:1.35}
+.technique-tally{align-self:flex-start;margin:4px 0 8px;border:1px solid var(--gold);background:transparent;color:var(--gold);padding:4px 7px;cursor:pointer;font:inherit;font-size:11px;line-height:1.2}
+.technique-tally-list{max-height:55vh;overflow:auto;margin-top:14px}
+.technique-tally-list section{padding:9px 0;border-top:1px solid var(--thin)}
+.technique-tally-list p{margin:3px 0 0;font-size:13px}
 .step-controls{display:flex;align-items:center;justify-content:center;gap:8px}
 .step-controls button{min-width:34px;margin:0;border:0;background:var(--surface);color:var(--ink);padding:8px 9px;cursor:pointer;font:inherit}
 .step-controls span{min-width:122px;text-align:center;color:var(--gold);font-size:12px}
