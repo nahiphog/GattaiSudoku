@@ -4,6 +4,7 @@ const inGrid=(r,c)=>(r>=0&&r<9&&c>=0&&c<9)||(r>=3&&r<12&&c>=3&&c<12);
 for(let r=0;r<12;r++)for(let c=0;c<12;c++){
   const a=r<9&&c<9,b=r>=3&&c>=3;
   const cell=document.createElement('div'); cell.className='cell';
+  cell.style.gridColumnStart=String(c+1); cell.style.gridRowStart=String(r+1);
   if(!a&&!b)cell.classList.add('empty');
   if(a&&b)cell.classList.add('shared');
   if((a||b)&&!inGrid(r-1,c))cell.classList.add('edge-t');
