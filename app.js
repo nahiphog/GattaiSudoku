@@ -1,11 +1,17 @@
 const puzzles = {
-  monday: { date: "Monday, September 7, 2026", difficulty: "Easy", score: 500, rows: ["82......9...", "..7.........", ".9....1.....", "6...8...3...", "....53..14..", ".......2.8..", "...8..6..5.4", ".....7.3....", "....1..5....", "....9.......", "......4...3.", "....7....69."] },
-  tuesday: { date: "Tuesday, September 8, 2026", difficulty: "Easy", score: 500, rows: [".6..........", "8.4...96....", "5.7..4......", "4....2......", ".....859....", "...........3", "6........1.7", "...1.62....4", ".2......9...", ".....4..1...", "......38....", "...91....7.."] },
-  wednesday: { date: "Wednesday, September 9, 2026", difficulty: "Intermediate", score: 700, rows: [".9.....6....", "......2.1...", "....4.......", ".......8....", "..7....4.1..", ".4..6.1....3", ".5...3......", "..4.8...694.", "2........6..", ".......35...", ".........2..", "...5.12...7."] },
-  thursday: { date: "Thursday, September 10, 2026", difficulty: "Intermediate", score: 800, rows: ["3.6.4.......", "...7934.....", "......8.....", "..8.......2.", ".6.1...9..67", "..3.......1.", "..1.6...5...", "......92....", ".........2.3", "...6....3...", "...2.1...7..", "..........91"] }
+  monday: { date: "Monday, September 7, 2026", rows: ["82......9...", "..7.........", ".9....1.....", "6...8...3...", "....53..14..", ".......2.8..", "...8..6..5.4", ".....7.3....", "....1..5....", "....9.......", "......4...3.", "....7....69."] },
+  tuesday: { date: "Tuesday, September 8, 2026", rows: [".6..........", "8.4...96....", "5.7..4......", "4....2......", ".....859....", "...........3", "6........1.7", "...1.62....4", ".2......9...", ".....4..1...", "......38....", "...91....7.."] },
+  wednesday: { date: "Wednesday, September 9, 2026", rows: [".9.....6....", "......2.1...", "....4.......", ".......8....", "..7....4.1..", ".4..6.1....3", ".5...3......", "..4.8...694.", "2........6..", ".......35...", ".........2..", "...5.12...7."] },
+  thursday: { date: "Thursday, September 10, 2026", rows: ["3.6.4.......", "...7934.....", "......8.....", "..8.......2.", ".6.1...9..67", "..3.......1.", "..1.6...5...", "......92....", ".........2.3", "...6....3...", "...2.1...7..", "..........91"] },
+  friday: { date: "Friday, September 11, 2026", rows: ["...9........", ".7..........", ".4...8.1....", "3.....1..9..", "..5........4", "...32..4....", "....1.9..4..", "1.6.3...4...", ".9....5.....", "......2...5.", ".....8.5..9.", ".....1...7.."] },
+  saturday: { date: "Saturday, September 12, 2026", rows: [".....3.8....", "..4....2....", "1...857.....", "9....7..3.2.", "...........4", "...5.94..7.1", "..1.......9.", "..2.1.....6.", "..8.9..37...", "....8.......", ".........2..", ".....3.218.."] }
 };
 let activeDay = "tuesday", rows = puzzles.tuesday.rows, puzzleDate = puzzles.tuesday.date;
 const digits = [1, 2, 3, 4, 5, 6, 7, 8, 9];
+const techniqueScores = { "Full House": 4, "Naked Single": 4, "Hidden Single": 14, "Locked Pair": 40, "Locked Triple": 60, "Pointing": 50, "Claiming": 50, "Naked Pair": 60, "Naked Triple": 80, "Hidden Pair": 70, "Hidden Triple": 100, "Naked Quad": 120, "Hidden Quad": 150, "X-Wing": 140 };
+const techniqueLevels = { "Full House": "Beginner", "Naked Single": "Beginner", "Hidden Single": "Beginner", "Locked Pair": "Medium", "Locked Triple": "Medium", "Pointing": "Medium", "Claiming": "Medium", "Naked Pair": "Medium", "Naked Triple": "Medium", "Hidden Pair": "Medium", "Hidden Triple": "Medium", "Naked Quad": "Hard", "Hidden Quad": "Hard", "X-Wing": "Hard" };
+const levelOrder = ["Beginner", "Easy", "Medium", "Tricky", "Hard", "Unfair", "Extreme", "Nightmare"];
+function rateSteps(solveSteps) { const score = solveSteps.reduce((total, step) => total + (techniqueScores[step.technique] || 0), 0); let rating = score <= 400 ? "Beginner" : score <= 800 ? "Easy" : score <= 1000 ? "Medium" : score <= 1150 ? "Tricky" : score <= 1600 ? "Hard" : score <= 1800 ? "Unfair" : score <= 3000 ? "Extreme" : "Nightmare"; solveSteps.forEach(step => { const techniqueLevel = techniqueLevels[step.technique] || "Nightmare"; if (levelOrder.indexOf(techniqueLevel) > levelOrder.indexOf(rating)) rating = techniqueLevel; }); return { score, rating }; }
 const units = [];
 for (const [name, rowOffset, columnOffset] of [["G1", 0, 0], ["G2", 3, 3]]) {
   for (let n = 0; n < 9; n += 1) {
@@ -18,7 +24,7 @@ const active = [...new Set(units.flatMap(([, house]) => house))];
 const housesFor = Object.fromEntries(active.map(index => [index, units.filter(([, house]) => house.includes(index)).map(([, house]) => house)]));
 const peers = Object.fromEntries(active.map(index => [index, new Set(housesFor[index].flat().filter(other => other !== index))]));
 const board = document.querySelector("#board"), guide = document.querySelector("#guide"), givenCount = document.querySelector("#givenCount"), solutionToggle = document.querySelector("#solutionToggle");
-const original = Array(144).fill(0), userInputs = { monday: Array(144).fill(0), tuesday: Array(144).fill(0), wednesday: Array(144).fill(0), thursday: Array(144).fill(0) }; let human = userInputs.tuesday;
+const original = Array(144).fill(0), userInputs = { monday: Array(144).fill(0), tuesday: Array(144).fill(0), wednesday: Array(144).fill(0), thursday: Array(144).fill(0), friday: Array(144).fill(0), saturday: Array(144).fill(0) }; let human = userInputs.tuesday;
 rows.forEach((row, r) => [...row].forEach((value, c) => { if (value !== ".") original[r * 12 + c] = Number(value); }));
 function hasCell(row, column) { return (row >= 0 && row < 9 && column >= 0 && column < 9) || (row >= 3 && row < 12 && column >= 3 && column < 12); }
 function nameFor(index, preferredGrid = "") { const row = Math.floor(index / 12), column = index % 12, names = []; if (row < 9 && column < 9 && preferredGrid !== "G2") names.push(`G1 R${row + 1}C${column + 1}`); if (row >= 3 && column >= 3 && preferredGrid !== "G1") names.push(`G2 R${row - 2}C${column - 2}`); return names.join(" / "); }
@@ -30,13 +36,36 @@ function deriveSteps() {
   function place(technique, index, digit, house) { values[index] = digit; delete notes[index]; peers[index].forEach(peer => notes[peer]?.delete(digit)); found.push({ technique, index, digit, house, text: `${nameFor(index, house ? house.split(" ")[0] : "")} = ${digit}.${house ? ` It is the only possible location in ${house}.` : ""}` }); }
   function nakedSubset() { for (const [houseName, house] of units) { const blanks = house.filter(index => notes[index]); for (let size = 2; size <= 4; size += 1) for (const group of choose(blanks, size)) { const union = new Set(group.flatMap(index => [...notes[index]])); if (union.size !== size || group.some(index => notes[index].size < 2 || notes[index].size > size)) continue; const victims = blanks.filter(index => !group.includes(index) && [...notes[index]].some(digit => union.has(digit))); if (!victims.length) continue; victims.forEach(index => union.forEach(digit => notes[index].delete(digit))); const technique = `Naked ${subsetName(size)}`; found.push({ technique, index: null, digit: null, house: houseName, text: `${[...union].join(", ")} are confined to ${group.map(index => nameFor(index, houseName.split(" ")[0])).join(" and ")} in ${houseName}. Remove them from ${victims.map(index => nameFor(index, houseName.split(" ")[0])).join(", ")}.` }); return true; } } return false; }
   function hiddenSubset() { for (const [houseName, house] of units) { const blanks = house.filter(index => notes[index]), missing = digits.filter(digit => !house.some(index => values[index] === digit)); for (let size = 2; size <= 4; size += 1) for (const group of choose(missing, size)) { const cells = [...new Set(group.flatMap(digit => blanks.filter(index => notes[index].has(digit))))]; if (cells.length !== size) continue; const removed = cells.some(index => [...notes[index]].some(digit => !group.includes(digit))); if (!removed) continue; cells.forEach(index => { notes[index] = new Set([...notes[index]].filter(digit => group.includes(digit))); }); const technique = `Hidden ${subsetName(size)}`; found.push({ technique, index: null, digit: null, house: houseName, text: `${group.join(", ")} can appear only in ${cells.map(index => nameFor(index, houseName.split(" ")[0])).join(" and ")} in ${houseName}. Remove every other candidate from those cells.` }); return true; } } return false; }
+  function basicFish() {
+    for (const [grid, rowOffset, columnOffset] of [["G1", 0, 0], ["G2", 3, 3]]) for (const digit of digits) {
+      const rowPatterns = [];
+      for (let localRow = 0; localRow < 9; localRow += 1) { const columns = digits.map(value => value - 1).filter(localColumn => { const index = (rowOffset + localRow) * 12 + columnOffset + localColumn; return notes[index]?.has(digit); }); if (columns.length === 2) rowPatterns.push([localRow, columns]); }
+      for (const [rowA, columnsA] of rowPatterns) for (const [rowB, columnsB] of rowPatterns) {
+        if (rowA >= rowB || columnsA.join(",") !== columnsB.join(",")) continue;
+        const victims = digits.map(value => value - 1).filter(localRow => ![rowA, rowB].includes(localRow)).flatMap(localRow => columnsA.map(localColumn => (rowOffset + localRow) * 12 + columnOffset + localColumn).filter(index => notes[index]?.has(digit)));
+        if (!victims.length) continue;
+        victims.forEach(index => notes[index].delete(digit)); const corners = [rowA, rowB].flatMap(localRow => columnsA.map(localColumn => (rowOffset + localRow) * 12 + columnOffset + localColumn));
+        found.push({ technique: "X-Wing", index: null, digit: null, house: "", highlight: [...corners, ...victims], text: `In ${grid}, candidate ${digit} occupies the same two columns in rows ${rowA + 1} and ${rowB + 1}. Those four corners form an X-Wing, so remove ${digit} from ${victims.map(index => nameFor(index, grid)).join(", ")}.` }); return true;
+      }
+      const columnPatterns = [];
+      for (let localColumn = 0; localColumn < 9; localColumn += 1) { const rowsForDigit = digits.map(value => value - 1).filter(localRow => { const index = (rowOffset + localRow) * 12 + columnOffset + localColumn; return notes[index]?.has(digit); }); if (rowsForDigit.length === 2) columnPatterns.push([localColumn, rowsForDigit]); }
+      for (const [columnA, rowsA] of columnPatterns) for (const [columnB, rowsB] of columnPatterns) {
+        if (columnA >= columnB || rowsA.join(",") !== rowsB.join(",")) continue;
+        const victims = rowsA.flatMap(localRow => digits.map(value => value - 1).filter(localColumn => ![columnA, columnB].includes(localColumn)).map(localColumn => (rowOffset + localRow) * 12 + columnOffset + localColumn).filter(index => notes[index]?.has(digit)));
+        if (!victims.length) continue;
+        victims.forEach(index => notes[index].delete(digit)); const corners = rowsA.flatMap(localRow => [columnA, columnB].map(localColumn => (rowOffset + localRow) * 12 + columnOffset + localColumn));
+        found.push({ technique: "X-Wing", index: null, digit: null, house: "", highlight: [...corners, ...victims], text: `In ${grid}, candidate ${digit} occupies the same two rows in columns ${columnA + 1} and ${columnB + 1}. Those four corners form an X-Wing, so remove ${digit} from ${victims.map(index => nameFor(index, grid)).join(", ")}.` }); return true;
+      }
+    }
+    return false;
+  }
   while (true) {
     let move = null;
     for (const [label, house] of units) { const blanks = house.filter(index => !values[index]), missing = digits.filter(digit => !house.some(index => values[index] === digit)); if (blanks.length === 1 && missing.length === 1) { move = ["Full House", blanks[0], missing[0], label]; break; } }
     if (!move) for (const index of active) if (!values[index] && notes[index].size === 1) { move = ["Naked Single", index, [...notes[index]][0], ""]; break; }
     if (!move) for (const [label, house] of units) { for (const digit of digits) { if (house.some(index => values[index] === digit)) continue; const places = house.filter(index => !values[index] && notes[index].has(digit)); if (places.length === 1) { move = ["Hidden Single", places[0], digit, label]; break; } } if (move) break; }
     if (move) { place(...move); continue; }
-    if (nakedSubset() || hiddenSubset()) continue;
+    if (nakedSubset() || hiddenSubset() || basicFish()) continue;
     return found;
   }
 }
@@ -58,7 +87,7 @@ function makeEditable(cell, index) {
 }
 function renderStep() { const step = steps[stepIndex], tally = steps.reduce((counts, item) => ({ ...counts, [item.technique]: (counts[item.technique] || 0) + 1 }), {}); document.querySelector("#stepCount").textContent = `Step ${stepIndex + 1} of ${steps.length}`; document.querySelector("#stepTechnique").textContent = step.technique; document.querySelector("#stepReasoning").textContent = step.text; document.querySelector("#techniqueTally").textContent = `Technique tally: ${Object.entries(tally).map(([name, count]) => `${name} ${count}`).join(" · ")}`; document.querySelector("#firstStep").disabled = stepIndex === 0; document.querySelector("#previousStep").disabled = stepIndex === 0; document.querySelector("#nextStep").disabled = stepIndex === steps.length - 1; document.querySelector("#lastStep").disabled = stepIndex === steps.length - 1; }
 function renderBoard() {
-  const values = currentValues(), activeHouse = mode === "solver" ? steps[stepIndex].house : "", highlighted = activeHouse ? units.find(([label]) => label === activeHouse)?.[1] || [] : [];
+  const values = currentValues(), activeStep = mode === "solver" ? steps[stepIndex] : null, activeHouse = activeStep?.house || "", highlighted = activeStep?.highlight || (activeHouse ? units.find(([label]) => label === activeHouse)?.[1] || [] : []);
   board.innerHTML = "";
   for (let row = 0; row < 12; row += 1) for (let column = 0; column < 12; column += 1) {
     if (!hasCell(row, column)) continue;
@@ -68,7 +97,7 @@ function renderBoard() {
     board.append(cell);
   }
 }
-function refresh() { renderStep(); renderBoard(); const givens = original.filter((value, index) => active.includes(index) && value).length; givenCount.textContent = `${givens} given cells`; document.querySelector("#difficultyLabel").textContent = `Difficulty: ${puzzles[activeDay].difficulty} (${puzzles[activeDay].score})`; solutionToggle.setAttribute("aria-pressed", String(mode === "solver")); }
+function refresh() { renderStep(); renderBoard(); const givens = original.filter((value, index) => active.includes(index) && value).length, rating = rateSteps(steps); givenCount.textContent = `${givens} given cells`; document.querySelector("#difficultyLabel").textContent = `Difficulty: ${rating.rating} (${rating.score})`; solutionToggle.setAttribute("aria-pressed", String(mode === "solver")); }
 function loadPuzzle(day) { activeDay = day; rows = puzzles[day].rows; puzzleDate = puzzles[day].date; original.fill(0); rows.forEach((row, r) => [...row].forEach((value, c) => { if (value !== ".") original[r * 12 + c] = Number(value); })); human = userInputs[day]; steps = deriveSteps(); stepIndex = 0; document.querySelectorAll(".day-button").forEach(button => button.setAttribute("aria-pressed", String(button.dataset.day === day))); refresh(); }
 document.querySelector("#firstStep").addEventListener("click", () => { stepIndex = 0; refresh(); }); document.querySelector("#previousStep").addEventListener("click", () => { if (stepIndex > 0) { stepIndex -= 1; refresh(); } }); document.querySelector("#nextStep").addEventListener("click", () => { if (stepIndex < steps.length - 1) { stepIndex += 1; refresh(); } }); document.querySelector("#lastStep").addEventListener("click", () => { stepIndex = steps.length - 1; refresh(); });
 solutionToggle.addEventListener("click", () => { mode = mode === "human" ? "solver" : "human"; guide.classList.toggle("hidden", mode === "human"); refresh(); });
