@@ -31,11 +31,12 @@ main{padding:24px 0}
 .entry-tabs,.play-actions{display:grid;grid-template-columns:1fr 1fr;gap:6px}
 .entry-button,.play-actions button{border:1px solid var(--ink);background:var(--muted);color:var(--ink);padding:7px 4px;cursor:pointer;font:inherit;font-size:11px}
 .entry-button[aria-pressed=true]{background:var(--ink);color:var(--surface)}
+.play-actions #eraseCell{grid-column:span 2}
 .numpad{display:grid;grid-template-columns:repeat(3,1fr);gap:5px;margin:3px 0 4px}
-.numpad button{min-height:39px;border:1px solid #5b1c8d;border-radius:6px;background:#6b21a8;color:#fff;cursor:pointer;font:600 20px/1 'DM Mono',monospace;box-shadow:inset 0 0 0 1px rgba(255,255,255,.28)}
+.numpad button{min-height:39px;border:1px solid #176b42;border-radius:6px;background:#238b57;color:#fff;cursor:pointer;font:600 20px/1 'DM Mono',monospace;box-shadow:inset 0 0 0 1px rgba(255,255,255,.28)}
 .numpad .numpad-zero{grid-column:span 1}
 .numpad .numpad-delete{grid-column:span 2;font-size:24px}
-.numpad button:hover,.numpad button:focus-visible{background:#7e2db8}
+.numpad button:hover,.numpad button:focus-visible{background:#2da86a}
 .board-card.solver-active .entry-panel,.board-card.solver-active .play-actions,.board-card.solver-active .numpad{opacity:.38;pointer-events:none}
 .puzzle-surface{min-width:0}
 .difficulty-label{margin:0 0 8px;font-size:13px;font-weight:500}
@@ -43,6 +44,7 @@ main{padding:24px 0}
 .cell{min-width:0;min-height:0;border:0;border-top:1px solid var(--thin);border-left:1px solid var(--thin);background:var(--paper);display:grid;place-items:center;font-size:clamp(12px,2.45vw,25px);color:#1c6fa1;position:relative;transition:none!important;animation:none!important}
 .given{color:#111;font-weight:600}
 body.dark .given{color:#fff}
+.cell.conflict{color:var(--red)!important;font-weight:600}
 .shared{background:var(--shared)}
 .grid-a{background:#dbeef4}
 .grid-b{background:#dff0dd}
@@ -59,6 +61,7 @@ body.dark .given{color:#fff}
 .box-left{border-left:3.15px solid var(--line)}
 .snyder{width:100%;height:100%;padding:5px;display:grid;grid-template-columns:repeat(3,1fr);grid-template-rows:repeat(3,1fr);grid-template-areas:'a b c' 'd e f' 'g h i';place-items:center;font-size:clamp(10px,1.45vw,14px);line-height:1;color:#1c6fa1}
 .snyder i{font-style:normal}
+.snyder i.eliminated{color:var(--red);font-weight:600}
 .candidate-1{grid-area:a}
 .candidate-2{grid-area:b}
 .candidate-3{grid-area:c}
