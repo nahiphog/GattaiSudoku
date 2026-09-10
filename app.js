@@ -1,8 +1,8 @@
 const puzzles = {
   monday: { date: "Monday, September 7, 2026", difficulty: "Easy", score: 500, rows: ["82......9...", "..7.........", ".9....1.....", "6...8...3...", "....53..14..", ".......2.8..", "...8..6..5.4", ".....7.3....", "....1..5....", "....9.......", "......4...3.", "....7....69."] },
   tuesday: { date: "Tuesday, September 8, 2026", difficulty: "Easy", score: 500, rows: [".6..........", "8.4...96....", "5.7..4......", "4....2......", ".....859....", "...........3", "6........1.7", "...1.62....4", ".2......9...", ".....4..1...", "......38....", "...91....7.."] },
-  wednesday: { date: "Wednesday, September 9, 2026", difficulty: "Easy", score: 500, rows: [".69....3....", ".1...8......", ".......6....", "....2..4....", "....1.3.....", "8.2..9..5...", "..5.7.......", "..84..12....", "...1...5...9", ".....4....6.", ".........3..", "...6......75"] },
-  thursday: { date: "Thursday, September 10, 2026", difficulty: "Easy", score: 500, rows: ["..2....63...", "....54......", "...6..7.....", "...3......9.", "7....98.6...", "2.6........8", "4...........", "....315.....", "......9....7", "......7..2.1", "....83...7.5", "..........8."] }
+  wednesday: { date: "Wednesday, September 9, 2026", difficulty: "Intermediate", score: 700, rows: [".9.....6....", "......2.1...", "....4.......", ".......8....", "..7....4.1..", ".4..6.1....3", ".5...3......", "..4.8...694.", "2........6..", ".......35...", ".........2..", "...5.12...7."] },
+  thursday: { date: "Thursday, September 10, 2026", difficulty: "Intermediate", score: 800, rows: ["3.6.4.......", "...7934.....", "......8.....", "..8.......2.", ".6.1...9..67", "..3.......1.", "..1.6...5...", "......92....", ".........2.3", "...6....3...", "...2.1...7..", "..........91"] }
 };
 let activeDay = "tuesday", rows = puzzles.tuesday.rows, puzzleDate = puzzles.tuesday.date;
 const digits = [1, 2, 3, 4, 5, 6, 7, 8, 9];
@@ -23,19 +23,25 @@ rows.forEach((row, r) => [...row].forEach((value, c) => { if (value !== ".") ori
 function hasCell(row, column) { return (row >= 0 && row < 9 && column >= 0 && column < 9) || (row >= 3 && row < 12 && column >= 3 && column < 12); }
 function nameFor(index, preferredGrid = "") { const row = Math.floor(index / 12), column = index % 12, names = []; if (row < 9 && column < 9 && preferredGrid !== "G2") names.push(`G1 R${row + 1}C${column + 1}`); if (row >= 3 && column >= 3 && preferredGrid !== "G1") names.push(`G2 R${row - 2}C${column - 2}`); return names.join(" / "); }
 function candidates(values, index) { return digits.filter(digit => ![...peers[index]].some(peer => values[peer] === digit)); }
+function choose(items, size) { if (size === 0) return [[]]; if (items.length < size) return []; return choose(items.slice(1), size - 1).map(group => [items[0], ...group]).concat(choose(items.slice(1), size)); }
 function deriveSteps() {
-  const values = [...original], found = [];
+  const values = [...original], found = [], notes = Object.fromEntries(active.filter(index => !values[index]).map(index => [index, new Set(candidates(values, index))]));
+  const subsetName = size => ({ 2: "Pair", 3: "Triple", 4: "Quad" }[size]);
+  function place(technique, index, digit, house) { values[index] = digit; delete notes[index]; peers[index].forEach(peer => notes[peer]?.delete(digit)); found.push({ technique, index, digit, house, text: `${nameFor(index, house ? house.split(" ")[0] : "")} = ${digit}.${house ? ` It is the only possible location in ${house}.` : ""}` }); }
+  function nakedSubset() { for (const [houseName, house] of units) { const blanks = house.filter(index => notes[index]); for (let size = 2; size <= 4; size += 1) for (const group of choose(blanks, size)) { const union = new Set(group.flatMap(index => [...notes[index]])); if (union.size !== size || group.some(index => notes[index].size < 2 || notes[index].size > size)) continue; const victims = blanks.filter(index => !group.includes(index) && [...notes[index]].some(digit => union.has(digit))); if (!victims.length) continue; victims.forEach(index => union.forEach(digit => notes[index].delete(digit))); const technique = `Naked ${subsetName(size)}`; found.push({ technique, index: null, digit: null, house: houseName, text: `${[...union].join(", ")} are confined to ${group.map(index => nameFor(index, houseName.split(" ")[0])).join(" and ")} in ${houseName}. Remove them from ${victims.map(index => nameFor(index, houseName.split(" ")[0])).join(", ")}.` }); return true; } } return false; }
+  function hiddenSubset() { for (const [houseName, house] of units) { const blanks = house.filter(index => notes[index]), missing = digits.filter(digit => !house.some(index => values[index] === digit)); for (let size = 2; size <= 4; size += 1) for (const group of choose(missing, size)) { const cells = [...new Set(group.flatMap(digit => blanks.filter(index => notes[index].has(digit))))]; if (cells.length !== size) continue; const removed = cells.some(index => [...notes[index]].some(digit => !group.includes(digit))); if (!removed) continue; cells.forEach(index => { notes[index] = new Set([...notes[index]].filter(digit => group.includes(digit))); }); const technique = `Hidden ${subsetName(size)}`; found.push({ technique, index: null, digit: null, house: houseName, text: `${group.join(", ")} can appear only in ${cells.map(index => nameFor(index, houseName.split(" ")[0])).join(" and ")} in ${houseName}. Remove every other candidate from those cells.` }); return true; } } return false; }
   while (true) {
     let move = null;
     for (const [label, house] of units) { const blanks = house.filter(index => !values[index]), missing = digits.filter(digit => !house.some(index => values[index] === digit)); if (blanks.length === 1 && missing.length === 1) { move = ["Full House", blanks[0], missing[0], label]; break; } }
-    if (!move) for (const index of active) if (!values[index] && candidates(values, index).length === 1) { move = ["Naked Single", index, candidates(values, index)[0], ""]; break; }
-    if (!move) for (const [label, house] of units) { for (const digit of digits) { if (house.some(index => values[index] === digit)) continue; const places = house.filter(index => !values[index] && candidates(values, index).includes(digit)); if (places.length === 1) { move = ["Hidden Single", places[0], digit, label]; break; } } if (move) break; }
-    if (!move) return found;
-    const [technique, index, digit, house] = move; values[index] = digit; found.push({ technique, index, digit, house, text: `${nameFor(index, house ? house.split(" ")[0] : "")} = ${digit}.${house ? ` It is the only possible location in ${house}.` : ""}` });
+    if (!move) for (const index of active) if (!values[index] && notes[index].size === 1) { move = ["Naked Single", index, [...notes[index]][0], ""]; break; }
+    if (!move) for (const [label, house] of units) { for (const digit of digits) { if (house.some(index => values[index] === digit)) continue; const places = house.filter(index => !values[index] && notes[index].has(digit)); if (places.length === 1) { move = ["Hidden Single", places[0], digit, label]; break; } } if (move) break; }
+    if (move) { place(...move); continue; }
+    if (nakedSubset() || hiddenSubset()) continue;
+    return found;
   }
 }
 let steps = deriveSteps(), mode = "human", stepIndex = 0, selectedCell = null;
-function currentValues() { const values = [...original]; if (mode === "human") human.forEach((value, index) => { if (value) values[index] = value; }); else steps.slice(0, stepIndex + 1).forEach(step => { values[step.index] = step.digit; }); return values; }
+function currentValues() { const values = [...original]; if (mode === "human") human.forEach((value, index) => { if (value) values[index] = value; }); else steps.slice(0, stepIndex + 1).forEach(step => { if (step.index !== null) values[step.index] = step.digit; }); return values; }
 function addBorders(cell, row, column) {
   if (!hasCell(row - 1, column)) cell.classList.add("edge-top"); if (!hasCell(row, column - 1)) cell.classList.add("edge-left"); if (!hasCell(row + 1, column)) cell.classList.add("edge-bottom"); if (!hasCell(row, column + 1)) cell.classList.add("edge-right");
   if (row % 3 === 0) cell.classList.add("box-top"); if (column % 3 === 0) cell.classList.add("box-left");

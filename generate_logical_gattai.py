@@ -47,6 +47,7 @@ def count_solutions(givens,limit=2):
 def allowed_logic(givens,record=False):
     """Human-style placements plus Naked/Hidden Pairs, Triples and Quads; no guessing."""
     board=givens[:];steps=[]
+    used_subsets=set();allowed_logic.last_subsets=used_subsets
     notes={cell:set(candidates(board,cell)) for cell in active if not board[cell]}
     def place(kind,cell,value,label):
         board[cell]=value;notes.pop(cell,None)
@@ -64,7 +65,9 @@ def allowed_logic(givens,record=False):
                     for cell in blanks:
                         if cell not in group:
                             before=len(notes[cell]);notes[cell]-=union;changed|=len(notes[cell])!=before
-                    if changed:return True
+                    if changed:
+                        used_subsets.add(f"Naked {('Pair','Triple','Quad')[size-2]}")
+                        return True
         return False
     def hidden_subset():
         for label,u in units:
@@ -77,7 +80,9 @@ def allowed_logic(givens,record=False):
                     changed=False
                     for cell in cells:
                         before=len(notes[cell]);notes[cell]&=digits;changed|=len(notes[cell])!=before
-                    if changed:return True
+                    if changed:
+                        used_subsets.add(f"Hidden {('Pair','Triple','Quad')[size-2]}")
+                        return True
         return False
     while True:
         move=None
@@ -179,20 +184,22 @@ def generate(seed):
             assert not (allowed_logic(puzzle)[0] and count_solutions(puzzle)==1)
             puzzle[cell]=value
     logical,steps,solved=allowed_logic(puzzle,True)
+    subsets=sorted(allowed_logic.last_subsets)
+    if not subsets:return None
     assert logical and solved==full and count_solutions(puzzle)==1
     rows=[''.join(str(puzzle[r*N+c]) if puzzle[r*N+c] else '.' for c in range(N)) for r in range(N)]
     solution=[''.join(str(full[r*N+c]) if full[r*N+c] else '.' for c in range(N)) for r in range(N)]
     return {"rows":rows,"solution":solution,"initialClues":126,"removed":removed,"finalClues":126-removed,
-            "unique":True,"allowedTechniqueSolve":True,"techniques":sorted(set(x[0] for x in steps)),
+            "unique":True,"allowedTechniqueSolve":True,"requiresSubsetTechnique":True,"subsetTechniques":subsets,"techniques":sorted(set(x[0] for x in steps)),
             "steps":[{"technique":k,"cell":label(c),"value":v,"unit":u} for k,c,v,u in steps]}
 
 start=time.time()
 base_seed=int(os.environ.get("GATTAI_SEED", "9000"))
-for offset in range(30):
+for offset in range(int(os.environ.get("GATTAI_ATTEMPTS", "30"))):
     result=generate(base_seed+offset*31)
     if result:
         result["seed"]=base_seed+offset*31
         with open("logical-gattai-result.json","w",encoding="utf-8") as f:json.dump(result,f,indent=2)
-        print(json.dumps({k:result[k] for k in ("seed","initialClues","removed","finalClues","techniques")},indent=2))
+        print(json.dumps({k:result[k] for k in ("seed","initialClues","removed","finalClues","subsetTechniques","techniques")},indent=2))
         print("seconds",round(time.time()-start,2))
         break
