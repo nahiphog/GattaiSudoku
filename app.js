@@ -175,11 +175,13 @@ function makeEditable(cell, index) {
   cell.addEventListener("paste", event => { event.preventDefault(); const digit = event.clipboardData.getData("text").match(/[1-9]/)?.[0]; if (digit) applyEntry(Number(digit), index); });
 }
 function renderStep() {
-  const step = steps[stepIndex], grouped = steps.reduce((groups, item, index) => { (groups[item.technique] ||= []).push(index + 1); return groups; }, {}), tallyList = document.querySelector("#techniqueTallyList");
+  const step = steps[stepIndex], grouped = steps.reduce((groups, item, index) => { (groups[item.technique] ||= []).push(index + 1); return groups; }, {}), tallyList = document.querySelector("#techniqueTallyList"), table = document.createElement("table"), header = document.createElement("thead"), body = document.createElement("tbody");
   document.querySelector("#stepCount").textContent = `Step ${stepIndex + 1} of ${steps.length}`;
   document.querySelector("#stepTechnique").textContent = step.technique;
   document.querySelector("#stepReasoning").textContent = step.text;
-  tallyList.replaceChildren(...Object.entries(grouped).map(([technique, stepNumbers]) => { const section = document.createElement("section"), title = document.createElement("strong"), details = document.createElement("p"); title.textContent = `${technique} · ${stepNumbers.length}`; details.textContent = `Steps ${stepNumbers.join(", ")}`; section.append(title, details); return section; }));
+  header.innerHTML = "<tr><th>Technique</th><th>Steps</th></tr>";
+  Object.entries(grouped).sort(([left], [right]) => (levelOrder.indexOf(techniqueLevels[left] || "Nightmare") - levelOrder.indexOf(techniqueLevels[right] || "Nightmare")) || (techniqueScores[left] || 0) - (techniqueScores[right] || 0) || left.localeCompare(right)).forEach(([technique, stepNumbers]) => { const row = document.createElement("tr"), name = document.createElement("th"), details = document.createElement("td"); name.scope = "row"; name.textContent = technique; details.textContent = stepNumbers.join(", "); row.append(name, details); body.append(row); });
+  table.append(header, body); tallyList.replaceChildren(table);
   document.querySelector("#firstStep").disabled = stepIndex === 0; document.querySelector("#previousStep").disabled = stepIndex === 0; document.querySelector("#nextStep").disabled = stepIndex === steps.length - 1; document.querySelector("#lastStep").disabled = stepIndex === steps.length - 1;
 }
 function renderBoard() {
