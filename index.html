@@ -13,10 +13,10 @@
   <main>
     <section class="board-card" aria-label="Gattai Sudoku puzzle">
       <div class="grid-tools" aria-label="Puzzle controls"><span>Mode:</span><button class="mode-button" data-mode="human" aria-pressed="true">Human</button><button class="mode-button" data-mode="solver" aria-pressed="false">Solver</button><span class="mode-status" id="modeStatus">Snyder candidates</span><button class="grid-button" data-grid="a" aria-pressed="false">Grid 1</button><button class="grid-button" data-grid="b" aria-pressed="false">Grid 2</button></div>
+      <section class="guide hidden" id="guide"><p class="eyebrow">HUMAN-STYLE WALKTHROUGH</p><div class="step-panel" aria-live="polite"><p class="eyebrow" id="stepCount"></p><h3 id="stepTechnique"></h3><p id="stepReasoning"></p></div><div class="step-controls"><button id="previousStep">Previous</button><button id="nextStep">Next</button></div></section>
       <div id="board" class="board"></div>
-      <button id="showGuide" aria-expanded="false">Show teaching guide</button>
+      <button id="copyPng" type="button">Copy grid as PNG</button><button id="showGuide" aria-expanded="false">Show teaching guide</button>
     </section>
-    <section class="guide hidden" id="guide"><p class="eyebrow">HUMAN-STYLE WALKTHROUGH</p><h2>Guided solve</h2><p>Coordinates use each grid’s own rows and columns. A shared cell names both coordinates.</p><div class="step-panel" aria-live="polite"><p class="eyebrow" id="stepCount"></p><h3 id="stepTechnique"></h3><p id="stepReasoning"></p></div><div class="step-controls"><button id="previousStep">Previous</button><button id="nextStep">Next</button></div><p><b>Verified method:</b> all steps use only Full House, Naked Single, or Hidden Single — all within the permitted technique set. No guessing is used.</p><p class="eyebrow solution-label">FINAL SOLUTION</p><div id="solutionBoard" class="board solution-board" aria-label="Completed Gattai Sudoku solution"></div></section>
   </main>
   <footer>Built for deliberate solving · Method names follow <a href="https://github.com/AImenes/sudokUI">sudokUI</a></footer>
   <script src="app.js"></script>
