@@ -12,15 +12,15 @@
   <header><div class="brand">GATTAI <span>SUDOKU</span></div><p>Two boards. One shared logic.</p></header>
   <main>
     <section class="intro">
-      <div><p class="eyebrow" id="dayLabel">THURSDAY · 10 SEPTEMBER</p><h1 id="puzzleTitle">Intermediate<br><em>shared-space</em> logic.</h1><p class="lede">Gattai Sudoku joins two standard 9×9 boards. The central 6×6 region belongs to both boards, so every placement has twice the consequence.</p><button id="showGuide" aria-expanded="false">Show teaching guide</button></div>
+      <div><p class="eyebrow" id="dayLabel">MONDAY · MINIMAL UNIQUE PUZZLE</p><h1 id="puzzleTitle">Monday<br><em>Gattai</em> puzzle.</h1><p class="lede">Gattai Sudoku joins two standard 9×9 boards. The central 6×6 region belongs to both boards, so every placement has twice the consequence.</p><button id="showGuide" aria-expanded="false">Show teaching guide</button></div>
     </section>
     <section class="board-card" aria-label="Gattai Sudoku puzzle">
-      <div class="legend"><span class="dot"></span> shared cells <span class="clues">48 clues</span></div>
+      <div class="legend"><span class="dot"></span> shared cells <span class="clues">29 givens</span></div>
       <div class="grid-tools" aria-label="Grid highlighting controls"><span>Highlight:</span><button class="grid-button" data-grid="a" aria-pressed="false">Grid 1</button><button class="grid-button" data-grid="b" aria-pressed="false">Grid 2</button></div>
       <div id="board" class="board"></div>
     </section>
-    <section class="week"><p class="eyebrow">DAILY PUZZLES</p><h2>This week’s boards</h2><p class="week-note" id="puzzleMeta"></p><div class="days" id="days"></div></section>
-    <section class="guide hidden" id="guide"><p class="eyebrow">HUMAN-STYLE WALKTHROUGH</p><h2>Start at the overlap.</h2><ol><li><b>Scan for naked singles.</b> In each row, column, and 3×3 box, a cell with one remaining candidate can be placed immediately.</li><li><b>Use hidden singles.</b> A digit that can appear in only one cell of a unit is forced even if that cell has other candidates.</li><li><b>Re-scan both boards.</b> Every shared placement updates one row, column, and box in each board. This is the engine of a Gattai solve.</li></ol><p>The displayed sample has one solution; the solver verifies both board rule sets simultaneously.</p></section>
+    <section class="week"><p class="eyebrow">MONDAY PUZZLE</p><h2>Generation report</h2><div class="report"><span>Initial filled cells <b>126</b></span><span>Removed during digging <b>97</b></span><span>Final givens <b>29</b></span><span>Minimality audit <b>Passed</b></span></div><p class="week-note">Every retained clue was individually retested: removing any one produces a puzzle without a unique solution.</p></section>
+    <section class="guide hidden" id="guide"><p class="eyebrow">HUMAN-STYLE WALKTHROUGH</p><h2>Start at the overlap.</h2><ol><li><b>Scan for naked singles.</b> In each row, column, and 3×3 box, a cell with one remaining candidate can be placed immediately.</li><li><b>Use hidden singles.</b> A digit that can appear in only one cell of a unit is forced even if that cell has other candidates.</li><li><b>Re-scan both boards.</b> Every shared placement updates one row, column, and box in each board. This is the engine of a Gattai solve.</li></ol><p>This Monday board was checked as one 126-cell Gattai structure before and after digging.</p></section>
   </main>
   <footer>Built for deliberate solving · Method names follow <a href="https://github.com/AImenes/sudokUI">sudokUI</a></footer>
   <script src="app.js"></script>
