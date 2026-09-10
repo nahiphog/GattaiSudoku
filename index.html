@@ -11,15 +11,11 @@
 <body>
   <header><div class="brand">GATTAI <span>SUDOKU</span></div><p>Two boards. One shared logic.</p></header>
   <main>
-    <section class="intro">
-      <div><p class="eyebrow" id="dayLabel">MONDAY · MINIMAL UNIQUE PUZZLE</p><h1 id="puzzleTitle">Monday<br><em>Gattai</em> puzzle.</h1><p class="lede">Gattai Sudoku joins two standard 9×9 boards. The central 6×6 region belongs to both boards, so every placement has twice the consequence.</p><button id="showGuide" aria-expanded="false">Show teaching guide</button></div>
-    </section>
     <section class="board-card" aria-label="Gattai Sudoku puzzle">
-      <div class="legend"><span class="dot"></span> shared cells <span class="clues">29 givens</span></div>
-      <div class="grid-tools" aria-label="Grid highlighting controls"><span>Highlight:</span><button class="grid-button" data-grid="a" aria-pressed="false">Grid 1</button><button class="grid-button" data-grid="b" aria-pressed="false">Grid 2</button></div>
+      <div class="grid-tools" aria-label="Puzzle controls"><span>Mode:</span><button class="mode-button" data-mode="human" aria-pressed="true">Human</button><button class="mode-button" data-mode="solver" aria-pressed="false">Solver</button><span class="mode-status" id="modeStatus">Snyder candidates</span><button class="grid-button" data-grid="a" aria-pressed="false">Grid 1</button><button class="grid-button" data-grid="b" aria-pressed="false">Grid 2</button></div>
       <div id="board" class="board"></div>
+      <button id="showGuide" aria-expanded="false">Show teaching guide</button>
     </section>
-    <section class="week"><p class="eyebrow">MONDAY PUZZLE</p><h2>Generation report</h2><div class="report"><span>Initial filled cells <b>126</b></span><span>Removed during digging <b>97</b></span><span>Final givens <b>29</b></span><span>Minimality audit <b>Passed</b></span></div><p class="week-note">Every retained clue was individually retested: removing any one produces a puzzle without a unique solution.</p></section>
     <section class="guide hidden" id="guide"><p class="eyebrow">HUMAN-STYLE WALKTHROUGH</p><h2>Guided solve</h2><p>Coordinates use each grid’s own rows and columns. A shared cell names both coordinates.</p><div class="step-panel" aria-live="polite"><p class="eyebrow" id="stepCount"></p><h3 id="stepTechnique"></h3><p id="stepReasoning"></p></div><div class="step-controls"><button id="previousStep">Previous</button><button id="nextStep">Next</button></div><p><b>Verified method:</b> all steps use only Full House, Naked Single, or Hidden Single — all within the permitted technique set. No guessing is used.</p><p class="eyebrow solution-label">FINAL SOLUTION</p><div id="solutionBoard" class="board solution-board" aria-label="Completed Gattai Sudoku solution"></div></section>
   </main>
   <footer>Built for deliberate solving · Method names follow <a href="https://github.com/AImenes/sudokUI">sudokUI</a></footer>
