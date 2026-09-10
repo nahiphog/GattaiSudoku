@@ -1,6 +1,6 @@
 const puzzles = {
-  monday: { date: "Monday, September 7, 2026", difficulty: "Easy", rows: ["82......9...", "..7.........", ".9....1.....", "6...8...3...", "....53..14..", ".......2.8..", "...8..6..5.4", ".....7.3....", "....1..5....", "....9.......", "......4...3.", "....7....69."] },
-  tuesday: { date: "Tuesday, September 8, 2026", difficulty: "Easy", rows: [".6..........", "8.4...96....", "5.7..4......", "4....2......", ".....859....", "...........3", "6........1.7", "...1.62....4", ".2......9...", ".....4..1...", "......38....", "...91....7.."] }
+  monday: { date: "Monday, September 7, 2026", difficulty: "Easy", score: 500, rows: ["82......9...", "..7.........", ".9....1.....", "6...8...3...", "....53..14..", ".......2.8..", "...8..6..5.4", ".....7.3....", "....1..5....", "....9.......", "......4...3.", "....7....69."] },
+  tuesday: { date: "Tuesday, September 8, 2026", difficulty: "Easy", score: 500, rows: [".6..........", "8.4...96....", "5.7..4......", "4....2......", ".....859....", "...........3", "6........1.7", "...1.62....4", ".2......9...", ".....4..1...", "......38....", "...91....7.."] }
 };
 let activeDay = "tuesday", rows = puzzles.tuesday.rows, puzzleDate = puzzles.tuesday.date;
 const digits = [1, 2, 3, 4, 5, 6, 7, 8, 9];
@@ -35,8 +35,7 @@ function deriveSteps() {
 let steps = deriveSteps(), mode = "human", stepIndex = 0;
 function currentValues() { const values = [...original]; if (mode === "human") human.forEach((value, index) => { if (value) values[index] = value; }); else steps.slice(0, stepIndex + 1).forEach(step => { values[step.index] = step.digit; }); return values; }
 function addBorders(cell, row, column) {
-  if (!hasCell(row + 1, column)) cell.classList.add("edge-bottom"); if (!hasCell(row, column + 1)) cell.classList.add("edge-right");
-  if (row % 3 === 0) cell.classList.add("box-top"); if (column % 3 === 0) cell.classList.add("box-left");
+  if (!hasCell(row - 1, column)) cell.classList.add("edge-top"); if (!hasCell(row, column - 1)) cell.classList.add("edge-left"); if (!hasCell(row + 1, column)) cell.classList.add("edge-bottom"); if (!hasCell(row, column + 1)) cell.classList.add("edge-right");
 }
 function makeCandidates(values, index) { const notation = document.createElement("span"); notation.className = "snyder"; candidates(values, index).forEach(digit => { const mark = document.createElement("i"); mark.className = `candidate-${digit}`; mark.textContent = digit; notation.append(mark); }); return notation; }
 function makeEditable(cell, index) {
@@ -47,7 +46,7 @@ function makeEditable(cell, index) {
   });
   cell.addEventListener("paste", event => { event.preventDefault(); const digit = event.clipboardData.getData("text").match(/[1-9]/)?.[0]; if (digit) { human[index] = Number(digit); refresh(); } });
 }
-function renderStep() { const step = steps[stepIndex]; document.querySelector("#stepCount").textContent = `Step ${stepIndex + 1} of ${steps.length}`; document.querySelector("#stepTechnique").textContent = step.technique; document.querySelector("#stepReasoning").textContent = step.text; document.querySelector("#firstStep").disabled = stepIndex === 0; document.querySelector("#previousStep").disabled = stepIndex === 0; document.querySelector("#nextStep").disabled = stepIndex === steps.length - 1; document.querySelector("#lastStep").disabled = stepIndex === steps.length - 1; }
+function renderStep() { const step = steps[stepIndex], tally = steps.reduce((counts, item) => ({ ...counts, [item.technique]: (counts[item.technique] || 0) + 1 }), {}); document.querySelector("#stepCount").textContent = `Step ${stepIndex + 1} of ${steps.length}`; document.querySelector("#stepTechnique").textContent = step.technique; document.querySelector("#stepReasoning").textContent = step.text; document.querySelector("#techniqueTally").textContent = `Technique tally: ${Object.entries(tally).map(([name, count]) => `${name} ${count}`).join(" · ")}`; document.querySelector("#firstStep").disabled = stepIndex === 0; document.querySelector("#previousStep").disabled = stepIndex === 0; document.querySelector("#nextStep").disabled = stepIndex === steps.length - 1; document.querySelector("#lastStep").disabled = stepIndex === steps.length - 1; }
 function renderBoard() {
   const values = currentValues(), activeHouse = mode === "solver" ? steps[stepIndex].house : "", highlighted = activeHouse ? units.find(([label]) => label === activeHouse)?.[1] || [] : [];
   board.innerHTML = "";
@@ -59,7 +58,7 @@ function renderBoard() {
     board.append(cell);
   }
 }
-function refresh() { renderStep(); renderBoard(); const givens = original.filter((value, index) => active.includes(index) && value).length; givenCount.textContent = `${givens} given cells`; solutionToggle.setAttribute("aria-pressed", String(mode === "solver")); }
+function refresh() { renderStep(); renderBoard(); const givens = original.filter((value, index) => active.includes(index) && value).length; givenCount.textContent = `${givens} given cells`; document.querySelector("#difficultyLabel").textContent = `Difficulty: ${puzzles[activeDay].difficulty} (${puzzles[activeDay].score})`; solutionToggle.setAttribute("aria-pressed", String(mode === "solver")); }
 function loadPuzzle(day) { activeDay = day; rows = puzzles[day].rows; puzzleDate = puzzles[day].date; original.fill(0); rows.forEach((row, r) => [...row].forEach((value, c) => { if (value !== ".") original[r * 12 + c] = Number(value); })); human = userInputs[day]; steps = deriveSteps(); stepIndex = 0; document.querySelectorAll(".day-button").forEach(button => button.setAttribute("aria-pressed", String(button.dataset.day === day))); refresh(); }
 document.querySelector("#firstStep").addEventListener("click", () => { stepIndex = 0; refresh(); }); document.querySelector("#previousStep").addEventListener("click", () => { if (stepIndex > 0) { stepIndex -= 1; refresh(); } }); document.querySelector("#nextStep").addEventListener("click", () => { if (stepIndex < steps.length - 1) { stepIndex += 1; refresh(); } }); document.querySelector("#lastStep").addEventListener("click", () => { stepIndex = steps.length - 1; refresh(); });
 solutionToggle.addEventListener("click", () => { mode = mode === "human" ? "solver" : "human"; guide.classList.toggle("hidden", mode === "human"); refresh(); });
@@ -73,5 +72,5 @@ document.querySelector("#copyPng").addEventListener("click", async () => {
   const button = document.querySelector("#copyPng"); try { const blob = await new Promise(resolve => canvas.toBlob(resolve, "image/png")); await navigator.clipboard.write([new ClipboardItem({ "image/png": blob })]); button.textContent = "Image copied"; } catch { button.textContent = "Image copy unavailable"; } setTimeout(() => { button.textContent = "Copy as a picture"; }, 2000);
 });
 const howToPlayDialog = document.querySelector("#howToPlayDialog"); document.querySelector("#howToPlay").addEventListener("click", () => howToPlayDialog.showModal()); document.querySelector("#closeHowToPlay").addEventListener("click", () => howToPlayDialog.close()); howToPlayDialog.addEventListener("click", event => { if (event.target === howToPlayDialog) howToPlayDialog.close(); });
-document.querySelector("#themeToggle").addEventListener("click", () => { const dark = document.body.classList.toggle("dark"); document.querySelector("#themeToggle").setAttribute("aria-label", dark ? "Use light mode" : "Use dark mode"); });
+document.querySelector("#themeToggle").addEventListener("click", () => { const button = document.querySelector("#themeToggle"), dark = document.body.classList.toggle("dark"); button.classList.toggle("is-dark", dark); button.setAttribute("aria-label", dark ? "Use light mode" : "Use dark mode"); });
 refresh();
