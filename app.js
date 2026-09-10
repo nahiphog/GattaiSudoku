@@ -32,14 +32,16 @@ function deriveSteps() {
     const [technique, index, digit, house] = move; values[index] = digit; found.push({ technique, index, digit, house, text: `${nameFor(index, house ? house.split(" ")[0] : "")} = ${digit}.${house ? ` It is the only possible location in ${house}.` : ""}` });
   }
 }
-let steps = deriveSteps(), mode = "human", stepIndex = 0;
+let steps = deriveSteps(), mode = "human", stepIndex = 0, selectedCell = null;
 function currentValues() { const values = [...original]; if (mode === "human") human.forEach((value, index) => { if (value) values[index] = value; }); else steps.slice(0, stepIndex + 1).forEach(step => { values[step.index] = step.digit; }); return values; }
 function addBorders(cell, row, column) {
   if (!hasCell(row - 1, column)) cell.classList.add("edge-top"); if (!hasCell(row, column - 1)) cell.classList.add("edge-left"); if (!hasCell(row + 1, column)) cell.classList.add("edge-bottom"); if (!hasCell(row, column + 1)) cell.classList.add("edge-right");
+  if (row % 3 === 0) cell.classList.add("box-top"); if (column % 3 === 0) cell.classList.add("box-left");
 }
 function makeCandidates(values, index) { const notation = document.createElement("span"); notation.className = "snyder"; candidates(values, index).forEach(digit => { const mark = document.createElement("i"); mark.className = `candidate-${digit}`; mark.textContent = digit; notation.append(mark); }); return notation; }
+function makeSelectable(cell, index) { cell.addEventListener("click", event => { event.preventDefault(); selectedCell = selectedCell === index ? null : index; board.querySelectorAll(".cell").forEach(item => item.classList.toggle("selected", Number(item.dataset.index) === selectedCell)); if (selectedCell !== null) cell.focus({ preventScroll: true }); }); }
 function makeEditable(cell, index) {
-  cell.classList.add("editable"); cell.contentEditable = "true"; cell.setAttribute("aria-label", `${nameFor(index)}, enter or delete a digit`);
+  cell.classList.add("editable"); cell.tabIndex = 0; cell.setAttribute("aria-label", `${nameFor(index)}, enter or delete a digit`); makeSelectable(cell, index);
   cell.addEventListener("keydown", event => {
     if (event.key === "Backspace" || event.key === "Delete") { event.preventDefault(); human[index] = 0; refresh(); return; }
     if (/^[1-9]$/.test(event.key)) { event.preventDefault(); human[index] = Number(event.key); refresh(); }
@@ -53,8 +55,8 @@ function renderBoard() {
   for (let row = 0; row < 12; row += 1) for (let column = 0; column < 12; column += 1) {
     if (!hasCell(row, column)) continue;
     const index = row * 12 + column, cell = document.createElement("div"); cell.className = "cell"; cell.dataset.index = index; cell.style.gridColumnStart = column + 1; cell.style.gridRowStart = row + 1;
-    if (row >= 3 && column >= 3 && row < 9 && column < 9) cell.classList.add("shared"); if (original[index]) cell.classList.add("given"); if (highlighted.includes(index)) cell.classList.add("affected-house"); if (mode === "solver" && steps[stepIndex].index === index) cell.classList.add("focus"); addBorders(cell, row, column);
-    if (values[index]) { cell.textContent = values[index]; if (mode === "human" && !original[index]) makeEditable(cell, index); } else if (mode === "solver") cell.append(makeCandidates(values, index)); else makeEditable(cell, index);
+    if (row >= 3 && column >= 3 && row < 9 && column < 9) cell.classList.add("shared"); if (original[index]) cell.classList.add("given"); if (highlighted.includes(index)) cell.classList.add("affected-house"); if (mode === "solver" && steps[stepIndex].index === index) cell.classList.add("focus"); if (index === selectedCell) cell.classList.add("selected"); addBorders(cell, row, column);
+    if (values[index]) { cell.textContent = values[index]; if (mode === "human" && !original[index]) makeEditable(cell, index); else makeSelectable(cell, index); } else if (mode === "solver") { cell.append(makeCandidates(values, index)); makeSelectable(cell, index); } else makeEditable(cell, index);
     board.append(cell);
   }
 }
