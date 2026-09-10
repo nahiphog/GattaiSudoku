@@ -1,6 +1,8 @@
 const puzzles = {
   monday: { date: "Monday, September 7, 2026", difficulty: "Easy", score: 500, rows: ["82......9...", "..7.........", ".9....1.....", "6...8...3...", "....53..14..", ".......2.8..", "...8..6..5.4", ".....7.3....", "....1..5....", "....9.......", "......4...3.", "....7....69."] },
-  tuesday: { date: "Tuesday, September 8, 2026", difficulty: "Easy", score: 500, rows: [".6..........", "8.4...96....", "5.7..4......", "4....2......", ".....859....", "...........3", "6........1.7", "...1.62....4", ".2......9...", ".....4..1...", "......38....", "...91....7.."] }
+  tuesday: { date: "Tuesday, September 8, 2026", difficulty: "Easy", score: 500, rows: [".6..........", "8.4...96....", "5.7..4......", "4....2......", ".....859....", "...........3", "6........1.7", "...1.62....4", ".2......9...", ".....4..1...", "......38....", "...91....7.."] },
+  wednesday: { date: "Wednesday, September 9, 2026", difficulty: "Easy", score: 500, rows: [".69....3....", ".1...8......", ".......6....", "....2..4....", "....1.3.....", "8.2..9..5...", "..5.7.......", "..84..12....", "...1...5...9", ".....4....6.", ".........3..", "...6......75"] },
+  thursday: { date: "Thursday, September 10, 2026", difficulty: "Easy", score: 500, rows: ["..2....63...", "....54......", "...6..7.....", "...3......9.", "7....98.6...", "2.6........8", "4...........", "....315.....", "......9....7", "......7..2.1", "....83...7.5", "..........8."] }
 };
 let activeDay = "tuesday", rows = puzzles.tuesday.rows, puzzleDate = puzzles.tuesday.date;
 const digits = [1, 2, 3, 4, 5, 6, 7, 8, 9];
@@ -16,7 +18,7 @@ const active = [...new Set(units.flatMap(([, house]) => house))];
 const housesFor = Object.fromEntries(active.map(index => [index, units.filter(([, house]) => house.includes(index)).map(([, house]) => house)]));
 const peers = Object.fromEntries(active.map(index => [index, new Set(housesFor[index].flat().filter(other => other !== index))]));
 const board = document.querySelector("#board"), guide = document.querySelector("#guide"), givenCount = document.querySelector("#givenCount"), solutionToggle = document.querySelector("#solutionToggle");
-const original = Array(144).fill(0), userInputs = { monday: Array(144).fill(0), tuesday: Array(144).fill(0) }; let human = userInputs.tuesday;
+const original = Array(144).fill(0), userInputs = { monday: Array(144).fill(0), tuesday: Array(144).fill(0), wednesday: Array(144).fill(0), thursday: Array(144).fill(0) }; let human = userInputs.tuesday;
 rows.forEach((row, r) => [...row].forEach((value, c) => { if (value !== ".") original[r * 12 + c] = Number(value); }));
 function hasCell(row, column) { return (row >= 0 && row < 9 && column >= 0 && column < 9) || (row >= 3 && row < 12 && column >= 3 && column < 12); }
 function nameFor(index, preferredGrid = "") { const row = Math.floor(index / 12), column = index % 12, names = []; if (row < 9 && column < 9 && preferredGrid !== "G2") names.push(`G1 R${row + 1}C${column + 1}`); if (row >= 3 && column >= 3 && preferredGrid !== "G1") names.push(`G2 R${row - 2}C${column - 2}`); return names.join(" / "); }
