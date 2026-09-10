@@ -15,7 +15,7 @@ for (const [name, rowOffset, columnOffset] of [["G1", 0, 0], ["G2", 3, 3]]) {
 const active = [...new Set(units.flatMap(([, house]) => house))];
 const housesFor = Object.fromEntries(active.map(index => [index, units.filter(([, house]) => house.includes(index)).map(([, house]) => house)]));
 const peers = Object.fromEntries(active.map(index => [index, new Set(housesFor[index].flat().filter(other => other !== index))]));
-const board = document.querySelector("#board"), guide = document.querySelector("#guide"), modeStatus = document.querySelector("#modeStatus");
+const board = document.querySelector("#board"), guide = document.querySelector("#guide"), givenCount = document.querySelector("#givenCount"), solutionToggle = document.querySelector("#solutionToggle");
 const original = Array(144).fill(0), userInputs = { monday: Array(144).fill(0), tuesday: Array(144).fill(0) }; let human = userInputs.tuesday;
 rows.forEach((row, r) => [...row].forEach((value, c) => { if (value !== ".") original[r * 12 + c] = Number(value); }));
 function hasCell(row, column) { return (row >= 0 && row < 9 && column >= 0 && column < 9) || (row >= 3 && row < 12 && column >= 3 && column < 12); }
@@ -60,10 +60,10 @@ function renderBoard() {
     board.append(cell);
   }
 }
-function refresh() { renderStep(); renderBoard(); const placed = currentValues().filter((value, index) => active.includes(index) && value).length; modeStatus.textContent = `${puzzleDate} · ${mode === "human" ? "Placed" : "Solution"}: ${placed} / 126 cells · Difficulty: ${puzzles[activeDay].difficulty}`; }
+function refresh() { renderStep(); renderBoard(); const givens = original.filter((value, index) => active.includes(index) && value).length; givenCount.textContent = `${givens} given cells`; solutionToggle.setAttribute("aria-pressed", String(mode === "solver")); }
 function loadPuzzle(day) { activeDay = day; rows = puzzles[day].rows; puzzleDate = puzzles[day].date; original.fill(0); rows.forEach((row, r) => [...row].forEach((value, c) => { if (value !== ".") original[r * 12 + c] = Number(value); })); human = userInputs[day]; steps = deriveSteps(); stepIndex = 0; document.querySelectorAll(".day-button").forEach(button => button.setAttribute("aria-pressed", String(button.dataset.day === day))); refresh(); }
 document.querySelector("#previousStep").addEventListener("click", () => { if (stepIndex > 0) { stepIndex -= 1; refresh(); } }); document.querySelector("#nextStep").addEventListener("click", () => { if (stepIndex < steps.length - 1) { stepIndex += 1; refresh(); } });
-document.querySelectorAll(".mode-button").forEach(button => button.addEventListener("click", () => { mode = button.dataset.mode; document.querySelectorAll(".mode-button").forEach(item => item.setAttribute("aria-pressed", String(item === button))); guide.classList.toggle("hidden", mode === "human"); refresh(); }));
+solutionToggle.addEventListener("click", () => { mode = mode === "human" ? "solver" : "human"; guide.classList.toggle("hidden", mode === "human"); refresh(); });
 document.querySelectorAll(".day-button").forEach(button => button.addEventListener("click", () => loadPuzzle(button.dataset.day)));
 document.querySelectorAll(".grid-button").forEach(button => button.addEventListener("click", () => { const grid = button.dataset.grid, selected = button.getAttribute("aria-pressed") !== "true"; document.querySelectorAll(".grid-button").forEach(item => item.setAttribute("aria-pressed", "false")); board.querySelectorAll(".cell").forEach(cell => cell.classList.remove("grid-a", "grid-b")); if (selected) { board.querySelectorAll(".cell").forEach(cell => { const index = Number(cell.dataset.index), row = Math.floor(index / 12), column = index % 12; if ((grid === "a" && row < 9 && column < 9) || (grid === "b" && row >= 3 && column >= 3)) cell.classList.add(`grid-${grid}`); }); button.setAttribute("aria-pressed", "true"); } }));
 document.querySelector("#copyPng").addEventListener("click", async () => {
