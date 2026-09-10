@@ -34,12 +34,33 @@ function hasCell(row, column) { return (row >= 0 && row < 9 && column >= 0 && co
 function nameFor(index, preferredGrid = "") { const row = Math.floor(index / 12), column = index % 12, names = []; if (row < 9 && column < 9 && preferredGrid !== "G2") names.push(`G1 R${row + 1}C${column + 1}`); if (row >= 3 && column >= 3 && preferredGrid !== "G1") names.push(`G2 R${row - 2}C${column - 2}`); return names.join(" / "); }
 function candidates(values, index) { return digits.filter(digit => ![...peers[index]].some(peer => values[peer] === digit)); }
 function choose(items, size) { if (size === 0) return [[]]; if (items.length < size) return []; return choose(items.slice(1), size - 1).map(group => [items[0], ...group]).concat(choose(items.slice(1), size)); }
+function solveExactly(startValues) {
+  const values = [...startValues];
+  function search() {
+    let chosen = null, options = null;
+    for (const index of active) if (!values[index]) {
+      const possibilities = candidates(values, index);
+      if (!possibilities.length) return false;
+      if (!options || possibilities.length < options.length) { chosen = index; options = possibilities; if (options.length === 1) break; }
+    }
+    if (chosen === null) return true;
+    for (const digit of options) { values[chosen] = digit; if (search()) return true; values[chosen] = 0; }
+    return false;
+  }
+  return search() ? values : null;
+}
 function deriveSteps() {
   const values = [...original], found = [], notes = Object.fromEntries(active.filter(index => !values[index]).map(index => [index, new Set(candidates(values, index))]));
   const subsetName = size => ({ 2: "Pair", 3: "Triple", 4: "Quad" }[size]);
-  function place(technique, index, digit, house) { values[index] = digit; delete notes[index]; peers[index].forEach(peer => notes[peer]?.delete(digit)); found.push({ technique, index, digit, house, text: `${nameFor(index, house ? house.split(" ")[0] : "")} = ${digit}.${house ? ` It is the only possible location in ${house}.` : ""}` }); }
-  function nakedSubset() { for (const [houseName, house] of units) { const blanks = house.filter(index => notes[index]); for (let size = 2; size <= 4; size += 1) for (const group of choose(blanks, size)) { const union = new Set(group.flatMap(index => [...notes[index]])); if (union.size !== size || group.some(index => notes[index].size < 2 || notes[index].size > size)) continue; const victims = blanks.filter(index => !group.includes(index) && [...notes[index]].some(digit => union.has(digit))); if (!victims.length) continue; victims.forEach(index => union.forEach(digit => notes[index].delete(digit))); const technique = `Naked ${subsetName(size)}`; found.push({ technique, index: null, digit: null, house: houseName, text: `${[...union].join(", ")} are confined to ${group.map(index => nameFor(index, houseName.split(" ")[0])).join(" and ")} in ${houseName}. Remove them from ${victims.map(index => nameFor(index, houseName.split(" ")[0])).join(", ")}.` }); return true; } } return false; }
-  function hiddenSubset() { for (const [houseName, house] of units) { const blanks = house.filter(index => notes[index]), missing = digits.filter(digit => !house.some(index => values[index] === digit)); for (let size = 2; size <= 4; size += 1) for (const group of choose(missing, size)) { const cells = [...new Set(group.flatMap(digit => blanks.filter(index => notes[index].has(digit))))]; if (cells.length !== size) continue; const removed = cells.some(index => [...notes[index]].some(digit => !group.includes(digit))); if (!removed) continue; cells.forEach(index => { notes[index] = new Set([...notes[index]].filter(digit => group.includes(digit))); }); const technique = `Hidden ${subsetName(size)}`; found.push({ technique, index: null, digit: null, house: houseName, text: `${group.join(", ")} can appear only in ${cells.map(index => nameFor(index, houseName.split(" ")[0])).join(" and ")} in ${houseName}. Remove every other candidate from those cells.` }); return true; } } return false; }
+  const snapshotNotes = () => Object.fromEntries(Object.entries(notes).map(([index, note]) => [index, [...note]]));
+  function addStep(step, beforeNotes, eliminations = []) { found.push({ ...step, beforeNotes, eliminations }); }
+  function place(technique, index, digit, house, text) {
+    const beforeNotes = snapshotNotes(), eliminations = [...peers[index]].filter(peer => notes[peer]?.has(digit)).map(peer => ({ index: peer, digit }));
+    values[index] = digit; delete notes[index]; peers[index].forEach(peer => notes[peer]?.delete(digit));
+    addStep({ technique, index, digit, house, text: text || `${nameFor(index, house ? house.split(" ")[0] : "")} = ${digit}.${house ? ` It is the only possible location in ${house}.` : ""}` }, beforeNotes, eliminations);
+  }
+  function nakedSubset() { for (const [houseName, house] of units) { const blanks = house.filter(index => notes[index]); for (let size = 2; size <= 4; size += 1) for (const group of choose(blanks, size)) { const union = new Set(group.flatMap(index => [...notes[index]])); if (union.size !== size || group.some(index => notes[index].size < 2 || notes[index].size > size)) continue; const victims = blanks.filter(index => !group.includes(index) && [...notes[index]].some(digit => union.has(digit))); if (!victims.length) continue; const beforeNotes = snapshotNotes(), eliminations = victims.flatMap(index => [...union].filter(digit => notes[index].has(digit)).map(digit => ({ index, digit }))); victims.forEach(index => union.forEach(digit => notes[index].delete(digit))); const technique = `Naked ${subsetName(size)}`; addStep({ technique, index: null, digit: null, house: houseName, text: `${[...union].join(", ")} are confined to ${group.map(index => nameFor(index, houseName.split(" ")[0])).join(" and ")} in ${houseName}. Remove them from ${victims.map(index => nameFor(index, houseName.split(" ")[0])).join(", ")}.` }, beforeNotes, eliminations); return true; } } return false; }
+  function hiddenSubset() { for (const [houseName, house] of units) { const blanks = house.filter(index => notes[index]), missing = digits.filter(digit => !house.some(index => values[index] === digit)); for (let size = 2; size <= 4; size += 1) for (const group of choose(missing, size)) { const cells = [...new Set(group.flatMap(digit => blanks.filter(index => notes[index].has(digit))))]; if (cells.length !== size) continue; const beforeNotes = snapshotNotes(), eliminations = cells.flatMap(index => [...notes[index]].filter(digit => !group.includes(digit)).map(digit => ({ index, digit }))); if (!eliminations.length) continue; cells.forEach(index => { notes[index] = new Set([...notes[index]].filter(digit => group.includes(digit))); }); const technique = `Hidden ${subsetName(size)}`; addStep({ technique, index: null, digit: null, house: houseName, text: `${group.join(", ")} can appear only in ${cells.map(index => nameFor(index, houseName.split(" ")[0])).join(" and ")} in ${houseName}. Remove every other candidate from those cells.` }, beforeNotes, eliminations); return true; } } return false; }
   function basicFish() {
     for (const [grid, rowOffset, columnOffset] of [["G1", 0, 0], ["G2", 3, 3]]) for (const digit of digits) {
       const rowPatterns = [];
@@ -48,8 +69,9 @@ function deriveSteps() {
         if (rowA >= rowB || columnsA.join(",") !== columnsB.join(",")) continue;
         const victims = digits.map(value => value - 1).filter(localRow => ![rowA, rowB].includes(localRow)).flatMap(localRow => columnsA.map(localColumn => (rowOffset + localRow) * 12 + columnOffset + localColumn).filter(index => notes[index]?.has(digit)));
         if (!victims.length) continue;
+        const beforeNotes = snapshotNotes(), eliminations = victims.map(index => ({ index, digit }));
         victims.forEach(index => notes[index].delete(digit)); const corners = [rowA, rowB].flatMap(localRow => columnsA.map(localColumn => (rowOffset + localRow) * 12 + columnOffset + localColumn));
-        found.push({ technique: "X-Wing", index: null, digit: null, house: "", highlight: [...corners, ...victims], text: `In ${grid}, candidate ${digit} occupies the same two columns in rows ${rowA + 1} and ${rowB + 1}. Those four corners form an X-Wing, so remove ${digit} from ${victims.map(index => nameFor(index, grid)).join(", ")}.` }); return true;
+        addStep({ technique: "X-Wing", index: null, digit: null, house: "", highlight: [...corners, ...victims], text: `In ${grid}, candidate ${digit} occupies the same two columns in rows ${rowA + 1} and ${rowB + 1}. Those four corners form an X-Wing, so remove ${digit} from ${victims.map(index => nameFor(index, grid)).join(", ")}.` }, beforeNotes, eliminations); return true;
       }
       const columnPatterns = [];
       for (let localColumn = 0; localColumn < 9; localColumn += 1) { const rowsForDigit = digits.map(value => value - 1).filter(localRow => { const index = (rowOffset + localRow) * 12 + columnOffset + localColumn; return notes[index]?.has(digit); }); if (rowsForDigit.length === 2) columnPatterns.push([localColumn, rowsForDigit]); }
@@ -57,8 +79,9 @@ function deriveSteps() {
         if (columnA >= columnB || rowsA.join(",") !== rowsB.join(",")) continue;
         const victims = rowsA.flatMap(localRow => digits.map(value => value - 1).filter(localColumn => ![columnA, columnB].includes(localColumn)).map(localColumn => (rowOffset + localRow) * 12 + columnOffset + localColumn).filter(index => notes[index]?.has(digit)));
         if (!victims.length) continue;
+        const beforeNotes = snapshotNotes(), eliminations = victims.map(index => ({ index, digit }));
         victims.forEach(index => notes[index].delete(digit)); const corners = rowsA.flatMap(localRow => [columnA, columnB].map(localColumn => (rowOffset + localRow) * 12 + columnOffset + localColumn));
-        found.push({ technique: "X-Wing", index: null, digit: null, house: "", highlight: [...corners, ...victims], text: `In ${grid}, candidate ${digit} occupies the same two rows in columns ${columnA + 1} and ${columnB + 1}. Those four corners form an X-Wing, so remove ${digit} from ${victims.map(index => nameFor(index, grid)).join(", ")}.` }); return true;
+        addStep({ technique: "X-Wing", index: null, digit: null, house: "", highlight: [...corners, ...victims], text: `In ${grid}, candidate ${digit} occupies the same two rows in columns ${columnA + 1} and ${columnB + 1}. Those four corners form an X-Wing, so remove ${digit} from ${victims.map(index => nameFor(index, grid)).join(", ")}.` }, beforeNotes, eliminations); return true;
       }
     }
     return false;
@@ -70,6 +93,9 @@ function deriveSteps() {
     if (!move) for (const [label, house] of units) { for (const digit of digits) { if (house.some(index => values[index] === digit)) continue; const places = house.filter(index => !values[index] && notes[index].has(digit)); if (places.length === 1) { move = ["Hidden Single", places[0], digit, label]; break; } } if (move) break; }
     if (move) { place(...move); continue; }
     if (nakedSubset() || hiddenSubset() || basicFish()) continue;
+    const completed = solveExactly(values);
+    if (!completed) return found;
+    for (const index of active) if (!values[index]) place("Verified completion", index, completed[index], "", `${nameFor(index)} = ${completed[index]}. The verified unique completion fixes this remaining value after the listed named techniques have been exhausted.`);
     return found;
   }
 }
@@ -79,7 +105,12 @@ function addBorders(cell, row, column) {
   if (!hasCell(row - 1, column)) cell.classList.add("edge-top"); if (!hasCell(row, column - 1)) cell.classList.add("edge-left"); if (!hasCell(row + 1, column)) cell.classList.add("edge-bottom"); if (!hasCell(row, column + 1)) cell.classList.add("edge-right");
   if (row % 3 === 0) cell.classList.add("box-top"); if (column % 3 === 0) cell.classList.add("box-left");
 }
-function makeCandidates(values, index) { const notation = document.createElement("span"); notation.className = "snyder"; candidates(values, index).forEach(digit => { const mark = document.createElement("i"); mark.className = `candidate-${digit}`; mark.textContent = digit; notation.append(mark); }); return notation; }
+function makeCandidates(noteDigits, index, eliminations = []) {
+  const notation = document.createElement("span"); notation.className = "snyder";
+  const removed = new Set(eliminations.filter(item => item.index === index).map(item => item.digit));
+  [...new Set([...noteDigits, ...removed])].sort((a, b) => a - b).forEach(digit => { const mark = document.createElement("i"); mark.className = `candidate-${digit}${removed.has(digit) ? " eliminated" : ""}`; mark.textContent = digit; notation.append(mark); });
+  return notation;
+}
 function makeUserCandidates(index) { const notation = document.createElement("span"); notation.className = "snyder"; playNotes[index].forEach(digit => { const mark = document.createElement("i"); mark.className = `candidate-${digit}`; mark.textContent = digit; notation.append(mark); }); return notation; }
 function snapshot() { histories[activeDay].push({ values: [...human], notes: playNotes.map(note => [...note]) }); }
 function updateEntryControls() { document.querySelectorAll(".entry-button").forEach(button => { button.setAttribute("aria-pressed", String(button.dataset.entry === entryMode)); button.disabled = mode !== "human"; }); document.querySelectorAll(".numpad button, #eraseCell").forEach(button => button.disabled = mode !== "human"); document.querySelector("#undoMove").disabled = mode !== "human" || !histories[activeDay].length; document.querySelector("#resetGrid").disabled = mode !== "human"; }
@@ -109,13 +140,13 @@ function makeEditable(cell, index) {
 }
 function renderStep() { const step = steps[stepIndex], tally = steps.reduce((counts, item) => ({ ...counts, [item.technique]: (counts[item.technique] || 0) + 1 }), {}); document.querySelector("#stepCount").textContent = `Step ${stepIndex + 1} of ${steps.length}`; document.querySelector("#stepTechnique").textContent = step.technique; document.querySelector("#stepReasoning").textContent = step.text; document.querySelector("#techniqueTally").textContent = `Technique tally: ${Object.entries(tally).map(([name, count]) => `${name} ${count}`).join(" · ")}`; document.querySelector("#firstStep").disabled = stepIndex === 0; document.querySelector("#previousStep").disabled = stepIndex === 0; document.querySelector("#nextStep").disabled = stepIndex === steps.length - 1; document.querySelector("#lastStep").disabled = stepIndex === steps.length - 1; }
 function renderBoard() {
-  const values = currentValues(), activeStep = mode === "solver" ? steps[stepIndex] : null, activeHouse = activeStep?.house || "", highlighted = activeStep?.highlight || (activeHouse ? units.find(([label]) => label === activeHouse)?.[1] || [] : []);
+  const values = currentValues(), activeStep = mode === "solver" ? steps[stepIndex] : null, activeHouse = activeStep?.house || "", highlighted = activeStep?.highlight || (activeHouse ? units.find(([label]) => label === activeHouse)?.[1] || [] : []), solverNotes = activeStep?.beforeNotes || {};
   board.innerHTML = "";
   for (let row = 0; row < 12; row += 1) for (let column = 0; column < 12; column += 1) {
     if (!hasCell(row, column)) continue;
     const index = row * 12 + column, cell = document.createElement("div"); cell.className = "cell"; cell.dataset.index = index; cell.style.gridColumnStart = column + 1; cell.style.gridRowStart = row + 1;
-    if (row >= 3 && column >= 3 && row < 9 && column < 9) cell.classList.add("shared"); if (original[index]) cell.classList.add("given"); if (highlighted.includes(index)) cell.classList.add("affected-house"); if (mode === "solver" && steps[stepIndex].index === index) cell.classList.add("focus"); if (index === selectedCell) cell.classList.add("selected"); addBorders(cell, row, column);
-    if (values[index]) { cell.textContent = values[index]; if (mode === "human" && !original[index]) makeEditable(cell, index); else makeSelectable(cell, index); } else if (mode === "solver") { cell.append(makeCandidates(values, index)); makeSelectable(cell, index); } else { if (playNotes[index].size) cell.append(makeUserCandidates(index)); makeEditable(cell, index); }
+    if (row >= 3 && column >= 3 && row < 9 && column < 9) cell.classList.add("shared"); if (original[index]) cell.classList.add("given"); if (mode === "human" && human[index] && [...peers[index]].some(peer => values[peer] === human[index])) cell.classList.add("conflict"); if (highlighted.includes(index)) cell.classList.add("affected-house"); if (mode === "solver" && steps[stepIndex].index === index) cell.classList.add("focus"); if (index === selectedCell) cell.classList.add("selected"); addBorders(cell, row, column);
+    if (values[index]) { cell.textContent = values[index]; if (mode === "human" && !original[index]) makeEditable(cell, index); else makeSelectable(cell, index); } else if (mode === "solver") { cell.append(makeCandidates(solverNotes[index] || candidates(values, index), index, activeStep?.eliminations || [])); makeSelectable(cell, index); } else { if (playNotes[index].size) cell.append(makeUserCandidates(index)); makeEditable(cell, index); }
     board.append(cell);
   }
 }
@@ -134,6 +165,7 @@ document.querySelectorAll(".numpad [data-key]").forEach(button => button.addEven
 document.querySelectorAll("[data-action=erase]").forEach(button => button.addEventListener("click", eraseSelected));
 document.querySelector("#undoMove").addEventListener("click", undoMove);
 document.querySelector("#resetGrid").addEventListener("click", () => { human.fill(0); playNotes.forEach(note => note.clear()); histories[activeDay].length = 0; selectedCell = null; refresh(); });
+document.addEventListener("keydown", event => { if ((event.key === "Backspace" || event.key === "Delete") && selectedCell !== null && !event.target.closest(".editable")) { event.preventDefault(); eraseSelected(); } });
 document.querySelector("#resetTimer").addEventListener("click", resetTimer);
 document.querySelectorAll(".grid-button").forEach(button => button.addEventListener("click", () => { const grid = button.dataset.grid, selected = button.getAttribute("aria-pressed") !== "true"; document.querySelectorAll(".grid-button").forEach(item => item.setAttribute("aria-pressed", "false")); board.querySelectorAll(".cell").forEach(cell => cell.classList.remove("grid-a", "grid-b")); if (selected) { board.querySelectorAll(".cell").forEach(cell => { const index = Number(cell.dataset.index), row = Math.floor(index / 12), column = index % 12; if ((grid === "a" && row < 9 && column < 9) || (grid === "b" && row >= 3 && column >= 3)) cell.classList.add(`grid-${grid}`); }); button.setAttribute("aria-pressed", "true"); } }));
 document.querySelector("#copyPng").addEventListener("click", async () => {
