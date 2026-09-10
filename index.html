@@ -1,0 +1,27 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Gattai Sudoku Studio</title>
+  <meta name="description" content="A human-first Gattai Sudoku lesson and daily puzzle board." />
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body>
+  <header><div class="brand">GATTAI <span>SUDOKU</span></div><p>Two boards. One shared logic.</p></header>
+  <main>
+    <section class="intro">
+      <div><p class="eyebrow">THURSDAY · 10 SEPTEMBER</p><h1>Intermediate<br><em>shared-space</em> logic.</h1><p class="lede">Gattai Sudoku joins two standard 9×9 boards. The central 6×6 region belongs to both boards, so every placement has twice the consequence.</p></div>
+      <aside><b>Today’s focus</b><strong>Hidden singles</strong><span>plus careful cross-board scanning</span><button id="showGuide">Show teaching guide</button></aside>
+    </section>
+    <section class="board-card" aria-label="Gattai Sudoku puzzle">
+      <div class="legend"><span class="dot"></span> shared cells <span class="clues">48 clues · unique solution confirmed</span></div>
+      <div id="board" class="board"></div>
+    </section>
+    <section class="week"><h2>This week’s path</h2><div class="days" id="days"></div></section>
+    <section class="guide hidden" id="guide"><p class="eyebrow">HUMAN-STYLE WALKTHROUGH</p><h2>Start at the overlap.</h2><ol><li><b>Scan for naked singles.</b> In each row, column, and 3×3 box, a cell with one remaining candidate can be placed immediately.</li><li><b>Use hidden singles.</b> A digit that can appear in only one cell of a unit is forced even if that cell has other candidates.</li><li><b>Re-scan both boards.</b> Every shared placement updates one row, column, and box in each board. This is the engine of a Gattai solve.</li></ol><p>The displayed sample has one solution; the solver verifies both board rule sets simultaneously.</p></section>
+  </main>
+  <footer>Built for deliberate solving · Method names follow <a href="https://github.com/AImenes/sudokUI">sudokUI</a></footer>
+  <script src="app.js"></script>
+</body>
+</html>
