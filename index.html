@@ -12,10 +12,9 @@
   <header><div class="brand">GATTAI <span>SUDOKU</span></div><p>Two boards. One shared logic.</p></header>
   <main>
     <section class="board-card" aria-label="Gattai Sudoku puzzle">
-      <div class="grid-tools" aria-label="Puzzle controls"><span>Day:</span><button class="day-button" data-day="monday" aria-pressed="false">Mon 7</button><button class="day-button" data-day="tuesday" aria-pressed="true">Tue 8</button><span>Mode:</span><button class="mode-button" data-mode="human" aria-pressed="true">Play</button><button class="mode-button" data-mode="solver" aria-pressed="false">Solution</button><span class="mode-status" id="modeStatus"></span><button class="grid-button" data-grid="a" aria-pressed="false">Grid 1</button><button class="grid-button" data-grid="b" aria-pressed="false">Grid 2</button></div>
-      <section class="guide hidden" id="guide"><p class="eyebrow">SOLUTION WALKTHROUGH</p><div class="step-panel" aria-live="polite"><p class="eyebrow" id="stepCount"></p><h3 id="stepTechnique"></h3><p id="stepReasoning"></p></div><div class="step-controls"><button id="previousStep">Previous</button><button id="nextStep">Next</button></div></section>
-      <div id="board" class="board"></div>
-      <button id="copyPng" type="button">Copy grid as image</button>
+      <aside class="day-sidebar" aria-label="Daily puzzles"><span>Daily</span><button class="day-button" data-day="monday" aria-pressed="false">Mon 7</button><button class="day-button" data-day="tuesday" aria-pressed="true">Tue 8</button></aside>
+      <section class="puzzle-surface"><div id="board" class="board"></div><div class="board-footer"><button id="solutionToggle" type="button" aria-pressed="false">Solution</button><span id="givenCount"></span><button id="copyPng" type="button">Copy as a picture</button></div><section class="guide hidden" id="guide"><p class="eyebrow">SOLUTION WALKTHROUGH</p><div class="step-panel" aria-live="polite"><p class="eyebrow" id="stepCount"></p><h3 id="stepTechnique"></h3><p id="stepReasoning"></p></div><div class="step-controls"><button id="previousStep">Previous</button><button id="nextStep">Next</button></div></section></section>
+      <aside class="grid-sidebar" aria-label="Grid highlights"><span>Highlight</span><button class="grid-button" data-grid="a" aria-pressed="false">Grid 1</button><button class="grid-button" data-grid="b" aria-pressed="false">Grid 2</button></aside>
     </section>
   </main>
   <footer>Built for deliberate solving · Method names follow <a href="https://github.com/AImenes/sudokUI">sudokUI</a></footer>
