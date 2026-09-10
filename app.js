@@ -11,7 +11,7 @@ for (const [name, rowOffset, columnOffset] of [["G1", 0, 0], ["G2", 3, 3]]) {
 const active = [...new Set(units.flatMap(([, house]) => house))];
 const housesFor = Object.fromEntries(active.map(index => [index, units.filter(([, house]) => house.includes(index)).map(([, house]) => house)]));
 const peers = Object.fromEntries(active.map(index => [index, new Set(housesFor[index].flat().filter(other => other !== index))]));
-const board = document.querySelector("#board"), guide = document.querySelector("#guide"), guideButton = document.querySelector("#showGuide"), modeStatus = document.querySelector("#modeStatus");
+const board = document.querySelector("#board"), guide = document.querySelector("#guide"), modeStatus = document.querySelector("#modeStatus");
 const original = Array(144).fill(0), human = Array(144).fill(0);
 rows.forEach((row, r) => [...row].forEach((value, c) => { if (value !== ".") original[r * 12 + c] = Number(value); }));
 function hasCell(row, column) { return (row >= 0 && row < 9 && column >= 0 && column < 9) || (row >= 3 && row < 12 && column >= 3 && column < 12); }
@@ -44,14 +44,13 @@ function renderBoard() {
     if (!hasCell(row, column)) continue;
     const index = row * 12 + column, cell = document.createElement("div"); cell.className = "cell"; cell.dataset.index = index; cell.style.gridColumnStart = column + 1; cell.style.gridRowStart = row + 1;
     if (row >= 3 && column >= 3 && row < 9 && column < 9) cell.classList.add("shared"); if (original[index]) cell.classList.add("given"); if (highlighted.includes(index)) cell.classList.add("affected-house"); if (mode === "solver" && steps[stepIndex].index === index) cell.classList.add("focus"); addBorders(cell, row, column);
-    if (values[index]) cell.textContent = values[index]; else if (mode === "solver") cell.append(makeCandidates(values, index)); else { cell.classList.add("editable"); cell.contentEditable = "true"; cell.setAttribute("aria-label", `${nameFor(index)}, enter a digit`); cell.addEventListener("input", () => { const digit = cell.textContent.replace(/[^1-9]/g, "").slice(-1); human[index] = digit ? Number(digit) : 0; renderBoard(); }); }
+    if (values[index]) cell.textContent = values[index]; else if (mode === "solver") cell.append(makeCandidates(values, index)); else { cell.classList.add("editable"); cell.contentEditable = "true"; cell.setAttribute("aria-label", `${nameFor(index)}, enter a digit`); cell.addEventListener("input", () => { const digit = cell.textContent.replace(/[^1-9]/g, "").slice(-1); human[index] = digit ? Number(digit) : 0; refresh(); }); }
     board.append(cell);
   }
 }
-function refresh() { renderStep(); renderBoard(); }
-guideButton.addEventListener("click", () => { const hidden = guide.classList.toggle("hidden"); guideButton.textContent = hidden ? "Show teaching guide" : "Hide teaching guide"; guideButton.setAttribute("aria-expanded", String(!hidden)); });
+function refresh() { renderStep(); renderBoard(); const placed = currentValues().filter((value, index) => active.includes(index) && value).length; modeStatus.textContent = `${mode === "human" ? "Placed" : "Solution"}: ${placed} / 126 cells · SudokUI rank: Easy (568)`; }
 document.querySelector("#previousStep").addEventListener("click", () => { if (stepIndex > 0) { stepIndex -= 1; refresh(); } }); document.querySelector("#nextStep").addEventListener("click", () => { if (stepIndex < steps.length - 1) { stepIndex += 1; refresh(); } });
-document.querySelectorAll(".mode-button").forEach(button => button.addEventListener("click", () => { mode = button.dataset.mode; document.querySelectorAll(".mode-button").forEach(item => item.setAttribute("aria-pressed", String(item === button))); modeStatus.textContent = mode === "human" ? "Fill in the blank cells" : `Step ${stepIndex + 1} on board`; if (mode === "solver") { guide.classList.remove("hidden"); guideButton.textContent = "Hide teaching guide"; } refresh(); }));
+document.querySelectorAll(".mode-button").forEach(button => button.addEventListener("click", () => { mode = button.dataset.mode; document.querySelectorAll(".mode-button").forEach(item => item.setAttribute("aria-pressed", String(item === button))); guide.classList.toggle("hidden", mode === "human"); refresh(); }));
 document.querySelectorAll(".grid-button").forEach(button => button.addEventListener("click", () => { const grid = button.dataset.grid, selected = button.getAttribute("aria-pressed") !== "true"; document.querySelectorAll(".grid-button").forEach(item => item.setAttribute("aria-pressed", "false")); board.querySelectorAll(".cell").forEach(cell => cell.classList.remove("grid-a", "grid-b")); if (selected) { board.querySelectorAll(".cell").forEach(cell => { const index = Number(cell.dataset.index), row = Math.floor(index / 12), column = index % 12; if ((grid === "a" && row < 9 && column < 9) || (grid === "b" && row >= 3 && column >= 3)) cell.classList.add(`grid-${grid}`); }); button.setAttribute("aria-pressed", "true"); } }));
 document.querySelector("#copyPng").addEventListener("click", async () => {
   const scale = 60, canvas = document.createElement("canvas"), context = canvas.getContext("2d"), values = currentValues(); canvas.width = canvas.height = scale * 12; context.fillStyle = "#fff"; context.fillRect(0, 0, canvas.width, canvas.height);
