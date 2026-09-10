@@ -7,8 +7,8 @@ header{display:grid;grid-template-columns:1fr auto 1fr;align-items:center;paddin
 .header-start{display:flex;align-items:center;gap:9px}
 .timer{min-width:55px;font-size:14px;font-weight:500;letter-spacing:.04em;text-align:center}
 .timer-reset{border:0;background:transparent;color:var(--ink);font:20px/1 'DM Mono',monospace;cursor:pointer;padding:2px}
-.brand{font-size:22px;font-weight:500;letter-spacing:.12em;text-align:center}
-.brand span{color:var(--red)}
+.brand{display:flex;align-items:center;justify-content:center;gap:.48em;font-size:22px;font-weight:500;letter-spacing:.04em;text-align:center}
+.brand span:last-child{color:var(--red)}
 .icon-button{width:32px;height:32px;border:1px solid var(--ink);border-radius:0;background:transparent;color:var(--ink);display:grid;place-items:center;padding:0;cursor:pointer;font:600 18px/1 'DM Mono',monospace}
 .info-button{justify-self:start;font:600 21px/1 Georgia,serif;font-style:italic}
 .theme-button{justify-self:end}
@@ -75,11 +75,11 @@ body.dark .given{color:#fff}
 .board-footer button{margin:16px 0 0;border:1px solid var(--ink);background:var(--ink);color:var(--surface);padding:8px 11px;cursor:pointer;font:inherit}
 .board-footer #givenCount{margin-top:16px;font-size:13px;white-space:nowrap}
 .board-footer #copyPng{margin-left:auto;background:var(--muted);color:var(--ink)}
-.guide{height:212px;margin-top:14px;padding:16px 18px;background:var(--ink);color:var(--surface);display:flex;flex-direction:column}
+.guide{height:236px;margin-top:14px;padding:16px 18px;background:var(--ink);color:var(--surface);display:flex;flex-direction:column;overflow:hidden}
 .guide .eyebrow{color:var(--gold);font-size:12px;letter-spacing:.12em;margin:0 0 4px}
 .guide h3{font:600 26px/1.1 'Playfair Display',serif;margin:4px 0 8px;color:var(--gold)}
 .guide p:last-child{margin:0}
-.guide .step-panel{flex:1}
+.guide .step-panel{flex:1;min-height:0;overflow-y:auto;padding-right:4px}
 .technique-tally{margin:4px 0 8px;font-size:11px;color:var(--gold);line-height:1.35}
 .step-controls{display:flex;align-items:center;justify-content:center;gap:8px}
 .step-controls button{min-width:34px;margin:0;border:0;background:var(--surface);color:var(--ink);padding:8px 9px;cursor:pointer;font:inherit}

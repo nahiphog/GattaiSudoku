@@ -3,8 +3,8 @@ const puzzles = {
   tuesday: { date: "Tuesday, September 8, 2026", rows: [".6..........", "8.4...96....", "5.7..4......", "4....2......", ".....859....", "...........3", "6........1.7", "...1.62....4", ".2......9...", ".....4..1...", "......38....", "...91....7.."] },
   wednesday: { date: "Wednesday, September 9, 2026", rows: [".9.....6....", "......2.1...", "....4.......", ".......8....", "..7....4.1..", ".4..6.1....3", ".5...3......", "..4.8...694.", "2........6..", ".......35...", ".........2..", "...5.12...7."] },
   thursday: { date: "Thursday, September 10, 2026", rows: ["3.6.4.......", "...7934.....", "......8.....", "..8.......2.", ".6.1...9..67", "..3.......1.", "..1.6...5...", "......92....", ".........2.3", "...6....3...", "...2.1...7..", "..........91"] },
-  friday: { date: "Friday, September 11, 2026", rows: ["...9........", ".7..........", ".4...8.1....", "3.....1..9..", "..5........4", "...32..4....", "....1.9..4..", "1.6.3...4...", ".9....5.....", "......2...5.", ".....8.5..9.", ".....1...7.."] },
-  saturday: { date: "Saturday, September 12, 2026", rows: [".....3.8....", "..4....2....", "1...857.....", "9....7..3.2.", "...........4", "...5.94..7.1", "..1.......9.", "..2.1.....6.", "..8.9..37...", "....8.......", ".........2..", ".....3.218.."] }
+  friday: { date: "Friday, September 11, 2026", rows: [".5..8.6.....", "...9....8...", ".....3......", ".1...7.8....", "3..........5", "..9...3.....", "..2.5...97..", "....3.7...5.", ".....84.5...", "...423......", "......9..84.", ".........2.."] },
+  saturday: { date: "Saturday, September 12, 2026", rows: ["4..3.9......", "..258.......", "............", ".8.6........", "..........76", "1..4..2....1", ".....78....9", ".3.......7..", ".6....9.1...", ".....9......", "...7...6.85.", "......728..."] }
 };
 let activeDay = "tuesday", rows = puzzles.tuesday.rows, puzzleDate = puzzles.tuesday.date;
 const digits = [1, 2, 3, 4, 5, 6, 7, 8, 9];
@@ -34,21 +34,6 @@ function hasCell(row, column) { return (row >= 0 && row < 9 && column >= 0 && co
 function nameFor(index, preferredGrid = "") { const row = Math.floor(index / 12), column = index % 12, names = []; if (row < 9 && column < 9 && preferredGrid !== "G2") names.push(`G1 R${row + 1}C${column + 1}`); if (row >= 3 && column >= 3 && preferredGrid !== "G1") names.push(`G2 R${row - 2}C${column - 2}`); return names.join(" / "); }
 function candidates(values, index) { return digits.filter(digit => ![...peers[index]].some(peer => values[peer] === digit)); }
 function choose(items, size) { if (size === 0) return [[]]; if (items.length < size) return []; return choose(items.slice(1), size - 1).map(group => [items[0], ...group]).concat(choose(items.slice(1), size)); }
-function solveExactly(startValues) {
-  const values = [...startValues];
-  function search() {
-    let chosen = null, options = null;
-    for (const index of active) if (!values[index]) {
-      const possibilities = candidates(values, index);
-      if (!possibilities.length) return false;
-      if (!options || possibilities.length < options.length) { chosen = index; options = possibilities; if (options.length === 1) break; }
-    }
-    if (chosen === null) return true;
-    for (const digit of options) { values[chosen] = digit; if (search()) return true; values[chosen] = 0; }
-    return false;
-  }
-  return search() ? values : null;
-}
 function deriveSteps() {
   const values = [...original], found = [], notes = Object.fromEntries(active.filter(index => !values[index]).map(index => [index, new Set(candidates(values, index))]));
   const subsetName = size => ({ 2: "Pair", 3: "Triple", 4: "Quad" }[size]);
@@ -61,6 +46,35 @@ function deriveSteps() {
   }
   function nakedSubset() { for (const [houseName, house] of units) { const blanks = house.filter(index => notes[index]); for (let size = 2; size <= 4; size += 1) for (const group of choose(blanks, size)) { const union = new Set(group.flatMap(index => [...notes[index]])); if (union.size !== size || group.some(index => notes[index].size < 2 || notes[index].size > size)) continue; const victims = blanks.filter(index => !group.includes(index) && [...notes[index]].some(digit => union.has(digit))); if (!victims.length) continue; const beforeNotes = snapshotNotes(), eliminations = victims.flatMap(index => [...union].filter(digit => notes[index].has(digit)).map(digit => ({ index, digit }))); victims.forEach(index => union.forEach(digit => notes[index].delete(digit))); const technique = `Naked ${subsetName(size)}`; addStep({ technique, index: null, digit: null, house: houseName, text: `${[...union].join(", ")} are confined to ${group.map(index => nameFor(index, houseName.split(" ")[0])).join(" and ")} in ${houseName}. Remove them from ${victims.map(index => nameFor(index, houseName.split(" ")[0])).join(", ")}.` }, beforeNotes, eliminations); return true; } } return false; }
   function hiddenSubset() { for (const [houseName, house] of units) { const blanks = house.filter(index => notes[index]), missing = digits.filter(digit => !house.some(index => values[index] === digit)); for (let size = 2; size <= 4; size += 1) for (const group of choose(missing, size)) { const cells = [...new Set(group.flatMap(digit => blanks.filter(index => notes[index].has(digit))))]; if (cells.length !== size) continue; const beforeNotes = snapshotNotes(), eliminations = cells.flatMap(index => [...notes[index]].filter(digit => !group.includes(digit)).map(digit => ({ index, digit }))); if (!eliminations.length) continue; cells.forEach(index => { notes[index] = new Set([...notes[index]].filter(digit => group.includes(digit))); }); const technique = `Hidden ${subsetName(size)}`; addStep({ technique, index: null, digit: null, house: houseName, text: `${group.join(", ")} can appear only in ${cells.map(index => nameFor(index, houseName.split(" ")[0])).join(" and ")} in ${houseName}. Remove every other candidate from those cells.` }, beforeNotes, eliminations); return true; } } return false; }
+  function lockedCandidates() {
+    for (const [grid, rowOffset, columnOffset] of [["G1", 0, 0], ["G2", 3, 3]]) {
+      for (let boxRow = 0; boxRow < 3; boxRow += 1) for (let boxColumn = 0; boxColumn < 3; boxColumn += 1) {
+        const box = units.find(([label]) => label === `${grid} box ${boxRow + 1},${boxColumn + 1}`)[1];
+        for (const digit of digits) {
+          const positions = box.filter(index => notes[index]?.has(digit));
+          if (positions.length < 2) continue;
+          const localRows = [...new Set(positions.map(index => Math.floor(index / 12) - rowOffset))], localColumns = [...new Set(positions.map(index => index % 12 - columnOffset))];
+          if (localRows.length === 1) {
+            const rowHouse = units.find(([label]) => label === `${grid} row ${localRows[0] + 1}`)[1], victims = rowHouse.filter(index => !box.includes(index) && notes[index]?.has(digit));
+            if (victims.length) { const beforeNotes = snapshotNotes(), eliminations = victims.map(index => ({ index, digit })); victims.forEach(index => notes[index].delete(digit)); addStep({ technique: "Pointing", index: null, digit: null, house: `${grid} box ${boxRow + 1},${boxColumn + 1}`, highlight: [...positions, ...victims], text: `In ${grid} box ${boxRow + 1},${boxColumn + 1}, candidate ${digit} is confined to row ${localRows[0] + 1}. Remove it from the other cells in that row.` }, beforeNotes, eliminations); return true; }
+          }
+          if (localColumns.length === 1) {
+            const columnHouse = units.find(([label]) => label === `${grid} column ${localColumns[0] + 1}`)[1], victims = columnHouse.filter(index => !box.includes(index) && notes[index]?.has(digit));
+            if (victims.length) { const beforeNotes = snapshotNotes(), eliminations = victims.map(index => ({ index, digit })); victims.forEach(index => notes[index].delete(digit)); addStep({ technique: "Pointing", index: null, digit: null, house: `${grid} box ${boxRow + 1},${boxColumn + 1}`, highlight: [...positions, ...victims], text: `In ${grid} box ${boxRow + 1},${boxColumn + 1}, candidate ${digit} is confined to column ${localColumns[0] + 1}. Remove it from the other cells in that column.` }, beforeNotes, eliminations); return true; }
+          }
+        }
+      }
+      for (let localRow = 0; localRow < 9; localRow += 1) for (const digit of digits) {
+        const rowHouse = units.find(([label]) => label === `${grid} row ${localRow + 1}`)[1], positions = rowHouse.filter(index => notes[index]?.has(digit));
+        if (positions.length < 2) continue;
+        const boxColumns = [...new Set(positions.map(index => Math.floor((index % 12 - columnOffset) / 3)))], boxRows = [...new Set(positions.map(index => Math.floor((Math.floor(index / 12) - rowOffset) / 3)))];
+        if (boxColumns.length !== 1 || boxRows.length !== 1) continue;
+        const box = units.find(([label]) => label === `${grid} box ${boxRows[0] + 1},${boxColumns[0] + 1}`)[1], victims = box.filter(index => !rowHouse.includes(index) && notes[index]?.has(digit));
+        if (victims.length) { const beforeNotes = snapshotNotes(), eliminations = victims.map(index => ({ index, digit })); victims.forEach(index => notes[index].delete(digit)); addStep({ technique: "Claiming", index: null, digit: null, house: `${grid} row ${localRow + 1}`, highlight: [...positions, ...victims], text: `In ${grid} row ${localRow + 1}, candidate ${digit} is confined to one box. Remove it from the other cells in that box.` }, beforeNotes, eliminations); return true; }
+      }
+    }
+    return false;
+  }
   function basicFish() {
     for (const [grid, rowOffset, columnOffset] of [["G1", 0, 0], ["G2", 3, 3]]) for (const digit of digits) {
       const rowPatterns = [];
@@ -92,10 +106,7 @@ function deriveSteps() {
     if (!move) for (const index of active) if (!values[index] && notes[index].size === 1) { move = ["Naked Single", index, [...notes[index]][0], ""]; break; }
     if (!move) for (const [label, house] of units) { for (const digit of digits) { if (house.some(index => values[index] === digit)) continue; const places = house.filter(index => !values[index] && notes[index].has(digit)); if (places.length === 1) { move = ["Hidden Single", places[0], digit, label]; break; } } if (move) break; }
     if (move) { place(...move); continue; }
-    if (nakedSubset() || hiddenSubset() || basicFish()) continue;
-    const completed = solveExactly(values);
-    if (!completed) return found;
-    for (const index of active) if (!values[index]) place("Verified completion", index, completed[index], "", `${nameFor(index)} = ${completed[index]}. The verified unique completion fixes this remaining value after the listed named techniques have been exhausted.`);
+    if (nakedSubset() || hiddenSubset() || basicFish() || lockedCandidates()) continue;
     return found;
   }
 }
