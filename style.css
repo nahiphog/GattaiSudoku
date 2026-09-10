@@ -3,7 +3,10 @@
 *{box-sizing:border-box}
 body{margin:0;background:var(--paper);color:var(--ink);font:16px/1.5 'DM Mono',monospace}
 body.dark{--ink:#e6f0ed;--paper:#172126;--surface:#172126;--line:#d4e5df;--thin:#688087;--muted:#31454c;--shared:#393a2c;--shadow:#0d1518;--select:#62d795;color-scheme:dark}
-header{display:grid;grid-template-columns:1fr auto 1fr;align-items:center;padding:22px clamp(20px,7vw,100px);border-bottom:2px solid var(--ink)}
+header{display:grid;grid-template-columns:1fr auto 1fr;align-items:center;padding:16px clamp(20px,7vw,100px);border-bottom:2px solid var(--ink)}
+.header-start{display:flex;align-items:center;gap:9px}
+.timer{min-width:55px;font-size:14px;font-weight:500;letter-spacing:.04em;text-align:center}
+.timer-reset{border:0;background:transparent;color:var(--ink);font:20px/1 'DM Mono',monospace;cursor:pointer;padding:2px}
 .brand{font-size:22px;font-weight:500;letter-spacing:.12em;text-align:center}
 .brand span{color:var(--red)}
 .icon-button{width:32px;height:32px;border:1px solid var(--ink);border-radius:0;background:transparent;color:var(--ink);display:grid;place-items:center;padding:0;cursor:pointer;font:600 18px/1 'DM Mono',monospace}
@@ -15,18 +18,28 @@ header{display:grid;grid-template-columns:1fr auto 1fr;align-items:center;paddin
 .theme-button.is-dark .theme-icon{width:16px;height:16px;background:currentColor;border-radius:50%}
 .theme-button.is-dark .theme-icon:after{content:"";position:absolute;width:15px;height:15px;border-radius:50%;background:var(--paper);left:5px;top:-3px}
 main{padding:24px 0}
-.board-card{max-width:1010px;margin:auto;padding:18px;background:var(--surface);box-shadow:none;display:grid;grid-template-columns:144px minmax(0,684px) 112px;gap:14px;align-items:start}
-.day-sidebar,.grid-sidebar{display:flex;flex-direction:column;gap:8px;padding-top:6px;font-size:12px}
-.day-sidebar>span,.grid-sidebar>span{font-weight:500;margin-bottom:3px}
+.board-card{max-width:1030px;margin:auto;padding:18px;background:var(--surface);box-shadow:none;display:grid;grid-template-columns:138px minmax(0,650px) 150px;gap:14px;align-items:start}
+.day-sidebar,.control-sidebar{display:flex;flex-direction:column;gap:8px;padding-top:6px;font-size:12px}
+.day-sidebar>span,.entry-panel>span,.highlight-panel>span{font-weight:500;margin-bottom:3px;display:block}
 .day-button,.grid-button{margin:0;border:1px solid var(--ink);background:var(--muted);color:var(--ink);padding:8px;cursor:pointer;font:inherit;text-align:left}
 .day-button strong,.day-button small{display:block}
 .day-button strong{font-size:13px}
 .day-button small{font-size:11px}
 .day-button[aria-pressed=true],.grid-button[aria-pressed=true]{background:var(--ink);color:var(--surface)}
 .grid-button{text-align:center}
+.entry-panel,.highlight-panel{display:flex;flex-direction:column;gap:7px}
+.entry-tabs,.play-actions{display:grid;grid-template-columns:1fr 1fr;gap:6px}
+.entry-button,.play-actions button{border:1px solid var(--ink);background:var(--muted);color:var(--ink);padding:7px 4px;cursor:pointer;font:inherit;font-size:11px}
+.entry-button[aria-pressed=true]{background:var(--ink);color:var(--surface)}
+.numpad{display:grid;grid-template-columns:repeat(3,1fr);gap:5px;margin:3px 0 4px}
+.numpad button{min-height:39px;border:1px solid #5b1c8d;border-radius:6px;background:#6b21a8;color:#fff;cursor:pointer;font:600 20px/1 'DM Mono',monospace;box-shadow:inset 0 0 0 1px rgba(255,255,255,.28)}
+.numpad .numpad-zero{grid-column:span 1}
+.numpad .numpad-delete{grid-column:span 2;font-size:24px}
+.numpad button:hover,.numpad button:focus-visible{background:#7e2db8}
+.board-card.solver-active .entry-panel,.board-card.solver-active .play-actions,.board-card.solver-active .numpad{opacity:.38;pointer-events:none}
 .puzzle-surface{min-width:0}
 .difficulty-label{margin:0 0 8px;font-size:13px;font-weight:500}
-.board{display:grid;grid-template-columns:repeat(12,minmax(0,1fr));grid-template-rows:repeat(12,minmax(0,1fr));aspect-ratio:1;width:min(100%,684px);margin:auto}
+.board{display:grid;grid-template-columns:repeat(12,minmax(0,1fr));grid-template-rows:repeat(12,minmax(0,1fr));aspect-ratio:1;width:min(100%,650px);margin:auto}
 .cell{min-width:0;min-height:0;border:0;border-top:1px solid var(--thin);border-left:1px solid var(--thin);background:var(--paper);display:grid;place-items:center;font-size:clamp(12px,2.45vw,25px);color:#1c6fa1;position:relative;transition:none!important;animation:none!important}
 .given{color:#111;font-weight:600}
 body.dark .given{color:#fff}
@@ -81,18 +94,20 @@ dialog h2{font:600 30px/1.1 'Playfair Display',serif;margin:4px 0 14px}
 .method-credit{margin:20px 0 0;padding-top:14px;border-top:1px solid var(--thin);font-size:12px}
 a{color:inherit}
 @media(max-width:820px){.board-card{grid-template-columns:1fr}
-.day-sidebar,.grid-sidebar{flex-direction:row;align-items:stretch;padding:0}
-.grid-sidebar{order:3}
+.day-sidebar,.control-sidebar{flex-direction:row;align-items:stretch;padding:0}
+.control-sidebar{order:3;flex-wrap:wrap}
 .puzzle-surface{order:2}
 .day-sidebar{order:1}
-.day-sidebar>span,.grid-sidebar>span{margin:0;align-self:center}
+.day-sidebar>span,.entry-panel>span,.highlight-panel>span{margin:0;align-self:center}
 .day-button{flex:1}
+.entry-panel,.highlight-panel{flex:1;min-width:145px}.numpad{width:150px}.play-actions{width:145px;align-self:end}
 .board{width:min(96%,684px)}
 .guide{margin:14px 2% 0}
 .board-footer{padding:0 2%}
 }
-@media(max-width:520px){header{padding:18px 12px}
+@media(max-width:520px){header{padding:14px 12px}
 .brand{font-size:16px;letter-spacing:.07em}
+.timer{min-width:43px;font-size:12px}.header-start{gap:5px}
 .board-card{padding:12px 4px 22px}
 .board-footer{gap:7px}
 .board-footer button{font-size:12px;padding:8px}
@@ -102,4 +117,5 @@ a{color:inherit}
 .box-top,.box-left{border-width:2.1px}
 .step-controls{gap:4px}
 .step-controls span{min-width:100px;font-size:11px}
+.control-sidebar{justify-content:center}
 }

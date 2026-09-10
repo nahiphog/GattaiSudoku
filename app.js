@@ -23,8 +23,12 @@ for (const [name, rowOffset, columnOffset] of [["G1", 0, 0], ["G2", 3, 3]]) {
 const active = [...new Set(units.flatMap(([, house]) => house))];
 const housesFor = Object.fromEntries(active.map(index => [index, units.filter(([, house]) => house.includes(index)).map(([, house]) => house)]));
 const peers = Object.fromEntries(active.map(index => [index, new Set(housesFor[index].flat().filter(other => other !== index))]));
-const board = document.querySelector("#board"), guide = document.querySelector("#guide"), givenCount = document.querySelector("#givenCount"), solutionToggle = document.querySelector("#solutionToggle");
-const original = Array(144).fill(0), userInputs = { monday: Array(144).fill(0), tuesday: Array(144).fill(0), wednesday: Array(144).fill(0), thursday: Array(144).fill(0), friday: Array(144).fill(0), saturday: Array(144).fill(0) }; let human = userInputs.tuesday;
+const board = document.querySelector("#board"), guide = document.querySelector("#guide"), givenCount = document.querySelector("#givenCount"), solutionToggle = document.querySelector("#solutionToggle"), boardCard = document.querySelector("#boardCard");
+const blankNotes = () => Array.from({ length: 144 }, () => new Set());
+const userInputs = { monday: Array(144).fill(0), tuesday: Array(144).fill(0), wednesday: Array(144).fill(0), thursday: Array(144).fill(0), friday: Array(144).fill(0), saturday: Array(144).fill(0) };
+const userNotes = { monday: blankNotes(), tuesday: blankNotes(), wednesday: blankNotes(), thursday: blankNotes(), friday: blankNotes(), saturday: blankNotes() };
+const histories = { monday: [], tuesday: [], wednesday: [], thursday: [], friday: [], saturday: [] };
+const original = Array(144).fill(0); let human = userInputs.tuesday, playNotes = userNotes.tuesday;
 rows.forEach((row, r) => [...row].forEach((value, c) => { if (value !== ".") original[r * 12 + c] = Number(value); }));
 function hasCell(row, column) { return (row >= 0 && row < 9 && column >= 0 && column < 9) || (row >= 3 && row < 12 && column >= 3 && column < 12); }
 function nameFor(index, preferredGrid = "") { const row = Math.floor(index / 12), column = index % 12, names = []; if (row < 9 && column < 9 && preferredGrid !== "G2") names.push(`G1 R${row + 1}C${column + 1}`); if (row >= 3 && column >= 3 && preferredGrid !== "G1") names.push(`G2 R${row - 2}C${column - 2}`); return names.join(" / "); }
@@ -69,21 +73,39 @@ function deriveSteps() {
     return found;
   }
 }
-let steps = deriveSteps(), mode = "human", stepIndex = 0, selectedCell = null;
+let steps = deriveSteps(), mode = "human", stepIndex = 0, selectedCell = null, entryMode = "digit";
 function currentValues() { const values = [...original]; if (mode === "human") human.forEach((value, index) => { if (value) values[index] = value; }); else steps.slice(0, stepIndex + 1).forEach(step => { if (step.index !== null) values[step.index] = step.digit; }); return values; }
 function addBorders(cell, row, column) {
   if (!hasCell(row - 1, column)) cell.classList.add("edge-top"); if (!hasCell(row, column - 1)) cell.classList.add("edge-left"); if (!hasCell(row + 1, column)) cell.classList.add("edge-bottom"); if (!hasCell(row, column + 1)) cell.classList.add("edge-right");
   if (row % 3 === 0) cell.classList.add("box-top"); if (column % 3 === 0) cell.classList.add("box-left");
 }
 function makeCandidates(values, index) { const notation = document.createElement("span"); notation.className = "snyder"; candidates(values, index).forEach(digit => { const mark = document.createElement("i"); mark.className = `candidate-${digit}`; mark.textContent = digit; notation.append(mark); }); return notation; }
+function makeUserCandidates(index) { const notation = document.createElement("span"); notation.className = "snyder"; playNotes[index].forEach(digit => { const mark = document.createElement("i"); mark.className = `candidate-${digit}`; mark.textContent = digit; notation.append(mark); }); return notation; }
+function snapshot() { histories[activeDay].push({ values: [...human], notes: playNotes.map(note => [...note]) }); }
+function updateEntryControls() { document.querySelectorAll(".entry-button").forEach(button => { button.setAttribute("aria-pressed", String(button.dataset.entry === entryMode)); button.disabled = mode !== "human"; }); document.querySelectorAll(".numpad button, #eraseCell").forEach(button => button.disabled = mode !== "human"); document.querySelector("#undoMove").disabled = mode !== "human" || !histories[activeDay].length; document.querySelector("#resetGrid").disabled = mode !== "human"; }
+function applyEntry(digit, index = selectedCell) {
+  if (mode !== "human" || index === null || original[index] || (entryMode === "snyder" && human[index])) return;
+  snapshot();
+  if (entryMode === "snyder") { if (digit === 0) playNotes[index].clear(); else if (playNotes[index].has(digit)) playNotes[index].delete(digit); else playNotes[index].add(digit); }
+  else { human[index] = digit; if (digit) playNotes[index].clear(); else playNotes[index].clear(); }
+  refresh();
+}
+function eraseSelected() {
+  if (mode !== "human" || selectedCell === null || original[selectedCell]) return;
+  snapshot(); human[selectedCell] = 0; playNotes[selectedCell].clear(); refresh();
+}
+function undoMove() {
+  const previous = histories[activeDay].pop(); if (!previous) return;
+  human.splice(0, human.length, ...previous.values); previous.notes.forEach((note, index) => { playNotes[index].clear(); note.forEach(digit => playNotes[index].add(digit)); }); refresh();
+}
 function makeSelectable(cell, index) { cell.addEventListener("click", event => { event.preventDefault(); selectedCell = selectedCell === index ? null : index; board.querySelectorAll(".cell").forEach(item => item.classList.toggle("selected", Number(item.dataset.index) === selectedCell)); if (selectedCell !== null) cell.focus({ preventScroll: true }); }); }
 function makeEditable(cell, index) {
   cell.classList.add("editable"); cell.tabIndex = 0; cell.setAttribute("aria-label", `${nameFor(index)}, enter or delete a digit`); makeSelectable(cell, index);
   cell.addEventListener("keydown", event => {
-    if (event.key === "Backspace" || event.key === "Delete") { event.preventDefault(); human[index] = 0; refresh(); return; }
-    if (/^[1-9]$/.test(event.key)) { event.preventDefault(); human[index] = Number(event.key); refresh(); }
+    if (event.key === "Backspace" || event.key === "Delete" || event.key === "0") { event.preventDefault(); applyEntry(0, index); return; }
+    if (/^[1-9]$/.test(event.key)) { event.preventDefault(); applyEntry(Number(event.key), index); }
   });
-  cell.addEventListener("paste", event => { event.preventDefault(); const digit = event.clipboardData.getData("text").match(/[1-9]/)?.[0]; if (digit) { human[index] = Number(digit); refresh(); } });
+  cell.addEventListener("paste", event => { event.preventDefault(); const digit = event.clipboardData.getData("text").match(/[1-9]/)?.[0]; if (digit) applyEntry(Number(digit), index); });
 }
 function renderStep() { const step = steps[stepIndex], tally = steps.reduce((counts, item) => ({ ...counts, [item.technique]: (counts[item.technique] || 0) + 1 }), {}); document.querySelector("#stepCount").textContent = `Step ${stepIndex + 1} of ${steps.length}`; document.querySelector("#stepTechnique").textContent = step.technique; document.querySelector("#stepReasoning").textContent = step.text; document.querySelector("#techniqueTally").textContent = `Technique tally: ${Object.entries(tally).map(([name, count]) => `${name} ${count}`).join(" · ")}`; document.querySelector("#firstStep").disabled = stepIndex === 0; document.querySelector("#previousStep").disabled = stepIndex === 0; document.querySelector("#nextStep").disabled = stepIndex === steps.length - 1; document.querySelector("#lastStep").disabled = stepIndex === steps.length - 1; }
 function renderBoard() {
@@ -93,15 +115,26 @@ function renderBoard() {
     if (!hasCell(row, column)) continue;
     const index = row * 12 + column, cell = document.createElement("div"); cell.className = "cell"; cell.dataset.index = index; cell.style.gridColumnStart = column + 1; cell.style.gridRowStart = row + 1;
     if (row >= 3 && column >= 3 && row < 9 && column < 9) cell.classList.add("shared"); if (original[index]) cell.classList.add("given"); if (highlighted.includes(index)) cell.classList.add("affected-house"); if (mode === "solver" && steps[stepIndex].index === index) cell.classList.add("focus"); if (index === selectedCell) cell.classList.add("selected"); addBorders(cell, row, column);
-    if (values[index]) { cell.textContent = values[index]; if (mode === "human" && !original[index]) makeEditable(cell, index); else makeSelectable(cell, index); } else if (mode === "solver") { cell.append(makeCandidates(values, index)); makeSelectable(cell, index); } else makeEditable(cell, index);
+    if (values[index]) { cell.textContent = values[index]; if (mode === "human" && !original[index]) makeEditable(cell, index); else makeSelectable(cell, index); } else if (mode === "solver") { cell.append(makeCandidates(values, index)); makeSelectable(cell, index); } else { if (playNotes[index].size) cell.append(makeUserCandidates(index)); makeEditable(cell, index); }
     board.append(cell);
   }
 }
-function refresh() { renderStep(); renderBoard(); const givens = original.filter((value, index) => active.includes(index) && value).length, rating = rateSteps(steps); givenCount.textContent = `${givens} given cells`; document.querySelector("#difficultyLabel").textContent = `Difficulty: ${rating.rating} (${rating.score})`; solutionToggle.setAttribute("aria-pressed", String(mode === "solver")); }
-function loadPuzzle(day) { activeDay = day; rows = puzzles[day].rows; puzzleDate = puzzles[day].date; original.fill(0); rows.forEach((row, r) => [...row].forEach((value, c) => { if (value !== ".") original[r * 12 + c] = Number(value); })); human = userInputs[day]; steps = deriveSteps(); stepIndex = 0; document.querySelectorAll(".day-button").forEach(button => button.setAttribute("aria-pressed", String(button.dataset.day === day))); refresh(); }
+function refresh() { renderStep(); renderBoard(); const givens = original.filter((value, index) => active.includes(index) && value).length, rating = rateSteps(steps); givenCount.textContent = `${givens} given cells`; document.querySelector("#difficultyLabel").textContent = `Difficulty: ${rating.rating} (${rating.score})`; solutionToggle.setAttribute("aria-pressed", String(mode === "solver")); boardCard.classList.toggle("solver-active", mode === "solver"); updateEntryControls(); setTimerRunning(mode === "human"); }
+function loadPuzzle(day) { activeDay = day; rows = puzzles[day].rows; puzzleDate = puzzles[day].date; original.fill(0); rows.forEach((row, r) => [...row].forEach((value, c) => { if (value !== ".") original[r * 12 + c] = Number(value); })); human = userInputs[day]; playNotes = userNotes[day]; selectedCell = null; steps = deriveSteps(); stepIndex = 0; document.querySelectorAll(".day-button").forEach(button => button.setAttribute("aria-pressed", String(button.dataset.day === day))); refresh(); }
+let elapsedSeconds = 0, timerBase = Date.now(), timerRunning = true;
+function showTimer() { const minutes = Math.floor(elapsedSeconds / 60), seconds = elapsedSeconds % 60; document.querySelector("#timer").textContent = `${String(minutes).padStart(2, "0")}:${String(seconds).padStart(2, "0")}`; }
+function setTimerRunning(running) { if (timerRunning === running) return; if (timerRunning) elapsedSeconds += Math.floor((Date.now() - timerBase) / 1000); timerRunning = running; timerBase = Date.now(); showTimer(); }
+function resetTimer() { elapsedSeconds = 0; timerBase = Date.now(); showTimer(); }
+setInterval(() => { if (timerRunning) { elapsedSeconds += Math.floor((Date.now() - timerBase) / 1000); timerBase = Date.now(); showTimer(); } }, 1000);
 document.querySelector("#firstStep").addEventListener("click", () => { stepIndex = 0; refresh(); }); document.querySelector("#previousStep").addEventListener("click", () => { if (stepIndex > 0) { stepIndex -= 1; refresh(); } }); document.querySelector("#nextStep").addEventListener("click", () => { if (stepIndex < steps.length - 1) { stepIndex += 1; refresh(); } }); document.querySelector("#lastStep").addEventListener("click", () => { stepIndex = steps.length - 1; refresh(); });
 solutionToggle.addEventListener("click", () => { mode = mode === "human" ? "solver" : "human"; guide.classList.toggle("hidden", mode === "human"); refresh(); });
 document.querySelectorAll(".day-button").forEach(button => button.addEventListener("click", () => loadPuzzle(button.dataset.day)));
+document.querySelectorAll(".entry-button").forEach(button => button.addEventListener("click", () => { entryMode = button.dataset.entry; updateEntryControls(); }));
+document.querySelectorAll(".numpad [data-key]").forEach(button => button.addEventListener("click", () => applyEntry(Number(button.dataset.key))));
+document.querySelectorAll("[data-action=erase]").forEach(button => button.addEventListener("click", eraseSelected));
+document.querySelector("#undoMove").addEventListener("click", undoMove);
+document.querySelector("#resetGrid").addEventListener("click", () => { human.fill(0); playNotes.forEach(note => note.clear()); histories[activeDay].length = 0; selectedCell = null; refresh(); });
+document.querySelector("#resetTimer").addEventListener("click", resetTimer);
 document.querySelectorAll(".grid-button").forEach(button => button.addEventListener("click", () => { const grid = button.dataset.grid, selected = button.getAttribute("aria-pressed") !== "true"; document.querySelectorAll(".grid-button").forEach(item => item.setAttribute("aria-pressed", "false")); board.querySelectorAll(".cell").forEach(cell => cell.classList.remove("grid-a", "grid-b")); if (selected) { board.querySelectorAll(".cell").forEach(cell => { const index = Number(cell.dataset.index), row = Math.floor(index / 12), column = index % 12; if ((grid === "a" && row < 9 && column < 9) || (grid === "b" && row >= 3 && column >= 3)) cell.classList.add(`grid-${grid}`); }); button.setAttribute("aria-pressed", "true"); } }));
 document.querySelector("#copyPng").addEventListener("click", async () => {
   const scale = 60, gridSize = scale * 12, margin = gridSize / 18, canvas = document.createElement("canvas"), context = canvas.getContext("2d"), values = currentValues(); canvas.width = canvas.height = gridSize + margin * 2; context.fillStyle = "#fff"; context.fillRect(0, 0, canvas.width, canvas.height); context.translate(margin, margin);
