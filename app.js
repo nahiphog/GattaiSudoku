@@ -159,7 +159,13 @@ function deriveSteps(preferAdvanced = false) {
     if (!move) for (const index of active) if (!values[index] && notes[index].size === 1) { move = ["Naked Single", index, [...notes[index]][0], ""]; break; }
     if (!move) for (const [label, house] of units) { for (const digit of digits) { if (house.some(index => values[index] === digit)) continue; const places = house.filter(index => !values[index] && notes[index].has(digit)); if (places.length === 1) { move = ["Hidden Single", places[0], digit, label]; break; } } if (move) break; }
     if (move) { place(...move); continue; }
-    if ((preferAdvanced ? (basicFish() || xyWing() || [2, 3, 4].some(size => nakedSubset(size) || hiddenSubset(size))) : ([2, 3, 4].some(size => nakedSubset(size) || hiddenSubset(size)) || basicFish() || xyWing())) || lockedCandidates()) continue;
+    // The walkthrough is deliberately ordered by human solving cost.  After every
+    // deduction it restarts at Singles, then tries Intersections, Subsets, Fish,
+    // and Wings.  A later family can never displace an available simpler move.
+    if (lockedCandidates()) continue;
+    if ([2, 3, 4].some(size => nakedSubset(size) || hiddenSubset(size))) continue;
+    if (basicFish()) continue;
+    if (xyWing()) continue;
     return found;
   }
 }
