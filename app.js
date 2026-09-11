@@ -164,9 +164,9 @@ function deriveSteps(preferAdvanced = false) {
     // The walkthrough is deliberately ordered by human solving cost.  After every
     // deduction it restarts at Singles, then tries the simplest available
     // intersection/subset pattern before Fish and Wings. A Naked/Hidden Pair is
-    // deliberately checked before Claiming.
-    if (lockedCandidates("pointing")) continue;
+    // deliberately checked ahead of both pointing and claiming.
     if (nakedSubset(2) || hiddenSubset(2)) continue;
+    if (lockedCandidates("pointing")) continue;
     if (lockedCandidates("claiming")) continue;
     if ([3, 4].some(size => nakedSubset(size) || hiddenSubset(size))) continue;
     if (basicFish()) continue;
