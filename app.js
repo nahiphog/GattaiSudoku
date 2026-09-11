@@ -76,9 +76,11 @@ function deriveSteps(preferAdvanced = false) {
   }
   function nakedSubset(size) { for (const [houseName, house] of units) { const blanks = house.filter(index => notes[index]); for (const group of choose(blanks, size)) { const union = new Set(group.flatMap(index => [...notes[index]])); if (union.size !== size || group.some(index => notes[index].size < 2 || notes[index].size > size)) continue; const victims = blanks.filter(index => !group.includes(index) && [...notes[index]].some(digit => union.has(digit))); if (!victims.length) continue; const beforeNotes = snapshotNotes(), eliminations = victims.flatMap(index => [...union].filter(digit => notes[index].has(digit)).map(digit => ({ index, digit }))), emphasis = group.flatMap(index => [...notes[index]].filter(digit => union.has(digit)).map(digit => ({ index, digit }))); victims.forEach(index => union.forEach(digit => notes[index].delete(digit))); const technique = `Naked ${subsetName(size)}`; addStep({ technique, index: null, digit: null, house: houseName, emphasis, text: `${[...union].join(", ")} are confined to ${group.map(index => nameFor(index, houseName.split(" ")[0])).join(" and ")} in ${houseName}. Remove them from ${victims.map(index => nameFor(index, houseName.split(" ")[0])).join(", ")}.` }, beforeNotes, eliminations); return true; } } return false; }
   function hiddenSubset(size) { for (const [houseName, house] of units) { const blanks = house.filter(index => notes[index]), missing = digits.filter(digit => !house.some(index => values[index] === digit)); for (const group of choose(missing, size)) { const cells = [...new Set(group.flatMap(digit => blanks.filter(index => notes[index].has(digit))))]; if (cells.length !== size) continue; const beforeNotes = snapshotNotes(), eliminations = cells.flatMap(index => [...notes[index]].filter(digit => !group.includes(digit)).map(digit => ({ index, digit }))); if (!eliminations.length) continue; const emphasis = cells.flatMap(index => group.filter(digit => notes[index].has(digit)).map(digit => ({ index, digit }))); cells.forEach(index => { notes[index] = new Set([...notes[index]].filter(digit => group.includes(digit))); }); const technique = `Hidden ${subsetName(size)}`; addStep({ technique, index: null, digit: null, house: houseName, emphasis, text: `${group.join(", ")} can appear only in ${cells.map(index => nameFor(index, houseName.split(" ")[0])).join(" and ")} in ${houseName}. Remove every other candidate from those cells.` }, beforeNotes, eliminations); return true; } } return false; }
-  function lockedCandidates() {
+  // Keep the two intersection directions separate: a pair is easier to spot
+  // than a claiming pattern, while pointing remains the first intersection.
+  function lockedCandidates(kind) {
     for (const [grid, rowOffset, columnOffset] of [["G1", 0, 0], ["G2", 3, 3]]) {
-      for (let boxRow = 0; boxRow < 3; boxRow += 1) for (let boxColumn = 0; boxColumn < 3; boxColumn += 1) {
+      if (kind !== "claiming") for (let boxRow = 0; boxRow < 3; boxRow += 1) for (let boxColumn = 0; boxColumn < 3; boxColumn += 1) {
         const box = units.find(([label]) => label === `${grid} box ${boxRow + 1},${boxColumn + 1}`)[1];
         for (const digit of digits) {
           const positions = box.filter(index => notes[index]?.has(digit));
@@ -94,7 +96,7 @@ function deriveSteps(preferAdvanced = false) {
           }
         }
       }
-      for (let localRow = 0; localRow < 9; localRow += 1) for (const digit of digits) {
+      if (kind !== "pointing") for (let localRow = 0; localRow < 9; localRow += 1) for (const digit of digits) {
         const rowHouse = units.find(([label]) => label === `${grid} row ${localRow + 1}`)[1], positions = rowHouse.filter(index => notes[index]?.has(digit));
         if (positions.length < 2) continue;
         const boxColumns = [...new Set(positions.map(index => Math.floor((index % 12 - columnOffset) / 3)))], boxRows = [...new Set(positions.map(index => Math.floor((Math.floor(index / 12) - rowOffset) / 3)))];
@@ -160,10 +162,13 @@ function deriveSteps(preferAdvanced = false) {
     if (!move) for (const [label, house] of units) { for (const digit of digits) { if (house.some(index => values[index] === digit)) continue; const places = house.filter(index => !values[index] && notes[index].has(digit)); if (places.length === 1) { move = ["Hidden Single", places[0], digit, label]; break; } } if (move) break; }
     if (move) { place(...move); continue; }
     // The walkthrough is deliberately ordered by human solving cost.  After every
-    // deduction it restarts at Singles, then tries Intersections, Subsets, Fish,
-    // and Wings.  A later family can never displace an available simpler move.
-    if (lockedCandidates()) continue;
-    if ([2, 3, 4].some(size => nakedSubset(size) || hiddenSubset(size))) continue;
+    // deduction it restarts at Singles, then tries the simplest available
+    // intersection/subset pattern before Fish and Wings. A Naked/Hidden Pair is
+    // deliberately checked before Claiming.
+    if (lockedCandidates("pointing")) continue;
+    if (nakedSubset(2) || hiddenSubset(2)) continue;
+    if (lockedCandidates("claiming")) continue;
+    if ([3, 4].some(size => nakedSubset(size) || hiddenSubset(size))) continue;
     if (basicFish()) continue;
     if (xyWing()) continue;
     return found;
