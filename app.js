@@ -5,7 +5,8 @@ const puzzles = {
   thursday: { date: "Thursday, September 10, 2026", rows: ["..4..19.....", "..8.........", "2.6....78...", "......7..2.5", "8..1....4..3", "..129.......", "35......9...", "......8.....", "..7...4.....", "..........51", "...7..9....6", "...4.2..8..."] },
   friday: { date: "Friday, September 11, 2026", rows: ["95.4........", "4.69........", ".2...3......", "..4...5..1.4", "3....6...3..", "6.9.........", "...1...3.7..", "......7.2...", ".....8.6...3", "............", ".....5.2.8..", "...9.1.54..."] },
   saturday: { date: "Saturday, September 12, 2026", rows: ["4.6...7.....", ".7......9...", "..9...3.....", "5...2....4.5", ".2.......2..", ".9..7...6.9.", "..1...8.....", "7......4....", "..5...9.15..", "....8.4...2.", ".....2......", "...5.6..8.13"] },
-  sunday: { date: "Sunday, September 13, 2026", rows: ["49..........", "1.8.5.......", ".3.1.8......", "..9......2.8", "..1..5...6..", "5.....7.....", "...8...4....", "....6.5.1.8.", ".......87.62", "......4.6...", ".....4.1.5..", "...6.8.5...."] }
+  sunday: { date: "Sunday, September 13, 2026", rows: ["49..........", "1.8.5.......", ".3.1.8......", "..9......2.8", "..1..5...6..", "5.....7.....", "...8...4....", "....6.5.1.8.", ".......87.62", "......4.6...", ".....4.1.5..", "...6.8.5...."] },
+  unlimited: { date: "Unlimited", rows: Array(12).fill("............") }
 };
 let activeDay = "tuesday", rows = puzzles.tuesday.rows, puzzleDate = puzzles.tuesday.date;
 const digits = [1, 2, 3, 4, 5, 6, 7, 8, 9];
@@ -26,14 +27,40 @@ const housesFor = Object.fromEntries(active.map(index => [index, units.filter(([
 const peers = Object.fromEntries(active.map(index => [index, new Set(housesFor[index].flat().filter(other => other !== index))]));
 const board = document.querySelector("#board"), guide = document.querySelector("#guide"), givenCount = document.querySelector("#givenCount"), solutionToggle = document.querySelector("#solutionToggle"), boardCard = document.querySelector("#boardCard");
 const blankNotes = () => Array.from({ length: 144 }, () => new Set());
-const userInputs = { monday: Array(144).fill(0), tuesday: Array(144).fill(0), wednesday: Array(144).fill(0), thursday: Array(144).fill(0), friday: Array(144).fill(0), saturday: Array(144).fill(0), sunday: Array(144).fill(0) };
-const userNotes = { monday: blankNotes(), tuesday: blankNotes(), wednesday: blankNotes(), thursday: blankNotes(), friday: blankNotes(), saturday: blankNotes(), sunday: blankNotes() };
-const histories = { monday: [], tuesday: [], wednesday: [], thursday: [], friday: [], saturday: [], sunday: [] }, redoHistories = { monday: [], tuesday: [], wednesday: [], thursday: [], friday: [], saturday: [], sunday: [] };
+const userInputs = { monday: Array(144).fill(0), tuesday: Array(144).fill(0), wednesday: Array(144).fill(0), thursday: Array(144).fill(0), friday: Array(144).fill(0), saturday: Array(144).fill(0), sunday: Array(144).fill(0), unlimited: Array(144).fill(0) };
+const userNotes = { monday: blankNotes(), tuesday: blankNotes(), wednesday: blankNotes(), thursday: blankNotes(), friday: blankNotes(), saturday: blankNotes(), sunday: blankNotes(), unlimited: blankNotes() };
+const histories = { monday: [], tuesday: [], wednesday: [], thursday: [], friday: [], saturday: [], sunday: [], unlimited: [] }, redoHistories = { monday: [], tuesday: [], wednesday: [], thursday: [], friday: [], saturday: [], sunday: [], unlimited: [] };
 const original = Array(144).fill(0); let human = userInputs.tuesday, playNotes = userNotes.tuesday;
 rows.forEach((row, r) => [...row].forEach((value, c) => { if (value !== ".") original[r * 12 + c] = Number(value); }));
 function hasCell(row, column) { return (row >= 0 && row < 9 && column >= 0 && column < 9) || (row >= 3 && row < 12 && column >= 3 && column < 12); }
 function nameFor(index, preferredGrid = "") { const row = Math.floor(index / 12), column = index % 12, names = []; if (row < 9 && column < 9 && preferredGrid !== "G2") names.push(`G1 R${row + 1}C${column + 1}`); if (row >= 3 && column >= 3 && preferredGrid !== "G1") names.push(`G2 R${row - 2}C${column - 2}`); return names.join(" / "); }
 function candidates(values, index) { return digits.filter(digit => ![...peers[index]].some(peer => values[peer] === digit)); }
+function shuffle(items) { const result = [...items]; for (let index = result.length - 1; index > 0; index -= 1) { const pick = Math.floor(Math.random() * (index + 1)); [result[index], result[pick]] = [result[pick], result[index]]; } return result; }
+function solveNine(givens) {
+  const values = [...givens];
+  function options(index) { const row = Math.floor(index / 9), column = index % 9, boxRow = Math.floor(row / 3) * 3, boxColumn = Math.floor(column / 3) * 3, used = new Set(); for (let n = 0; n < 9; n += 1) { used.add(values[row * 9 + n]); used.add(values[n * 9 + column]); } for (let rowOffset = 0; rowOffset < 3; rowOffset += 1) for (let columnOffset = 0; columnOffset < 3; columnOffset += 1) used.add(values[(boxRow + rowOffset) * 9 + boxColumn + columnOffset]); return shuffle(digits.filter(digit => !used.has(digit))); }
+  function search() { let choice = -1, choices = null; for (let index = 0; index < 81; index += 1) if (!values[index]) { const possible = options(index); if (!possible.length) return false; if (!choices || possible.length < choices.length) { choice = index; choices = possible; } } if (choice === -1) return true; for (const digit of choices) { values[choice] = digit; if (search()) return true; } values[choice] = 0; return false; }
+  return search() ? values : null;
+}
+function makeFullGattai() {
+  for (let attempt = 0; attempt < 80; attempt += 1) {
+    const first = solveNine(Array(81).fill(0)); if (!first) continue;
+    const secondGivens = Array(81).fill(0);
+    for (let row = 0; row < 6; row += 1) for (let column = 0; column < 6; column += 1) secondGivens[row * 9 + column] = first[(row + 3) * 9 + column + 3];
+    const second = solveNine(secondGivens); if (!second) continue;
+    const full = Array(144).fill(0);
+    for (let row = 0; row < 9; row += 1) for (let column = 0; column < 9; column += 1) full[row * 12 + column] = first[row * 9 + column];
+    for (let row = 0; row < 9; row += 1) for (let column = 0; column < 9; column += 1) full[(row + 3) * 12 + column + 3] = second[row * 9 + column];
+    return full;
+  }
+  throw new Error("Unable to construct a compatible Gattai grid.");
+}
+function countGattaiSolutions(givens, limit = 2) {
+  const values = [...givens];
+  function search() { let choice = -1, choices = null; for (const index of active) if (!values[index]) { const possible = candidates(values, index); if (!possible.length) return 0; if (!choices || possible.length < choices.length) { choice = index; choices = possible; } } if (choice === -1) return 1; let total = 0; for (const digit of choices) { values[choice] = digit; total += search(); values[choice] = 0; if (total >= limit) return total; } return total; }
+  return search();
+}
+const rowsFromBoard = boardValues => Array.from({ length: 12 }, (_, row) => Array.from({ length: 12 }, (_, column) => boardValues[row * 12 + column] || ".").join(""));
 function choose(items, size) { if (size === 0) return [[]]; if (items.length < size) return []; return choose(items.slice(1), size - 1).map(group => [items[0], ...group]).concat(choose(items.slice(1), size)); }
 function deriveSteps(preferAdvanced = false) {
   const values = [...original], found = [], notes = Object.fromEntries(active.filter(index => !values[index]).map(index => [index, new Set(candidates(values, index))]));
@@ -134,8 +161,9 @@ function deriveSteps(preferAdvanced = false) {
     return found;
   }
 }
-let steps = deriveSteps(), mode = "human", stepIndex = 0, selectedCell = null, entryMode = "digit";
-function currentValues() { const values = [...original]; if (mode === "human") human.forEach((value, index) => { if (value) values[index] = value; }); else steps.slice(0, stepIndex + 1).forEach(step => { if (step.index !== null) values[step.index] = step.digit; }); return values; }
+let steps = deriveSteps(), mode = "human", stepIndex = 0, selectedCell = null, entryMode = "digit", unlimitedSolution = null, unlimitedGenerationMilliseconds = 0, unlimitedRated = false;
+function isUnlimited() { return activeDay === "unlimited"; }
+function currentValues() { const values = [...original]; if (mode === "human") human.forEach((value, index) => { if (value) values[index] = value; }); else if (isUnlimited() && unlimitedSolution) return [...unlimitedSolution]; else steps.slice(0, stepIndex + 1).forEach(step => { if (step.index !== null) values[step.index] = step.digit; }); return values; }
 function addBorders(cell, row, column) {
   if (!hasCell(row - 1, column)) cell.classList.add("edge-top"); if (!hasCell(row, column - 1)) cell.classList.add("edge-left"); if (!hasCell(row + 1, column)) cell.classList.add("edge-bottom"); if (!hasCell(row, column + 1)) cell.classList.add("edge-right");
   if (row % 3 === 0) cell.classList.add("box-top"); if (column % 3 === 0) cell.classList.add("box-left");
@@ -151,7 +179,7 @@ function makeUserCandidates(index) { const notation = document.createElement("sp
 function stateSnapshot() { return { values: [...human], notes: playNotes.map(note => [...note]) }; }
 function restoreState(state) { human.splice(0, human.length, ...state.values); state.notes.forEach((note, index) => { playNotes[index].clear(); note.forEach(digit => playNotes[index].add(digit)); }); }
 function snapshot() { histories[activeDay].push(stateSnapshot()); redoHistories[activeDay].length = 0; }
-function updateEntryControls() { document.querySelectorAll(".entry-button").forEach(button => { button.setAttribute("aria-pressed", String(button.dataset.entry === entryMode)); button.disabled = mode !== "human"; }); document.querySelectorAll(".numpad button, #eraseCell").forEach(button => button.disabled = mode !== "human"); document.querySelector("#undoMove").disabled = mode !== "human" || !histories[activeDay].length; document.querySelector("#redoMove").disabled = mode !== "human" || !redoHistories[activeDay].length; document.querySelector("#resetGrid").disabled = mode !== "human"; }
+function updateEntryControls() { document.querySelectorAll(".entry-button").forEach(button => { button.setAttribute("aria-pressed", String(button.dataset.entry === entryMode)); button.disabled = mode !== "human"; }); document.querySelectorAll(".numpad button").forEach(button => button.disabled = mode !== "human"); document.querySelector("#undoMove").disabled = mode !== "human" || !histories[activeDay].length; document.querySelector("#redoMove").disabled = mode !== "human" || !redoHistories[activeDay].length; document.querySelector("#resetGrid").disabled = mode !== "human"; }
 function applyEntry(digit, index = selectedCell) {
   if (mode !== "human" || index === null || original[index]) return;
   snapshot();
@@ -178,6 +206,7 @@ function makeEditable(cell, index) {
   cell.addEventListener("paste", event => { event.preventDefault(); const digit = event.clipboardData.getData("text").match(/[1-9]/)?.[0]; if (digit) applyEntry(Number(digit), index); });
 }
 function renderStep() {
+  if (isUnlimited()) return;
   const step = steps[stepIndex], grouped = steps.reduce((groups, item, index) => { (groups[item.technique] ||= []).push(index + 1); return groups; }, {}), tallyList = document.querySelector("#techniqueTallyList"), table = document.createElement("table"), header = document.createElement("thead"), body = document.createElement("tbody");
   document.querySelector("#stepCount").textContent = `Step ${stepIndex + 1} of ${steps.length}`;
   document.querySelector("#stepTechnique").textContent = step.technique;
@@ -188,18 +217,44 @@ function renderStep() {
   document.querySelector("#firstStep").disabled = stepIndex === 0; document.querySelector("#previousStep").disabled = stepIndex === 0; document.querySelector("#nextStep").disabled = stepIndex === steps.length - 1; document.querySelector("#lastStep").disabled = stepIndex === steps.length - 1;
 }
 function renderBoard() {
-  const values = currentValues(), activeStep = mode === "solver" ? steps[stepIndex] : null, activeHouse = activeStep?.house || "", highlighted = activeStep?.highlight || (activeHouse ? units.find(([label]) => label === activeHouse)?.[1] || [] : []), solverNotes = activeStep?.beforeNotes || {};
+  const values = currentValues(), activeStep = mode === "solver" && !isUnlimited() ? steps[stepIndex] : null, activeHouse = activeStep?.house || "", highlighted = activeStep?.highlight || (activeHouse ? units.find(([label]) => label === activeHouse)?.[1] || [] : []), solverNotes = activeStep?.beforeNotes || {};
   board.innerHTML = "";
   for (let row = 0; row < 12; row += 1) for (let column = 0; column < 12; column += 1) {
     if (!hasCell(row, column)) continue;
     const index = row * 12 + column, cell = document.createElement("div"); cell.className = "cell"; cell.dataset.index = index; cell.style.gridColumnStart = column + 1; cell.style.gridRowStart = row + 1;
-    if (row >= 3 && column >= 3 && row < 9 && column < 9) cell.classList.add("shared"); if (original[index]) cell.classList.add("given"); if (mode === "human" && human[index] && [...peers[index]].some(peer => values[peer] === human[index])) cell.classList.add("conflict"); if (highlighted.includes(index)) cell.classList.add("affected-house"); if (mode === "solver" && steps[stepIndex].index === index) cell.classList.add("focus"); if (index === selectedCell) cell.classList.add("selected"); addBorders(cell, row, column);
+    if (row >= 3 && column >= 3 && row < 9 && column < 9) cell.classList.add("shared"); if (original[index]) cell.classList.add("given"); if (mode === "human" && human[index] && [...peers[index]].some(peer => values[peer] === human[index])) cell.classList.add("conflict"); if (highlighted.includes(index)) cell.classList.add("affected-house"); if (activeStep?.index === index) cell.classList.add("focus"); if (index === selectedCell) cell.classList.add("selected"); addBorders(cell, row, column);
     if (values[index]) { cell.textContent = values[index]; if (mode === "human" && !original[index]) makeEditable(cell, index); else makeSelectable(cell, index); } else if (mode === "solver") { cell.append(makeCandidates(solverNotes[index] || candidates(values, index), index, activeStep?.eliminations || [], activeStep?.emphasis || [])); makeSelectable(cell, index); } else { if (playNotes[index].size) cell.append(makeUserCandidates(index)); makeEditable(cell, index); }
     board.append(cell);
   }
 }
-function refresh() { renderStep(); renderBoard(); const givens = original.filter((value, index) => active.includes(index) && value).length, rating = rateSteps(steps), showingSolution = mode === "solver"; givenCount.textContent = `${givens} given cells`; document.querySelector("#difficultyLabel").textContent = `Difficulty: ${rating.rating} (${rating.score})`; solutionToggle.setAttribute("aria-pressed", String(showingSolution)); solutionToggle.textContent = showingSolution ? "Hide solution" : "Read solution"; boardCard.classList.toggle("solver-active", showingSolution); updateEntryControls(); setTimerRunning(mode === "human"); }
-function loadPuzzle(day) { activeDay = day; rows = puzzles[day].rows; puzzleDate = puzzles[day].date; original.fill(0); rows.forEach((row, r) => [...row].forEach((value, c) => { if (value !== ".") original[r * 12 + c] = Number(value); })); human = userInputs[day]; playNotes = userNotes[day]; selectedCell = null; steps = deriveSteps(["friday", "saturday", "sunday"].includes(day)); stepIndex = 0; document.querySelectorAll(".day-button").forEach(button => button.setAttribute("aria-pressed", String(button.dataset.day === day))); refresh(); }
+function refresh() { renderStep(); renderBoard(); const givens = original.filter((value, index) => active.includes(index) && value).length, rating = rateSteps(steps), showingSolution = mode === "solver", unlimited = isUnlimited(); givenCount.textContent = unlimited ? `${givens} given cells · generated in ${(unlimitedGenerationMilliseconds / 1000).toFixed(2)} s` : `${givens} given cells`; document.querySelector("#difficultyLabel").textContent = unlimited && !unlimitedRated ? "Difficulty: Unrated (unique-only)" : `Difficulty: ${rating.rating} (${rating.score})`; solutionToggle.setAttribute("aria-pressed", String(showingSolution)); solutionToggle.textContent = unlimited ? (showingSolution ? "Hide final grid" : "Show final grid") : (showingSolution ? "Hide solution" : "Read solution"); guide.classList.toggle("hidden", mode === "human" || unlimited); boardCard.classList.toggle("solver-active", showingSolution); updateEntryControls(); setTimerRunning(mode === "human"); }
+function loadPuzzle(day) { activeDay = day; rows = puzzles[day].rows; puzzleDate = puzzles[day].date; original.fill(0); rows.forEach((row, r) => [...row].forEach((value, c) => { if (value !== ".") original[r * 12 + c] = Number(value); })); human = userInputs[day]; playNotes = userNotes[day]; selectedCell = null; steps = deriveSteps(["friday", "saturday", "sunday"].includes(day)); const walked = [...original]; steps.forEach(step => { if (step.index !== null) walked[step.index] = step.digit; }); unlimitedRated = day === "unlimited" && active.every(index => walked[index]); stepIndex = 0; document.querySelectorAll(".day-button").forEach(button => button.setAttribute("aria-pressed", String(button.dataset.day === day))); document.querySelector("#unlimitedMode").classList.toggle("active", day === "unlimited"); refresh(); }
+async function generateUnlimitedPuzzle() {
+  const button = document.querySelector("#unlimitedMode"), title = button.querySelector("strong"), detail = button.querySelector("small"), started = performance.now();
+  button.disabled = true; title.textContent = "Generating…"; detail.textContent = "Digging for uniqueness";
+  await new Promise(resolve => setTimeout(resolve, 20));
+  try {
+    const full = makeFullGattai(), puzzle = [...full]; let changed = true;
+    while (changed) {
+      changed = false;
+      for (const cell of shuffle(active.filter(index => puzzle[index]))) {
+        const value = puzzle[cell]; puzzle[cell] = 0;
+        if (countGattaiSolutions(puzzle, 2) === 1) changed = true; else puzzle[cell] = value;
+      }
+      await new Promise(resolve => setTimeout(resolve, 0));
+    }
+    puzzles.unlimited = { date: "Unlimited", rows: rowsFromBoard(puzzle) };
+    unlimitedSolution = full; unlimitedGenerationMilliseconds = performance.now() - started;
+    userInputs.unlimited.fill(0); userNotes.unlimited.forEach(note => note.clear()); histories.unlimited.length = 0; redoHistories.unlimited.length = 0;
+    mode = "human"; loadPuzzle("unlimited");
+    detail.textContent = "Generate another";
+  } catch (error) {
+    detail.textContent = "Try again";
+    window.alert("The generator could not make a compatible Gattai this time. Please try again.");
+  } finally {
+    title.textContent = "Unlimited"; button.disabled = false;
+  }
+}
 let elapsedSeconds = 0, timerBase = Date.now(), timerRunning = true;
 function showTimer() { const minutes = Math.floor(elapsedSeconds / 60), seconds = elapsedSeconds % 60; document.querySelector("#timer").textContent = `${String(minutes).padStart(2, "0")}:${String(seconds).padStart(2, "0")}`; }
 function setTimerRunning(running) { if (timerRunning === running) return; if (timerRunning) elapsedSeconds += Math.floor((Date.now() - timerBase) / 1000); timerRunning = running; timerBase = Date.now(); showTimer(); }
@@ -208,6 +263,7 @@ setInterval(() => { if (timerRunning) { elapsedSeconds += Math.floor((Date.now()
 document.querySelector("#firstStep").addEventListener("click", () => { stepIndex = 0; refresh(); }); document.querySelector("#previousStep").addEventListener("click", () => { if (stepIndex > 0) { stepIndex -= 1; refresh(); } }); document.querySelector("#nextStep").addEventListener("click", () => { if (stepIndex < steps.length - 1) { stepIndex += 1; refresh(); } }); document.querySelector("#lastStep").addEventListener("click", () => { stepIndex = steps.length - 1; refresh(); });
 solutionToggle.addEventListener("click", () => { mode = mode === "human" ? "solver" : "human"; guide.classList.toggle("hidden", mode === "human"); refresh(); });
 document.querySelectorAll(".day-button").forEach(button => button.addEventListener("click", () => loadPuzzle(button.dataset.day)));
+document.querySelector("#unlimitedMode").addEventListener("click", generateUnlimitedPuzzle);
 document.querySelectorAll(".entry-button").forEach(button => button.addEventListener("click", () => { entryMode = button.dataset.entry; updateEntryControls(); }));
 document.querySelectorAll(".numpad [data-key]").forEach(button => button.addEventListener("click", () => applyEntry(Number(button.dataset.key))));
 document.querySelectorAll("[data-action=erase]").forEach(button => button.addEventListener("click", eraseSelected));
