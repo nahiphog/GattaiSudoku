@@ -55,30 +55,28 @@ def allowed_logic(givens,record=False):
         for peer in peers[cell]:
             if peer in notes: notes[peer].discard(value)
         if record: steps.append((kind,cell,value,label))
-    def naked_subset():
+    def naked_subset(size):
         for _,unit in units:
             blanks=[x for x in unit if x in notes]
-            for size in range(2,5):
-                for group in combinations(blanks,size):
-                    union=set().union(*(notes[x] for x in group))
-                    if len(union)!=size or any(len(notes[x])<2 or len(notes[x])>size for x in group): continue
-                    changed=False
-                    for cell in blanks:
-                        if cell not in group:
-                            before=len(notes[cell]); notes[cell]-=union; changed|=len(notes[cell])!=before
-                    if changed: used_subsets.add(f"Naked {('Pair','Triple','Quad')[size-2]}"); return True
+            for group in combinations(blanks,size):
+                union=set().union(*(notes[x] for x in group))
+                if len(union)!=size or any(len(notes[x])<2 or len(notes[x])>size for x in group): continue
+                changed=False
+                for cell in blanks:
+                    if cell not in group:
+                        before=len(notes[cell]); notes[cell]-=union; changed|=len(notes[cell])!=before
+                if changed: used_subsets.add(f"Naked {('Pair','Triple','Quad')[size-2]}"); return True
         return False
-    def hidden_subset():
+    def hidden_subset(size):
         for _,unit in units:
             blanks=[x for x in unit if x in notes]; missing=ALL-{board[x] for x in unit if board[x]}
-            for size in range(2,5):
-                for group in combinations(sorted(missing),size):
-                    digits=set(group); cells=set().union(*(set(x for x in blanks if digit in notes[x]) for digit in digits))
-                    if len(cells)!=size: continue
-                    changed=False
-                    for cell in cells:
-                        before=len(notes[cell]); notes[cell]&=digits; changed|=len(notes[cell])!=before
-                    if changed: used_subsets.add(f"Hidden {('Pair','Triple','Quad')[size-2]}"); return True
+            for group in combinations(sorted(missing),size):
+                digits=set(group); cells=set().union(*(set(x for x in blanks if digit in notes[x]) for digit in digits))
+                if len(cells)!=size: continue
+                changed=False
+                for cell in cells:
+                    before=len(notes[cell]); notes[cell]&=digits; changed|=len(notes[cell])!=before
+                if changed: used_subsets.add(f"Hidden {('Pair','Triple','Quad')[size-2]}"); return True
         return False
     def xy_wing():
         for pivot in active:
@@ -141,7 +139,7 @@ def allowed_logic(givens,record=False):
                     places=[x for x in unit if not board[x] and value in notes[x]]
                     if len(places)==1: move=("Hidden Single",places[0],value,label); break
                 if move: break
-        if not move and (naked_subset() or hidden_subset() or basic_fish() or xy_wing()): continue
+        if not move and (any(naked_subset(size) or hidden_subset(size) for size in range(2,5)) or basic_fish() or xy_wing()): continue
         if not move: break
         place(*move)
     return all(board[x] for x in active),steps,board,used_subsets,used_fish,used_single_digit_patterns,used_wings
