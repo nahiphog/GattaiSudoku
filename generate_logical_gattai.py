@@ -139,7 +139,10 @@ def allowed_logic(givens,record=False):
                     places=[x for x in unit if not board[x] and value in notes[x]]
                     if len(places)==1: move=("Hidden Single",places[0],value,label); break
                 if move: break
-        if not move and (any(naked_subset(size) or hidden_subset(size) for size in range(2,5)) or basic_fish() or xy_wing()): continue
+        # Prefer a visible advanced pattern over larger subset escalation.  This
+        # keeps the recorded walkthrough honest when a fish or wing is already
+        # available, while pairs/triples/quads remain the next logical choice.
+        if not move and (basic_fish() or xy_wing() or any(naked_subset(size) or hidden_subset(size) for size in range(2,5))): continue
         if not move: break
         place(*move)
     return all(board[x] for x in active),steps,board,used_subsets,used_fish,used_single_digit_patterns,used_wings
@@ -205,15 +208,20 @@ def generate(seed):
                 for index,value in previous.items(): puzzle[index]=value
     logical,steps,solved,subsets,fish,single_digit_patterns,wings=allowed_logic(puzzle,True)
     require_advanced=os.environ.get('GATTAI_REQUIRE_ADVANCED','1')=='1'
+    require_subset=os.environ.get('GATTAI_REQUIRE_SUBSET','0')=='1'
+    require_fish=os.environ.get('GATTAI_REQUIRE_FISH','0')=='1'
+    require_wing=os.environ.get('GATTAI_REQUIRE_WING','0')=='1'
+    forbid_advanced=os.environ.get('GATTAI_FORBID_ADVANCED','0')=='1'
     advanced_family_used=bool(fish or single_digit_patterns or wings)
-    if not (logical and solved==full and count_solutions(puzzle)==1 and (advanced_family_used or not require_advanced)): return None
+    if not (logical and solved==full and count_solutions(puzzle)==1 and (subsets or not require_subset) and (fish or not require_fish) and (wings or not require_wing) and (advanced_family_used or not require_advanced) and (not advanced_family_used or not forbid_advanced)): return None
     return [''.join(str(puzzle[row*N+column]) if puzzle[row*N+column] else '.' for column in range(N)) for row in range(N)], sorted(subsets), sorted(fish), sorted(single_digit_patterns), sorted(wings)
 
-seed=int(os.environ.get('GATTAI_SEED','9000'))
-attempts=int(os.environ.get('GATTAI_ATTEMPTS','100'))
-for offset in range(attempts):
-    result=generate(seed+offset*31)
-    if result:
-        rows,subsets,fish,single_digit_patterns,wings=result
-        print(json.dumps({'seed':seed+offset*31,'rows':rows,'subsets':subsets,'fish':fish,'single_digit_patterns':single_digit_patterns,'wings':wings,'symmetry':os.environ.get('GATTAI_SYMMETRY','none')}))
-        break
+if __name__ == '__main__':
+    seed=int(os.environ.get('GATTAI_SEED','9000'))
+    attempts=int(os.environ.get('GATTAI_ATTEMPTS','100'))
+    for offset in range(attempts):
+        result=generate(seed+offset*31)
+        if result:
+            rows,subsets,fish,single_digit_patterns,wings=result
+            print(json.dumps({'seed':seed+offset*31,'rows':rows,'subsets':subsets,'fish':fish,'single_digit_patterns':single_digit_patterns,'wings':wings,'symmetry':os.environ.get('GATTAI_SYMMETRY','none')}))
+            break
