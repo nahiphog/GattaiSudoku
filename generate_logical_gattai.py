@@ -179,17 +179,30 @@ def make_full(seed):
         for column in range(9): board[(row+3)*N+column+3]=g2[row*9+column]
     return board
 
+def symmetric_partner(cell,rng):
+    row,column=divmod(cell,N)
+    grids=[]
+    if row<9 and column<9: grids.append((0,0))
+    if row>=3 and column>=3: grids.append((3,3))
+    row_offset,column_offset=rng.choice(grids)
+    local_row,local_column=row-row_offset,column-column_offset
+    return (row_offset+8-local_row)*N+column_offset+8-local_column
+
 def generate(seed):
     full=make_full(seed)
     if not full: return None
     puzzle=full[:]; rng=random.Random(seed+2)
+    symmetry=os.environ.get('GATTAI_SYMMETRY','none')
     changed=True
     while changed:
         changed=False; order=[cell for cell in active if puzzle[cell]]; rng.shuffle(order)
         for cell in order:
-            value=puzzle[cell]; puzzle[cell]=0; logical,_,_,_,_,_,_=allowed_logic(puzzle)
+            partner=symmetric_partner(cell,rng) if symmetry=='rotational' else cell
+            previous={index:puzzle[index] for index in {cell,partner}}
+            puzzle[cell]=0; puzzle[partner]=0; logical,_,_,_,_,_,_=allowed_logic(puzzle)
             if logical and count_solutions(puzzle)==1: changed=True
-            else: puzzle[cell]=value
+            else:
+                for index,value in previous.items(): puzzle[index]=value
     logical,steps,solved,subsets,fish,single_digit_patterns,wings=allowed_logic(puzzle,True)
     require_advanced=os.environ.get('GATTAI_REQUIRE_ADVANCED','1')=='1'
     advanced_family_used=bool(fish or single_digit_patterns or wings)
@@ -202,5 +215,5 @@ for offset in range(attempts):
     result=generate(seed+offset*31)
     if result:
         rows,subsets,fish,single_digit_patterns,wings=result
-        print(json.dumps({'seed':seed+offset*31,'rows':rows,'subsets':subsets,'fish':fish,'single_digit_patterns':single_digit_patterns,'wings':wings}))
+        print(json.dumps({'seed':seed+offset*31,'rows':rows,'subsets':subsets,'fish':fish,'single_digit_patterns':single_digit_patterns,'wings':wings,'symmetry':os.environ.get('GATTAI_SYMMETRY','none')}))
         break
