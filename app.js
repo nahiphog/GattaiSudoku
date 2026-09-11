@@ -27,10 +27,12 @@ const housesFor = Object.fromEntries(active.map(index => [index, units.filter(([
 const peers = Object.fromEntries(active.map(index => [index, new Set(housesFor[index].flat().filter(other => other !== index))]));
 const board = document.querySelector("#board"), guide = document.querySelector("#guide"), givenCount = document.querySelector("#givenCount"), solutionToggle = document.querySelector("#solutionToggle"), boardCard = document.querySelector("#boardCard");
 const blankNotes = () => Array.from({ length: 144 }, () => new Set());
+const blankColors = () => Array(144).fill("");
 const userInputs = { monday: Array(144).fill(0), tuesday: Array(144).fill(0), wednesday: Array(144).fill(0), thursday: Array(144).fill(0), friday: Array(144).fill(0), saturday: Array(144).fill(0), sunday: Array(144).fill(0), unlimited: Array(144).fill(0) };
 const userNotes = { monday: blankNotes(), tuesday: blankNotes(), wednesday: blankNotes(), thursday: blankNotes(), friday: blankNotes(), saturday: blankNotes(), sunday: blankNotes(), unlimited: blankNotes() };
+const userColors = { monday: blankColors(), tuesday: blankColors(), wednesday: blankColors(), thursday: blankColors(), friday: blankColors(), saturday: blankColors(), sunday: blankColors(), unlimited: blankColors() };
 const histories = { monday: [], tuesday: [], wednesday: [], thursday: [], friday: [], saturday: [], sunday: [], unlimited: [] }, redoHistories = { monday: [], tuesday: [], wednesday: [], thursday: [], friday: [], saturday: [], sunday: [], unlimited: [] };
-const original = Array(144).fill(0); let human = userInputs.tuesday, playNotes = userNotes.tuesday;
+const original = Array(144).fill(0); let human = userInputs.tuesday, playNotes = userNotes.tuesday, playColors = userColors.tuesday, sharedHighlight = true;
 rows.forEach((row, r) => [...row].forEach((value, c) => { if (value !== ".") original[r * 12 + c] = Number(value); }));
 function hasCell(row, column) { return (row >= 0 && row < 9 && column >= 0 && column < 9) || (row >= 3 && row < 12 && column >= 3 && column < 12); }
 function nameFor(index, preferredGrid = "") { const row = Math.floor(index / 12), column = index % 12, names = []; if (row < 9 && column < 9 && preferredGrid !== "G2") names.push(`G1 R${row + 1}C${column + 1}`); if (row >= 3 && column >= 3 && preferredGrid !== "G1") names.push(`G2 R${row - 2}C${column - 2}`); return names.join(" / "); }
@@ -164,9 +166,12 @@ function deriveSteps(preferAdvanced = false) {
 let steps = deriveSteps(), mode = "human", stepIndex = 0, selectedCell = null, entryMode = "digit", unlimitedSolution = null, unlimitedGenerationMilliseconds = 0, unlimitedRated = false;
 function isUnlimited() { return activeDay === "unlimited"; }
 function currentValues() { const values = [...original]; if (mode === "human") human.forEach((value, index) => { if (value) values[index] = value; }); else if (isUnlimited() && unlimitedSolution) return [...unlimitedSolution]; else steps.slice(0, stepIndex + 1).forEach(step => { if (step.index !== null) values[step.index] = step.digit; }); return values; }
-function addBorders(cell, row, column) {
-  if (!hasCell(row - 1, column)) cell.classList.add("edge-top"); if (!hasCell(row, column - 1)) cell.classList.add("edge-left"); if (!hasCell(row + 1, column)) cell.classList.add("edge-bottom"); if (!hasCell(row, column + 1)) cell.classList.add("edge-right");
-  if (row % 3 === 0) cell.classList.add("box-top"); if (column % 3 === 0) cell.classList.add("box-left");
+function drawBoardBoundaries() {
+  const lines = [
+    ["horizontal", "h-0"], ["horizontal", "h-3"], ["horizontal", "h-6"], ["horizontal", "h-9"], ["horizontal", "h-12"],
+    ["vertical", "v-0"], ["vertical", "v-3"], ["vertical", "v-6"], ["vertical", "v-9"], ["vertical", "v-12"]
+  ];
+  lines.forEach(([direction, position]) => { const line = document.createElement("span"); line.className = `board-boundary ${direction} ${position}`; board.append(line); });
 }
 function makeCandidates(noteDigits, index, eliminations = [], emphasis = []) {
   const notation = document.createElement("span"); notation.className = "snyder";
@@ -175,11 +180,11 @@ function makeCandidates(noteDigits, index, eliminations = [], emphasis = []) {
   [...new Set([...noteDigits, ...removed])].sort((a, b) => a - b).forEach(digit => { const mark = document.createElement("i"); mark.className = `candidate-${digit}${removed.has(digit) ? " eliminated" : ""}${highlighted.has(digit) ? " emphasized" : ""}`; mark.textContent = digit; notation.append(mark); });
   return notation;
 }
-function makeUserCandidates(index) { const notation = document.createElement("span"); notation.className = "snyder"; playNotes[index].forEach(digit => { const mark = document.createElement("i"); mark.className = `candidate-${digit}`; mark.textContent = digit; notation.append(mark); }); return notation; }
-function stateSnapshot() { return { values: [...human], notes: playNotes.map(note => [...note]) }; }
-function restoreState(state) { human.splice(0, human.length, ...state.values); state.notes.forEach((note, index) => { playNotes[index].clear(); note.forEach(digit => playNotes[index].add(digit)); }); }
+function makeUserCandidates(index) { const notation = document.createElement("span"), clashes = new Set([...playNotes[index]].filter(digit => [...peers[index]].some(peer => (original[peer] || human[peer]) === digit))); notation.className = "snyder"; playNotes[index].forEach(digit => { const mark = document.createElement("i"); mark.className = `candidate-${digit}${clashes.has(digit) ? " candidate-conflict" : ""}`; mark.textContent = digit; notation.append(mark); }); return notation; }
+function stateSnapshot() { return { values: [...human], notes: playNotes.map(note => [...note]), colors: [...playColors] }; }
+function restoreState(state) { human.splice(0, human.length, ...state.values); state.notes.forEach((note, index) => { playNotes[index].clear(); note.forEach(digit => playNotes[index].add(digit)); }); playColors.splice(0, playColors.length, ...state.colors); }
 function snapshot() { histories[activeDay].push(stateSnapshot()); redoHistories[activeDay].length = 0; }
-function updateEntryControls() { document.querySelectorAll(".entry-button").forEach(button => { button.setAttribute("aria-pressed", String(button.dataset.entry === entryMode)); button.disabled = mode !== "human"; }); document.querySelectorAll(".numpad button").forEach(button => button.disabled = mode !== "human"); document.querySelector("#undoMove").disabled = mode !== "human" || !histories[activeDay].length; document.querySelector("#redoMove").disabled = mode !== "human" || !redoHistories[activeDay].length; document.querySelector("#resetGrid").disabled = mode !== "human"; }
+function updateEntryControls() { document.querySelectorAll(".entry-button").forEach(button => { button.setAttribute("aria-pressed", String(button.dataset.entry === entryMode)); button.disabled = mode !== "human"; }); document.querySelectorAll(".numpad button, .color-button").forEach(button => button.disabled = mode !== "human" || selectedCell === null); document.querySelector("#undoMove").disabled = mode !== "human" || !histories[activeDay].length; document.querySelector("#redoMove").disabled = mode !== "human" || !redoHistories[activeDay].length; document.querySelector("#resetGrid").disabled = mode !== "human"; }
 function applyEntry(digit, index = selectedCell) {
   if (mode !== "human" || index === null || original[index]) return;
   snapshot();
@@ -191,12 +196,13 @@ function eraseSelected() {
   if (mode !== "human" || selectedCell === null || original[selectedCell]) return;
   snapshot(); human[selectedCell] = 0; playNotes[selectedCell].clear(); refresh();
 }
+function applyCellColor(color) { if (mode !== "human" || selectedCell === null) return; snapshot(); playColors[selectedCell] = color; refresh(); }
 function undoMove() {
   const previous = histories[activeDay].pop(); if (!previous) return;
   redoHistories[activeDay].push(stateSnapshot()); restoreState(previous); refresh();
 }
 function redoMove() { const next = redoHistories[activeDay].pop(); if (!next) return; histories[activeDay].push(stateSnapshot()); restoreState(next); refresh(); }
-function makeSelectable(cell, index) { cell.addEventListener("click", event => { event.preventDefault(); selectedCell = selectedCell === index ? null : index; board.querySelectorAll(".cell").forEach(item => item.classList.toggle("selected", Number(item.dataset.index) === selectedCell)); if (selectedCell !== null) cell.focus({ preventScroll: true }); }); }
+function makeSelectable(cell, index) { cell.addEventListener("click", event => { event.preventDefault(); selectedCell = selectedCell === index ? null : index; board.querySelectorAll(".cell").forEach(item => item.classList.toggle("selected", Number(item.dataset.index) === selectedCell)); if (selectedCell !== null) cell.focus({ preventScroll: true }); updateEntryControls(); }); }
 function makeEditable(cell, index) {
   cell.classList.add("editable"); cell.tabIndex = 0; cell.setAttribute("aria-label", `${nameFor(index)}, enter or delete a digit`); makeSelectable(cell, index);
   cell.addEventListener("keydown", event => {
@@ -222,13 +228,14 @@ function renderBoard() {
   for (let row = 0; row < 12; row += 1) for (let column = 0; column < 12; column += 1) {
     if (!hasCell(row, column)) continue;
     const index = row * 12 + column, cell = document.createElement("div"); cell.className = "cell"; cell.dataset.index = index; cell.style.gridColumnStart = column + 1; cell.style.gridRowStart = row + 1;
-    if (row >= 3 && column >= 3 && row < 9 && column < 9) cell.classList.add("shared"); if (original[index]) cell.classList.add("given"); if (mode === "human" && human[index] && [...peers[index]].some(peer => values[peer] === human[index])) cell.classList.add("conflict"); if (highlighted.includes(index)) cell.classList.add("affected-house"); if (activeStep?.index === index) cell.classList.add("focus"); if (index === selectedCell) cell.classList.add("selected"); addBorders(cell, row, column);
+    if (sharedHighlight && row >= 3 && column >= 3 && row < 9 && column < 9) cell.classList.add("shared"); if (playColors[index]) cell.classList.add(`user-color-${playColors[index]}`); if (original[index]) cell.classList.add("given"); if (mode === "human" && human[index] && [...peers[index]].some(peer => values[peer] === human[index])) cell.classList.add("conflict"); if (highlighted.includes(index)) cell.classList.add("affected-house"); if (activeStep?.index === index) cell.classList.add("focus"); if (index === selectedCell) cell.classList.add("selected");
     if (values[index]) { cell.textContent = values[index]; if (mode === "human" && !original[index]) makeEditable(cell, index); else makeSelectable(cell, index); } else if (mode === "solver") { cell.append(makeCandidates(solverNotes[index] || candidates(values, index), index, activeStep?.eliminations || [], activeStep?.emphasis || [])); makeSelectable(cell, index); } else { if (playNotes[index].size) cell.append(makeUserCandidates(index)); makeEditable(cell, index); }
     board.append(cell);
   }
+  drawBoardBoundaries();
 }
 function refresh() { renderStep(); renderBoard(); const givens = original.filter((value, index) => active.includes(index) && value).length, rating = rateSteps(steps), showingSolution = mode === "solver", unlimited = isUnlimited(); givenCount.textContent = unlimited ? `${givens} given cells · generated in ${(unlimitedGenerationMilliseconds / 1000).toFixed(2)} s` : `${givens} given cells`; document.querySelector("#difficultyLabel").textContent = unlimited && !unlimitedRated ? "Difficulty: Unrated (unique-only)" : `Difficulty: ${rating.rating} (${rating.score})`; solutionToggle.setAttribute("aria-pressed", String(showingSolution)); solutionToggle.textContent = unlimited ? (showingSolution ? "Hide final grid" : "Show final grid") : (showingSolution ? "Hide solution" : "Read solution"); guide.classList.toggle("hidden", mode === "human" || unlimited); boardCard.classList.toggle("solver-active", showingSolution); updateEntryControls(); setTimerRunning(mode === "human"); }
-function loadPuzzle(day) { activeDay = day; rows = puzzles[day].rows; puzzleDate = puzzles[day].date; original.fill(0); rows.forEach((row, r) => [...row].forEach((value, c) => { if (value !== ".") original[r * 12 + c] = Number(value); })); human = userInputs[day]; playNotes = userNotes[day]; selectedCell = null; steps = deriveSteps(["friday", "saturday", "sunday"].includes(day)); const walked = [...original]; steps.forEach(step => { if (step.index !== null) walked[step.index] = step.digit; }); unlimitedRated = day === "unlimited" && active.every(index => walked[index]); stepIndex = 0; document.querySelectorAll(".day-button").forEach(button => button.setAttribute("aria-pressed", String(button.dataset.day === day))); document.querySelector("#unlimitedMode").classList.toggle("active", day === "unlimited"); refresh(); }
+function loadPuzzle(day) { activeDay = day; rows = puzzles[day].rows; puzzleDate = puzzles[day].date; original.fill(0); rows.forEach((row, r) => [...row].forEach((value, c) => { if (value !== ".") original[r * 12 + c] = Number(value); })); human = userInputs[day]; playNotes = userNotes[day]; playColors = userColors[day]; selectedCell = null; steps = deriveSteps(["friday", "saturday", "sunday"].includes(day)); const walked = [...original]; steps.forEach(step => { if (step.index !== null) walked[step.index] = step.digit; }); unlimitedRated = day === "unlimited" && active.every(index => walked[index]); stepIndex = 0; document.querySelectorAll(".day-button").forEach(button => button.setAttribute("aria-pressed", String(button.dataset.day === day))); document.querySelector("#unlimitedMode").classList.toggle("active", day === "unlimited"); refresh(); }
 async function generateUnlimitedPuzzle() {
   const button = document.querySelector("#unlimitedMode"), title = button.querySelector("strong"), detail = button.querySelector("small"), started = performance.now();
   button.disabled = true; title.textContent = "Generating…"; detail.textContent = "Digging for uniqueness";
@@ -245,7 +252,7 @@ async function generateUnlimitedPuzzle() {
     }
     puzzles.unlimited = { date: "Unlimited", rows: rowsFromBoard(puzzle) };
     unlimitedSolution = full; unlimitedGenerationMilliseconds = performance.now() - started;
-    userInputs.unlimited.fill(0); userNotes.unlimited.forEach(note => note.clear()); histories.unlimited.length = 0; redoHistories.unlimited.length = 0;
+    userInputs.unlimited.fill(0); userNotes.unlimited.forEach(note => note.clear()); userColors.unlimited.fill(""); histories.unlimited.length = 0; redoHistories.unlimited.length = 0;
     mode = "human"; loadPuzzle("unlimited");
     detail.textContent = "Generate another";
   } catch (error) {
@@ -269,14 +276,18 @@ document.querySelectorAll(".numpad [data-key]").forEach(button => button.addEven
 document.querySelectorAll("[data-action=erase]").forEach(button => button.addEventListener("click", eraseSelected));
 document.querySelector("#undoMove").addEventListener("click", undoMove);
 document.querySelector("#redoMove").addEventListener("click", redoMove);
-document.querySelector("#resetGrid").addEventListener("click", () => { if (!window.confirm("Reset this grid? Your entered digits and Snyder notes will be cleared.")) return; snapshot(); human.fill(0); playNotes.forEach(note => note.clear()); selectedCell = null; refresh(); });
+document.querySelector("#resetGrid").addEventListener("click", () => { if (!window.confirm("Reset this grid? Your entered digits, Snyder notes, and cell colours will be cleared.")) return; snapshot(); human.fill(0); playNotes.forEach(note => note.clear()); playColors.fill(""); selectedCell = null; refresh(); });
 document.addEventListener("keydown", event => { if (event.defaultPrevented || mode !== "human" || selectedCell === null || original[selectedCell]) return; if (/^[1-9]$/.test(event.key)) { event.preventDefault(); applyEntry(Number(event.key)); return; } if ((event.key === "Backspace" || event.key === "Delete") && !event.target.closest(".editable")) { event.preventDefault(); eraseSelected(); } });
 document.querySelector("#resetTimer").addEventListener("click", resetTimer);
+document.querySelector("#sharedToggle").addEventListener("change", event => { sharedHighlight = event.target.checked; refresh(); });
+document.querySelectorAll(".color-button").forEach(button => button.addEventListener("click", () => applyCellColor(button.dataset.color)));
 document.querySelectorAll(".grid-button").forEach(button => button.addEventListener("click", () => { const grid = button.dataset.grid, selected = button.getAttribute("aria-pressed") !== "true"; document.querySelectorAll(".grid-button").forEach(item => item.setAttribute("aria-pressed", "false")); board.querySelectorAll(".cell").forEach(cell => cell.classList.remove("grid-a", "grid-b")); if (selected) { board.querySelectorAll(".cell").forEach(cell => { const index = Number(cell.dataset.index), row = Math.floor(index / 12), column = index % 12; if ((grid === "a" && row < 9 && column < 9) || (grid === "b" && row >= 3 && column >= 3)) cell.classList.add(`grid-${grid}`); }); button.setAttribute("aria-pressed", "true"); } }));
 document.querySelector("#copyPng").addEventListener("click", async () => {
   const scale = 60, gridSize = scale * 12, margin = gridSize / 18, canvas = document.createElement("canvas"), context = canvas.getContext("2d"), values = currentValues(); canvas.width = canvas.height = gridSize + margin * 2; context.fillStyle = "#fff"; context.fillRect(0, 0, canvas.width, canvas.height); context.translate(margin, margin);
   for (let row = 0; row < 12; row += 1) for (let column = 0; column < 12; column += 1) if (hasCell(row, column)) { context.fillStyle = row >= 3 && column >= 3 && row < 9 && column < 9 ? "#fff1c7" : "#fff"; context.fillRect(column * scale, row * scale, scale, scale); context.strokeStyle = "#9aa6a8"; context.lineWidth = 1; context.strokeRect(column * scale, row * scale, scale, scale); const value = values[row * 12 + column]; if (value) { context.fillStyle = original[row * 12 + column] ? "#111" : "#1c6fa1"; context.font = "28px sans-serif"; context.textAlign = "center"; context.textBaseline = "middle"; context.fillText(value, (column + .5) * scale, (row + .53) * scale); } }
-  context.strokeStyle = "#173a4c"; context.lineWidth = 3; [[0, 0, 9, 9], [3, 3, 9, 9]].forEach(([x, y, width, height]) => context.strokeRect(x * scale, y * scale, width * scale, height * scale)); [3, 6].forEach(n => { context.beginPath(); context.moveTo(n * scale, 0); context.lineTo(n * scale, 9 * scale); context.stroke(); context.beginPath(); context.moveTo(0, n * scale); context.lineTo(9 * scale, n * scale); context.stroke(); }); [6, 9].forEach(n => { context.beginPath(); context.moveTo(n * scale, 3 * scale); context.lineTo(n * scale, 12 * scale); context.stroke(); context.beginPath(); context.moveTo(3 * scale, n * scale); context.lineTo(12 * scale, n * scale); context.stroke(); });
+  context.strokeStyle = "#173a4c"; context.lineWidth = 3;
+  [[0, 0, 9, 0], [0, 3, 12, 3], [0, 6, 12, 6], [0, 9, 12, 9], [3, 12, 12, 12]].forEach(([x1, y1, x2, y2]) => { context.beginPath(); context.moveTo(x1 * scale, y1 * scale); context.lineTo(x2 * scale, y2 * scale); context.stroke(); });
+  [[0, 0, 0, 9], [3, 0, 3, 12], [6, 0, 6, 12], [9, 0, 9, 12], [12, 3, 12, 12]].forEach(([x1, y1, x2, y2]) => { context.beginPath(); context.moveTo(x1 * scale, y1 * scale); context.lineTo(x2 * scale, y2 * scale); context.stroke(); });
   context.fillStyle = "#52656b"; context.font = "12px sans-serif"; context.textAlign = "right"; context.textBaseline = "middle"; context.fillText("gattai-sudoku.vercel.app", gridSize, gridSize + margin * .55);
   const button = document.querySelector("#copyPng"); try { const blob = await new Promise(resolve => canvas.toBlob(resolve, "image/png")); await navigator.clipboard.write([new ClipboardItem({ "image/png": blob })]); button.textContent = "Image copied"; } catch { button.textContent = "Image copy unavailable"; } setTimeout(() => { button.textContent = "Copy as a picture"; }, 2000);
 });

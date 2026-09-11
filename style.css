@@ -21,7 +21,7 @@ header{display:grid;grid-template-columns:1fr auto 1fr;align-items:center;paddin
 main{padding:24px 0}
 .board-card{width:calc(100% - 48px);max-width:1100px;margin:0 auto;padding:18px 24px;background:var(--surface);box-shadow:none;display:grid;grid-template-columns:138px minmax(0,650px) 150px;justify-content:space-between;gap:14px;align-items:start}
 .day-sidebar,.control-sidebar{display:flex;flex-direction:column;gap:8px;padding-top:6px;font-size:12px}
-.day-sidebar>span,.entry-panel>span,.highlight-panel>span{font-weight:500;margin-bottom:3px;display:block}
+.day-sidebar>span,.entry-panel>span,.highlight-panel>span,.color-panel>span{font-weight:500;margin-bottom:3px;display:block}
 .day-button,.grid-button{margin:0;border:1px solid var(--ink);background:var(--muted);color:var(--ink);padding:8px;cursor:pointer;font:inherit;text-align:left}
 .day-button strong,.day-button small{display:block}
 .day-button strong{font-size:13px}
@@ -33,7 +33,9 @@ main{padding:24px 0}
 .unlimited-button:disabled{opacity:.65;cursor:wait}
 .day-button[aria-pressed=true],.grid-button[aria-pressed=true]{background:var(--ink);color:var(--surface)}
 .grid-button{text-align:center}
-.entry-panel,.highlight-panel{display:flex;flex-direction:column;gap:7px}
+.shared-toggle{display:flex;align-items:center;gap:6px;font-size:11px;cursor:pointer}.shared-toggle input{accent-color:var(--ink);margin:0}
+.color-picker{display:grid;grid-template-columns:repeat(3,1fr);gap:5px}.color-button{min-height:28px;border:1px solid var(--ink);background:var(--surface);font:18px/1 sans-serif;cursor:pointer}.color-button:disabled{opacity:.45;cursor:not-allowed}.color-clear{color:var(--ink)}.color-blue{color:#2d73b9}.color-green{color:#2f9e63}.color-yellow{color:#d39d1e}.color-purple{color:#7a55aa}.color-teal{color:#188b92}
+.entry-panel,.highlight-panel,.color-panel{display:flex;flex-direction:column;gap:7px}
 .entry-tabs,.play-actions{display:grid;grid-template-columns:1fr 1fr;gap:6px}
 .entry-button,.play-actions button{border:1px solid var(--ink);background:var(--muted);color:var(--ink);padding:7px 4px;cursor:pointer;font:inherit;font-size:11px}
 .entry-button[aria-pressed=true]{background:var(--ink);color:var(--surface)}
@@ -46,12 +48,14 @@ main{padding:24px 0}
 .board-card.solver-active .entry-panel,.board-card.solver-active .play-actions,.board-card.solver-active .numpad{opacity:.38;pointer-events:none}
 .puzzle-surface{min-width:0}
 .difficulty-label{margin:0 0 8px;font-size:13px;font-weight:500}
-.board{display:grid;grid-template-columns:repeat(12,minmax(0,1fr));grid-template-rows:repeat(12,minmax(0,1fr));aspect-ratio:1;width:min(100%,650px);margin:auto}
+.board{display:grid;grid-template-columns:repeat(12,minmax(0,1fr));grid-template-rows:repeat(12,minmax(0,1fr));aspect-ratio:1;width:min(100%,650px);margin:auto;position:relative}
 .cell{min-width:0;min-height:0;border:0;border-top:1px solid var(--thin);border-left:1px solid var(--thin);background:var(--paper);display:grid;place-items:center;font-size:clamp(12px,2.45vw,25px);color:#1c6fa1;position:relative;transition:none!important;animation:none!important}
 .given{color:#111;font-weight:600}
 body.dark .given{color:#fff}
 .cell.conflict{color:var(--red)!important;font-weight:600}
 .shared{background:var(--shared)}
+.user-color-blue{background:#cfe7ff!important}.user-color-green{background:#ccefdc!important}.user-color-yellow{background:#fff0b3!important}.user-color-purple{background:#e7d8f8!important}.user-color-teal{background:#c8eef0!important}
+body.dark .user-color-blue{background:#244f76!important}body.dark .user-color-green{background:#285942!important}body.dark .user-color-yellow{background:#5d4a1c!important}body.dark .user-color-purple{background:#4d396d!important}body.dark .user-color-teal{background:#1e575d!important}
 .grid-a{background:#dbeef4}
 .grid-b{background:#dff0dd}
 .affected-house{background:#e7f3fa}
@@ -59,16 +63,16 @@ body.dark .given{color:#fff}
 .editable{cursor:default;outline:none}
 .editable:focus{outline:none;animation:none!important}
 .selected{box-shadow:inset 0 0 0 3px var(--select);z-index:2}
-.edge-top{border-top:3px solid var(--line)}
-.edge-left{border-left:3px solid var(--line)}
-.edge-right{border-right:3px solid var(--line)}
-.edge-bottom{border-bottom:3px solid var(--line)}
-.box-top{border-top:3.15px solid var(--line)}
-.box-left{border-left:3.15px solid var(--line)}
+.board-boundary{position:absolute;display:block;background:var(--line);pointer-events:none;z-index:4}
+.board-boundary.horizontal{height:3.15px;transform:translateY(-50%)}
+.board-boundary.vertical{width:3.15px;transform:translateX(-50%)}
+.h-0{left:0;top:0;width:75%}.h-3{left:0;top:25%;width:100%}.h-6{left:0;top:50%;width:100%}.h-9{left:0;top:75%;width:100%}.h-12{left:25%;top:100%;width:75%}
+.v-0{top:0;left:0;height:75%}.v-3{top:0;left:25%;height:100%}.v-6{top:0;left:50%;height:100%}.v-9{top:0;left:75%;height:100%}.v-12{top:25%;left:100%;height:75%}
 .snyder{width:100%;height:100%;padding:5px;display:grid;grid-template-columns:repeat(3,1fr);grid-template-rows:repeat(3,1fr);grid-template-areas:'a b c' 'd e f' 'g h i';place-items:center;font-size:clamp(10px,1.45vw,14px);line-height:1;color:#1c6fa1}
 .snyder i{font-style:normal}
 .snyder i.eliminated{color:var(--red);font-weight:600}
 .snyder i.emphasized{color:var(--select);font-weight:700}
+.snyder i.candidate-conflict{color:var(--red);font-weight:700}
 .candidate-1{grid-area:a}
 .candidate-2{grid-area:b}
 .candidate-3{grid-area:c}
@@ -111,9 +115,9 @@ a{color:inherit}
 .control-sidebar{order:3;flex-wrap:wrap}
 .puzzle-surface{order:2}
 .day-sidebar{order:1}
-.day-sidebar>span,.entry-panel>span,.highlight-panel>span{margin:0;align-self:center}
+.day-sidebar>span,.entry-panel>span,.highlight-panel>span,.color-panel>span{margin:0;align-self:center}
 .day-button{flex:1}
-.entry-panel,.highlight-panel{flex:1;min-width:145px}.numpad{width:150px}.play-actions{width:145px;align-self:end}
+.entry-panel,.highlight-panel,.color-panel{flex:1;min-width:145px}.numpad{width:150px}.play-actions{width:145px;align-self:end}
 .board{width:min(96%,684px)}
 .guide{margin:14px 2% 0}
 .board-footer{padding:0 2%}
@@ -125,8 +129,7 @@ a{color:inherit}
 .board-footer button{font-size:12px;padding:8px}
 .board-footer #givenCount{font-size:11px}
 .snyder{font-size:9px;padding:2px}
-.edge-top,.edge-right,.edge-bottom,.edge-left{border-width:2px}
-.box-top,.box-left{border-width:2.1px}
+.board-boundary.horizontal{height:2.1px}.board-boundary.vertical{width:2.1px}
 .step-controls{gap:4px}
 .step-controls span{min-width:100px;font-size:11px}
 .control-sidebar{justify-content:center}
