@@ -31,7 +31,7 @@ main{padding:24px 0}
 .entry-panel>span,.highlight-panel>span,.color-panel>span{font-weight:500;margin-bottom:3px;display:block}
 .grid-button,.archive-button{margin:0;border:1px solid var(--ink);background:var(--muted);color:var(--ink);padding:8px;cursor:pointer;font:inherit;text-align:left}
 .archive-button{font-weight:600;text-align:center}
-.unlimited-button{display:none}
+.unlimited-button{display:block}
 .unlimited-button{margin-top:18px;border:1px solid var(--ink);background:transparent;color:var(--ink);padding:9px 8px;cursor:pointer;font:inherit;text-align:left}
 .unlimited-button strong,.unlimited-button small{display:block}
 .unlimited-button strong{font-size:13px}.unlimited-button small{font-size:11px}
