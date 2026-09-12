@@ -688,3 +688,60 @@ async function generateUnlimitedPuzzle() {
 
 // Keep controls that are logically hidden out of sidebar layouts.
 document.head.insertAdjacentHTML("beforeend", "<style>[hidden]{display:none!important}</style>");
+
+
+// Complete-grid viewer and logical-first unlimited digging
+(() => {
+  function completeGattai(givens) {
+    const values = [...givens];
+    const search = () => {
+      let selected = -1, options = null;
+      for (const index of active) if (!values[index]) {
+        const available = candidates(values, index);
+        if (!available.length) return null;
+        if (!options || available.length < options.length) { selected = index; options = available; }
+      }
+      if (selected < 0) return [...values];
+      for (const digit of options) { values[selected] = digit; const result = search(); if (result) return result; values[selected] = 0; }
+      return null;
+    };
+    return search();
+  }
+  function namedSolve(givens) {
+    const saved = [...original], savedDay = activeDay;
+    original.splice(0, original.length, ...givens); activeDay = "logic-check";
+    let logic = [];
+    try { logic = deriveSteps(); } finally { activeDay = savedDay; original.splice(0, original.length, ...saved); }
+    const values = [...givens]; logic.forEach(step => { if (step.index !== null) values[step.index] = step.digit; });
+    return active.every(index => values[index]);
+  }
+  const reveal = document.createElement("button");
+  reveal.type = "button"; reveal.className = "reveal-complete-grid"; reveal.textContent = "Reveal complete grid";
+  (document.querySelector(".other-panel") || document.querySelector(".control-sidebar")).append(reveal);
+  const dialog = document.createElement("dialog");
+  dialog.className = "complete-grid-dialog";
+  dialog.innerHTML = '<div class="complete-title"><h2>Complete grid</h2><button type="button" class="dialog-close" aria-label="Close">×</button></div><p>Given cells are black. Filled cells are blue.</p><div class="complete-scroll"><div id="completeGrid" class="board complete-board"></div></div><button type="button" id="copyComplete">Copy complete grid</button>';
+  document.body.append(dialog);
+  const completeGrid = dialog.querySelector("#completeGrid"); let finalValues = null;
+  const boundary = target => [["horizontal","h-0"],["horizontal","h-3"],["horizontal","h-6"],["horizontal","h-9"],["horizontal","h-12"],["vertical","v-0"],["vertical","v-3"],["vertical","v-6"],["vertical","v-9"],["vertical","v-12"]].forEach(item => { const line=document.createElement("span"); line.className="board-boundary "+item[0]+" "+item[1]; target.append(line); });
+  const drawComplete = values => {
+    completeGrid.replaceChildren(); const rect = board.getBoundingClientRect(); completeGrid.style.width = rect.width + "px"; completeGrid.style.height = rect.height + "px";
+    for (let row=0;row<12;row+=1) for (let column=0;column<12;column+=1) if (hasCell(row,column)) { const index=row*12+column, cell=document.createElement("div"); cell.className="cell "+(original[index]?"given":"filled-complete"); cell.style.gridColumnStart=column+1; cell.style.gridRowStart=row+1; cell.textContent=values[index]; completeGrid.append(cell); }
+    boundary(completeGrid);
+  };
+  reveal.addEventListener("click", () => { if (isUnlimited() && !unlimitedSolution) { window.alert("Generate an unlimited puzzle first."); return; } finalValues = isUnlimited() ? [...unlimitedSolution] : completeGattai(original); if (!finalValues) { window.alert("No completed grid is available."); return; } drawComplete(finalValues); dialog.showModal(); });
+  dialog.querySelector(".dialog-close").addEventListener("click",()=>dialog.close()); dialog.addEventListener("click",event=>{if(event.target===dialog)dialog.close();});
+  dialog.querySelector("#copyComplete").addEventListener("click",async()=>{
+    if(!finalValues)return; const scale=60, size=scale*12, margin=size/18, canvas=document.createElement("canvas"), context=canvas.getContext("2d"); canvas.width=canvas.height=size+margin*2; context.fillStyle="#fff";context.fillRect(0,0,canvas.width,canvas.height);context.translate(margin,margin);
+    for(let row=0;row<12;row+=1)for(let column=0;column<12;column+=1)if(hasCell(row,column)){const index=row*12+column;context.fillStyle=row>=3&&column>=3&&row<9&&column<9?"#fff1c7":"#fff";context.fillRect(column*scale,row*scale,scale,scale);context.strokeStyle="#9aa6a8";context.lineWidth=1;context.strokeRect(column*scale,row*scale,scale,scale);context.fillStyle=original[index]?"#111":"#1c6fa1";context.font="700 28px Nunito, sans-serif";context.textAlign="center";context.textBaseline="middle";context.fillText(finalValues[index],(column+.5)*scale,(row+.53)*scale);}
+    context.strokeStyle="#173a4c";context.lineWidth=3;[[0,0,9,0],[0,3,12,3],[0,6,12,6],[0,9,12,9],[3,12,12,12],[0,0,0,9],[3,0,3,12],[6,0,6,12],[9,0,9,12],[12,3,12,12]].forEach(line=>{context.beginPath();context.moveTo(line[0]*scale,line[1]*scale);context.lineTo(line[2]*scale,line[3]*scale);context.stroke();});
+    const button=dialog.querySelector("#copyComplete");try{const blob=await new Promise(resolve=>canvas.toBlob(resolve,"image/png"));await navigator.clipboard.write([new ClipboardItem({"image/png":blob})]);button.textContent="Complete grid copied";}catch{button.textContent="Grid copy unavailable";}setTimeout(()=>button.textContent="Copy complete grid",1800);
+  });
+  const priorUnlimited = document.querySelector("#unlimitedMode"), logicalUnlimited = priorUnlimited.cloneNode(true); priorUnlimited.replaceWith(logicalUnlimited);
+  logicalUnlimited.addEventListener("click",async()=>{
+    const title=logicalUnlimited.querySelector("strong"), detail=logicalUnlimited.querySelector("small"), started=performance.now(); let timer=null, fallbacks=0;
+    document.querySelector("#archiveDialog")?.close();logicalUnlimited.disabled=true;document.querySelector(".evaluation-button").disabled=true;title.textContent="Generating…";detail.textContent="Trying named techniques first";generationClock.textContent="Generation time: 0.00 seconds";diggingMeter.max=active.length;diggingMeter.value=active.length;diggingStatus.textContent="Building a compatible Gattai grid…";diggingDialog.showModal();timer=setInterval(()=>generationClock.textContent="Generation time: "+((performance.now()-started)/1000).toFixed(2)+" seconds",100);await nextPaint();
+    try { const full=makeFullGattai(), puzzle=[...full];let changed=true,tested=0;while(changed){changed=false;for(const cell of shuffle(active.filter(index=>puzzle[index]))){const clue=puzzle[cell];puzzle[cell]=0;let keep=namedSolve(puzzle);if(!keep){fallbacks+=1;diggingStatus.textContent="Techniques stalled — checking uniqueness…";keep=countGattaiSolutions(puzzle,2)===1;}if(keep)changed=true;else puzzle[cell]=clue;tested+=1;if(tested%2===0){showDiggingProgress(active.filter(index=>puzzle[index]).length);await nextPaint();}}}unlimitedGenerationMilliseconds=performance.now()-started;puzzles.unlimited={date:"unlimited",rows:rowsFromBoard(puzzle)};unlimitedSolution=full;userInputs.unlimited.fill(0);userNotes.unlimited.forEach(note=>note.clear());userColors.unlimited.fill("");histories.unlimited.length=0;redoHistories.unlimited.length=0;mode="human";loadPuzzle("unlimited");detail.textContent=fallbacks?"Generated with logical solving and fallback checks":"Generated with named techniques";diggingDialog.close();}catch(error){diggingStatus.textContent="Generation could not complete. Please close this message and try again.";detail.textContent="Try again";diggingDialog.addEventListener("click",()=>diggingDialog.close(),{once:true});}finally{clearInterval(timer);logicalUnlimited.disabled=false;title.textContent="unlimited";}
+  });
+  const style=document.createElement("style");style.textContent=".complete-grid-dialog{width:max-content;max-width:calc(100vw - 32px);max-height:calc(100vh - 32px);padding:22px;border:1px solid var(--line);border-radius:16px;background:var(--surface);color:var(--ink)}.complete-grid-dialog::backdrop{background:rgba(19,58,76,.35)}.complete-title{display:flex;align-items:center;justify-content:space-between;gap:32px}.complete-title h2{margin:0}.complete-scroll{overflow:auto;max-width:calc(100vw - 76px);padding:3px}.complete-board{margin:0 auto}.complete-board .filled-complete{color:#1c6fa1}.complete-board .given{color:#111}.complete-grid-dialog>#copyComplete,.reveal-complete-grid{width:100%;min-height:34px;margin-top:14px;border:1px solid var(--line);border-radius:8px;background:var(--muted);color:var(--ink);font:inherit;font-weight:700;cursor:pointer}";document.head.append(style);
+})();
