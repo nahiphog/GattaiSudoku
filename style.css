@@ -6,17 +6,18 @@ body.dark{--ink:#e6f0ed;--paper:#172126;--surface:#172126;--line:#d4e5df;--thin:
 header{display:grid;grid-template-columns:1fr auto 1fr;align-items:center;padding:16px clamp(20px,7vw,100px);border-bottom:2px solid var(--ink)}
 .header-start{display:flex;align-items:center;gap:9px}
 .timer{min-width:55px;font-size:14px;font-weight:500;letter-spacing:.04em;text-align:center}
-.timer-reset{border:0;background:transparent;color:var(--ink);font:20px/1 'DM Mono',monospace;cursor:pointer;padding:2px}
+.timer-reset{border:1px solid var(--ink);border-radius:50%;background:transparent;color:var(--ink);font:20px/1 'DM Mono',monospace;cursor:pointer;padding:0;width:34px;height:34px;display:grid;place-items:center}
 .brand{display:flex;align-items:center;justify-content:center;gap:.48em;font-size:22px;font-weight:500;letter-spacing:.04em;text-align:center}
 .gattai-logo{width:31px;height:31px;flex:0 0 31px;color:var(--line);overflow:visible}
 .logo-overlap{fill:var(--shared)}
 .logo-lines{fill:none;stroke:currentColor;stroke-width:3;stroke-linecap:round;stroke-linejoin:round}
 .brand span:last-child{color:var(--red)}
-.icon-button{width:32px;height:32px;border:1px solid var(--ink);border-radius:0;background:transparent;color:var(--ink);display:grid;place-items:center;padding:0;cursor:pointer;font:600 18px/1 'DM Mono',monospace}
+.icon-button{width:34px;height:34px;border:1px solid var(--ink);border-radius:50%;background:transparent;color:var(--ink);display:grid;place-items:center;padding:0;cursor:pointer;font:600 18px/1 'DM Mono',monospace}
 .info-button{justify-self:start;font:600 21px/1 Georgia,serif;font-style:italic}
 .header-end{justify-self:end;display:flex;align-items:center;gap:9px}
 .theme-button{justify-self:end}
-.about-button{border:1px solid var(--ink);background:transparent;color:var(--ink);padding:6px 9px;cursor:pointer;font:500 12px/1 'DM Mono',monospace}
+.about-button{width:34px;height:34px;border:1px solid var(--ink);border-radius:50%;background:transparent;color:var(--ink);padding:0;display:grid;place-items:center;cursor:pointer;font:600 13px/1 'DM Mono',monospace}
+.archive-header svg{width:18px;height:18px;fill:none;stroke:currentColor;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round}
 .theme-icon{width:19px;height:19px;display:block;position:relative}
 .theme-button:not(.is-dark) .theme-icon{color:#e5a528;font:25px/19px Georgia,serif;transform:translateY(-1px)}
 .theme-button.is-dark .theme-icon{width:16px;height:16px;background:currentColor;border-radius:50%;font-size:0}
@@ -31,6 +32,7 @@ main{padding:24px 0}
 .entry-panel>span,.highlight-panel>span,.color-panel>span{font-weight:500;margin-bottom:3px;display:block}
 .grid-button,.archive-button{margin:0;border:1px solid var(--ink);background:var(--muted);color:var(--ink);padding:8px;cursor:pointer;font:inherit;text-align:left}
 .archive-button{font-weight:600;text-align:center}
+.control-sidebar .archive-button{display:none}
 .unlimited-button{display:block}
 .unlimited-button{margin-top:18px;border:1px solid var(--ink);background:transparent;color:var(--ink);padding:9px 8px;cursor:pointer;font:inherit;text-align:left}
 .unlimited-button strong,.unlimited-button small{display:block}
