@@ -443,3 +443,26 @@ async function generateUnlimitedPuzzle() {
   const sync = () => document.querySelectorAll(".entry-button").forEach(button => { button.setAttribute("role", "radio"); button.setAttribute("aria-checked", String(button.getAttribute("aria-pressed") === "true")); }); sync(); document.querySelectorAll(".entry-button").forEach(button => button.addEventListener("click", sync));
   const css = `.help-page[hidden]{display:none}.help-pagination{display:flex;align-items:center;justify-content:center;gap:12px;margin-top:20px;padding-top:12px;border-top:1px solid var(--thin)}.help-pagination button{width:32px;height:32px;border:1px solid var(--line);border-radius:50%;background:var(--muted);color:var(--ink);font:600 21px/1 Nunito,sans-serif;cursor:pointer}.help-pagination button:disabled{opacity:.35}.other-panel{display:flex;flex-direction:column;gap:7px;margin-top:4px;padding-top:8px;border-top:1px solid var(--thin)}.other-panel>span{font-weight:700;color:var(--ink)}.control-sidebar .other-panel button{width:100%;margin:0!important;text-align:center;color:var(--ink)!important;background:var(--muted)!important}.control-sidebar .sidebar-solution,.control-sidebar #copyPng,.control-sidebar .entry-button,.control-sidebar .grid-button,.control-sidebar #resetGrid,.control-sidebar .history-icon{color:var(--ink)!important}.entry-tabs{display:grid;grid-template-columns:1fr 1fr;gap:0;border:1px solid var(--line);border-radius:8px;overflow:hidden;background:var(--muted)}.entry-tabs .entry-button{min-height:36px;margin:0;border:0!important;border-radius:0!important;background:transparent!important;text-align:center}.entry-tabs .entry-button+.entry-button{border-left:1px solid var(--line)!important}.entry-tabs .entry-button[aria-pressed=true]{background:var(--ink)!important;color:var(--surface)!important;box-shadow:inset 0 -3px 0 var(--gold)}.entry-tabs .entry-button[aria-pressed=false]{color:var(--ink)!important}`; const style = document.createElement("style"); style.textContent = css; document.head.append(style);
 })();
+
+
+// Sidebar control labels, order, and confirmations
+(() => {
+  const controls = document.querySelector(".control-sidebar");
+  const digit = document.querySelector(".entry-button[data-entry=digit]");
+  const snyder = document.querySelector(".entry-button[data-entry=snyder]");
+  digit.innerHTML = "<span>Digit</span><b class='digit-symbol'>9</b>";
+  snyder.innerHTML = "<span>Snyder</span><b class='snyder-symbol'><i>1</i><i>2</i><i>3</i><i>4</i><i>5</i><i>6</i><i>7</i><i>8</i><i>9</i></b>";
+  const undo = document.querySelector("#undoMove"), redo = document.querySelector("#redoMove");
+  undo.innerHTML = "<span>Undo</span>" + historyIcons.undoMove; redo.innerHTML = "<span>Redo</span>" + historyIcons.redoMove;
+  const others = controls.querySelector(".other-panel") || document.createElement("section");
+  others.className = "other-panel"; if (!others.parentNode) { others.innerHTML = "<span>Others</span>"; controls.append(others); }
+  const resetGridButton = document.querySelector("#resetGrid");
+  const oldTimerButton = document.querySelector("#resetTimer");
+  const resetTimerButton = oldTimerButton.cloneNode(false);
+  resetTimerButton.id = "resetTimer"; resetTimerButton.type = "button"; resetTimerButton.className = "sidebar-reset"; resetTimerButton.textContent = "Reset timer"; resetTimerButton.setAttribute("aria-label", "Reset timer");
+  oldTimerButton.replaceWith(resetTimerButton);
+  resetTimerButton.addEventListener("click", () => { if (window.confirm("Reset the timer to 00:00?")) resetTimer(); });
+  others.append(resetGridButton, resetTimerButton, solutionToggle, copyPng);
+  const errorLabel = document.querySelector("#autoErrorToggle")?.closest("label")?.querySelector("span"); if (errorLabel) errorLabel.textContent = "Mark obvious incorrect entries as red";
+  const css = `.entry-tabs .entry-button{display:flex;align-items:center;justify-content:space-between;gap:6px;padding:6px 8px!important}.digit-symbol{font:700 19px/1 Nunito,sans-serif}.snyder-symbol{width:20px;height:20px;display:grid;grid-template-columns:repeat(3,1fr);grid-template-rows:repeat(3,1fr);place-items:center;font:700 7px/1 Arial,sans-serif}.snyder-symbol i{font-style:normal}.history-icon{display:flex!important;align-items:center;justify-content:center;gap:7px}.history-icon span{font:inherit}.history-icon svg{width:17px;height:17px}.other-panel #resetGrid,.other-panel .sidebar-reset{width:100%;min-height:34px;border:1px solid var(--line);background:var(--muted);color:var(--ink);font:inherit;cursor:pointer}.other-panel #resetGrid:disabled,.other-panel .sidebar-reset:disabled{opacity:.45;cursor:not-allowed}`; const style = document.createElement("style"); style.textContent = css; document.head.append(style);
+})();
