@@ -387,3 +387,40 @@ function addSidebarToggle(sidebar, label) {
 addSidebarToggle(document.querySelector(".control-sidebar"), "puzzle controls sidebar");
 document.querySelector(".generator-rule").textContent = "Both published weeks are independently rechecked for exactly one solution. The previous week uses paired rotational digging; every listed walkthrough resolves the entire Gattai using named Singles techniques only.";
 const puzzleNav=["previous:monday","previous:tuesday","previous:wednesday","previous:thursday","previous:friday","previous:saturday","previous:sunday","current:monday","current:tuesday","current:wednesday","current:thursday","current:friday","current:saturday","current:sunday"];const movePuzzle=offset=>{const target=puzzleNav[puzzleNav.indexOf(`${activeWeek}:${activeDay}`)+offset];if(!target)return;[activeWeek,activeDay]=target.split(":");mode="human";loadPuzzle(activeDay);};document.querySelector("#previousPuzzle").addEventListener("click",()=>movePuzzle(-1));document.querySelector("#nextPuzzle").addEventListener("click",()=>movePuzzle(1));loadPuzzle(activeDay);
+const diggingDialog = document.createElement("dialog");
+diggingDialog.className = "dig-progress";
+diggingDialog.innerHTML = '<h2>Generating Unlimited puzzle</h2><p id="diggingStatus" aria-live="polite">Preparing the Gattai grid…</p><progress id="diggingMeter" value="0" max="126"></progress><p class="digging-note">This window stays open until the puzzle is ready.</p>';
+document.body.append(diggingDialog);
+const diggingStatus = diggingDialog.querySelector("#diggingStatus"), diggingMeter = diggingDialog.querySelector("#diggingMeter");
+const nextPaint = () => new Promise(resolve => requestAnimationFrame(() => requestAnimationFrame(resolve)));
+function showDiggingProgress(remaining) { diggingMeter.value = remaining; diggingStatus.textContent = `Digging the puzzle now. ${remaining} cells remaining.`; }
+async function generateUnlimitedPuzzle() {
+  const button = document.querySelector("#unlimitedMode"), title = button.querySelector("strong"), detail = button.querySelector("small"), started = performance.now();
+  document.querySelector("#archiveDialog")?.close();
+  button.disabled = true; title.textContent = "Generating…"; detail.textContent = "Digging for uniqueness";
+  diggingMeter.max = active.length; diggingMeter.value = active.length; diggingStatus.textContent = "Building a compatible Gattai grid…"; diggingDialog.showModal();
+  await nextPaint();
+  try {
+    const full = makeFullGattai(), puzzle = [...full]; let changed = true, tested = 0;
+    showDiggingProgress(active.length);
+    while (changed) {
+      changed = false;
+      for (const cell of shuffle(active.filter(index => puzzle[index]))) {
+        const value = puzzle[cell]; puzzle[cell] = 0;
+        if (countGattaiSolutions(puzzle, 2) === 1) changed = true; else puzzle[cell] = value;
+        tested += 1;
+        if (tested % 4 === 0) { showDiggingProgress(active.filter(index => puzzle[index]).length); await nextPaint(); }
+      }
+    }
+    showDiggingProgress(active.filter(index => puzzle[index]).length);
+    puzzles.unlimited = { date: "Unlimited", rows: rowsFromBoard(puzzle) };
+    unlimitedSolution = full; unlimitedGenerationMilliseconds = performance.now() - started;
+    userInputs.unlimited.fill(0); userNotes.unlimited.forEach(note => note.clear()); userColors.unlimited.fill(""); histories.unlimited.length = 0; redoHistories.unlimited.length = 0;
+    mode = "human"; loadPuzzle("unlimited"); detail.textContent = "Generate another";
+    diggingDialog.close();
+  } catch (error) {
+    diggingStatus.textContent = "Generation could not complete. Please close this message and try again.";
+    title.textContent = "Unlimited"; detail.textContent = "Try again";
+    diggingDialog.addEventListener("click", () => diggingDialog.close(), { once: true });
+  } finally { button.disabled = false; if (!diggingDialog.open) title.textContent = "Unlimited"; }
+}
