@@ -466,3 +466,32 @@ async function generateUnlimitedPuzzle() {
   const errorLabel = document.querySelector("#autoErrorToggle")?.closest("label")?.querySelector("span"); if (errorLabel) errorLabel.textContent = "Mark obvious incorrect entries as red";
   const css = `.entry-tabs .entry-button{display:flex;align-items:center;justify-content:space-between;gap:6px;padding:6px 8px!important}.digit-symbol{font:700 19px/1 Nunito,sans-serif}.snyder-symbol{width:20px;height:20px;display:grid;grid-template-columns:repeat(3,1fr);grid-template-rows:repeat(3,1fr);place-items:center;font:700 7px/1 Arial,sans-serif}.snyder-symbol i{font-style:normal}.history-icon{display:flex!important;align-items:center;justify-content:center;gap:7px}.history-icon span{font:inherit}.history-icon svg{width:17px;height:17px}.other-panel #resetGrid,.other-panel .sidebar-reset{width:100%;min-height:34px;border:1px solid var(--line);background:var(--muted);color:var(--ink);font:inherit;cursor:pointer}.other-panel #resetGrid:disabled,.other-panel .sidebar-reset:disabled{opacity:.45;cursor:not-allowed}`; const style = document.createElement("style"); style.textContent = css; document.head.append(style);
 })();
+
+
+// Unlimited mode: uniqueness-only generation and timing
+(() => {
+  const deriveUnlimitedSafe = deriveSteps;
+  deriveSteps = function (...args) { return activeDay === 'unlimited' ? [] : deriveUnlimitedSafe(...args); };
+  const refreshUnlimitedSafe = refresh;
+  const generationTime = document.createElement('p');
+  generationTime.id = 'unlimitedGenerationTime';
+  generationTime.className = 'unlimited-generation-time';
+  givenCount.after(generationTime);
+  const normaliseUnlimitedName = () => {
+    const title = document.querySelector('#unlimitedMode strong');
+    if (title && title.textContent === 'Unlimited') title.textContent = 'unlimited';
+  };
+  const unlimitedButton = document.querySelector('#unlimitedMode');
+  new MutationObserver(normaliseUnlimitedName).observe(unlimitedButton, { childList: true, subtree: true, characterData: true });
+  refresh = function () {
+    refreshUnlimitedSafe();
+    const unlimited = isUnlimited();
+    generationTime.hidden = !unlimited;
+    if (!unlimited) return;
+    document.querySelector('#puzzleDate').textContent = 'unlimited';
+    document.querySelector('#difficultyLabel').classList.add('is-hidden');
+    generationTime.textContent = 'Generation time: ' + (unlimitedGenerationMilliseconds / 1000).toFixed(2) + ' seconds';
+    normaliseUnlimitedName();
+  };
+  normaliseUnlimitedName();
+})();
