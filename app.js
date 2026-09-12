@@ -335,4 +335,20 @@ const howToPlayDialog = document.querySelector("#howToPlayDialog"); document.que
 const aboutDialog = document.querySelector("#aboutDialog"); document.querySelector("#about").addEventListener("click", () => aboutDialog.showModal()); document.querySelector("#closeAbout").addEventListener("click", () => aboutDialog.close()); aboutDialog.addEventListener("click", event => { if (event.target === aboutDialog) aboutDialog.close(); });
 const techniqueDialog = document.querySelector("#techniqueDialog"); document.querySelector("#techniqueTally").addEventListener("click", () => techniqueDialog.showModal()); document.querySelector("#closeTechniqueDialog").addEventListener("click", () => techniqueDialog.close()); techniqueDialog.addEventListener("click", event => { if (event.target === techniqueDialog) techniqueDialog.close(); });
 document.querySelector("#themeToggle").addEventListener("click", () => { const button = document.querySelector("#themeToggle"), dark = document.body.classList.toggle("dark"); button.classList.toggle("is-dark", dark); button.setAttribute("aria-label", dark ? "Use light mode" : "Use dark mode"); });
+function addSidebarToggle(sidebar, label) {
+  const button = document.createElement("button");
+  button.type = "button";
+  button.className = "sidebar-toggle";
+  button.setAttribute("aria-label", `Collapse ${label}`);
+  button.setAttribute("aria-expanded", "true");
+  button.textContent = "☰";
+  button.addEventListener("click", () => {
+    const collapsed = sidebar.classList.toggle("sidebar-collapsed");
+    button.setAttribute("aria-expanded", String(!collapsed));
+    button.setAttribute("aria-label", `${collapsed ? "Expand" : "Collapse"} ${label}`);
+  });
+  sidebar.prepend(button);
+}
+addSidebarToggle(document.querySelector(".day-sidebar"), "daily puzzle sidebar");
+addSidebarToggle(document.querySelector(".control-sidebar"), "puzzle controls sidebar");
 refresh();
