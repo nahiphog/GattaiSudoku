@@ -685,3 +685,6 @@ async function generateUnlimitedPuzzle() {
   };
   refresh();
 })();
+
+// Keep controls that are logically hidden out of sidebar layouts.
+document.head.insertAdjacentHTML("beforeend", "<style>[hidden]{display:none!important}</style>");
