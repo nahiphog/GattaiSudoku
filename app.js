@@ -209,7 +209,7 @@ function makeUserCandidates(index) { const notation = document.createElement("sp
 function stateSnapshot() { return { values: [...human], notes: playNotes.map(note => [...note]), colors: [...playColors] }; }
 function restoreState(state) { human.splice(0, human.length, ...state.values); state.notes.forEach((note, index) => { playNotes[index].clear(); note.forEach(digit => playNotes[index].add(digit)); }); playColors.splice(0, playColors.length, ...state.colors); }
 function snapshot() { const key = stateKey(); histories[key].push(stateSnapshot()); redoHistories[key].length = 0; }
-function updateEntryControls() { const key = stateKey(); document.querySelectorAll(".entry-button").forEach(button => { button.setAttribute("aria-pressed", String(button.dataset.entry === entryMode)); button.disabled = mode !== "human"; }); document.querySelectorAll(".numpad button, .color-button").forEach(button => button.disabled = mode !== "human" || selectedCell === null); document.querySelector("#undoMove").disabled = mode !== "human" || !histories[key].length; document.querySelector("#redoMove").disabled = mode !== "human" || !redoHistories[key].length; document.querySelector("#resetGrid").disabled = mode !== "human"; }
+function updateEntryControls() { const key = stateKey(), editableSelected = selectedCell !== null && !original[selectedCell]; document.querySelectorAll(".entry-button").forEach(button => { button.setAttribute("aria-pressed", String(button.dataset.entry === entryMode)); button.disabled = mode !== "human"; }); document.querySelectorAll(".numpad button, .color-button").forEach(button => button.disabled = mode !== "human" || !editableSelected); document.querySelector("#undoMove").disabled = mode !== "human" || !histories[key].length; document.querySelector("#redoMove").disabled = mode !== "human" || !redoHistories[key].length; document.querySelector("#resetGrid").disabled = mode !== "human"; }
 function applyEntry(digit, index = selectedCell) {
   if (mode !== "human" || index === null || original[index]) return;
   snapshot();
@@ -221,7 +221,7 @@ function eraseSelected() {
   if (mode !== "human" || selectedCell === null || original[selectedCell]) return;
   snapshot(); human[selectedCell] = 0; playNotes[selectedCell].clear(); refresh();
 }
-function applyCellColor(color) { if (mode !== "human" || selectedCell === null) return; snapshot(); playColors[selectedCell] = color; refresh(); }
+function applyCellColor(color) { if (mode !== "human" || selectedCell === null || original[selectedCell]) return; snapshot(); playColors[selectedCell] = color; refresh(); }
 function undoMove() {
   const key = stateKey(), previous = histories[key].pop(); if (!previous) return;
   redoHistories[key].push(stateSnapshot()); restoreState(previous); refresh();
@@ -229,11 +229,17 @@ function undoMove() {
 function redoMove() { const key = stateKey(), next = redoHistories[key].pop(); if (!next) return; histories[key].push(stateSnapshot()); restoreState(next); refresh(); }
 function makeSelectable(cell, index) { cell.addEventListener("click", event => { event.preventDefault(); selectedCell = selectedCell === index ? null : index; board.querySelectorAll(".cell").forEach(item => item.classList.toggle("selected", Number(item.dataset.index) === selectedCell)); if (selectedCell !== null) cell.focus({ preventScroll: true }); updateEntryControls(); }); }
 function makeEditable(cell, index) {
-  cell.classList.add("editable"); cell.tabIndex = 0; cell.setAttribute("aria-label", `${nameFor(index)}, enter or delete a digit`); makeSelectable(cell, index);
+  cell.classList.add("editable"); cell.tabIndex = 0; cell.contentEditable = "true"; cell.setAttribute("inputmode", "numeric"); cell.setAttribute("aria-label", `${nameFor(index)}, enter or delete a digit`); makeSelectable(cell, index);
   cell.addEventListener("keydown", event => {
     if (event.key === "Backspace" || event.key === "Delete" || event.key === "0") { event.preventDefault(); applyEntry(0, index); return; }
     if (/^[1-9]$/.test(event.key)) { event.preventDefault(); applyEntry(Number(event.key), index); }
   });
+  cell.addEventListener("beforeinput", event => {
+    if (event.inputType.startsWith("delete")) { event.preventDefault(); applyEntry(0, index); return; }
+    const digit = event.data?.match(/[1-9]/)?.[0];
+    if (digit) { event.preventDefault(); applyEntry(Number(digit), index); }
+  });
+  cell.addEventListener("input", () => { const digit = cell.textContent.match(/[1-9]/)?.[0]; if (digit) applyEntry(Number(digit), index); else applyEntry(0, index); });
   cell.addEventListener("paste", event => { event.preventDefault(); const digit = event.clipboardData.getData("text").match(/[1-9]/)?.[0]; if (digit) applyEntry(Number(digit), index); });
 }
 function renderStep() {
@@ -339,7 +345,9 @@ const howToPlayDialog = document.querySelector("#howToPlayDialog"); document.que
 const archiveDialog = document.querySelector("#archiveDialog"); document.querySelector("#archive").addEventListener("click", () => { renderArchiveCalendar(); archiveDialog.showModal(); }); document.querySelector("#closeArchive").addEventListener("click", () => archiveDialog.close()); archiveDialog.addEventListener("click", event => { if (event.target === archiveDialog) archiveDialog.close(); });
 const settingsDialog = document.querySelector("#settingsDialog"); if (settingsDialog) { document.querySelector("#settings").addEventListener("click", () => settingsDialog.showModal()); document.querySelector("#closeSettings").addEventListener("click", () => settingsDialog.close()); settingsDialog.addEventListener("click", event => { if (event.target === settingsDialog) settingsDialog.close(); }); }
 const techniqueDialog = document.querySelector("#techniqueDialog"); document.querySelector("#techniqueTally").addEventListener("click", () => techniqueDialog.showModal()); document.querySelector("#closeTechniqueDialog").addEventListener("click", () => techniqueDialog.close()); techniqueDialog.addEventListener("click", event => { if (event.target === techniqueDialog) techniqueDialog.close(); });
-document.querySelector("#themeToggle").addEventListener("click", () => { const button = document.querySelector("#themeToggle"), dark = document.body.classList.toggle("dark"); button.classList.toggle("is-dark", dark); button.setAttribute("aria-label", dark ? "Use light mode" : "Use dark mode"); });
+function setTheme(dark) { document.body.classList.toggle("dark", dark); document.querySelector("#darkTheme")?.setAttribute("aria-pressed", String(dark)); document.querySelector("#lightTheme")?.setAttribute("aria-pressed", String(!dark)); }
+document.querySelector("#darkTheme")?.addEventListener("click", () => setTheme(true));
+document.querySelector("#lightTheme")?.addEventListener("click", () => setTheme(false));
 document.querySelector("#timerVisibility")?.addEventListener("change", event => document.querySelector(".timer-controls")?.classList.toggle("timer-hidden", !event.target.checked));
 document.querySelector("#autoErrorToggle")?.addEventListener("change", event => { autoMarkConflicts = event.target.checked; refresh(); });
 document.querySelector("#settingsSharedToggle")?.addEventListener("change", event => setSharedHighlight(event.target.checked));
