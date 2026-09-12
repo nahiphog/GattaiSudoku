@@ -7,8 +7,17 @@ const dailyPuzzles = {
   saturday: { date: "Saturday, September 12, 2026", rows: ["1..6.2..7...", "......1.....", ".9..73......", "..1..9..2...", ".....8.1.3..", "2.......9...", "..28....125.", "98..2.....6.", "..7....4....", ".....5..71..", "............", ".....2....95"] },
   sunday: { date: "Sunday, September 13, 2026", rows: ["......1.8...", "....26..4...", "7..15...2...", ".8..9.....8.", ".3....28.1..", "..4......9..", "..357.......", "....49.....1", ".2..........", "...7.....29.", "....3......7", ".....83....."] }
 };
+const previousWeekPuzzles = {
+  monday: { date: "Monday, August 31, 2026", rows: ["..6.59......", "81.4........", "...8.2......", "......8.....", "...19....75.", "..8.......19", "..........9.", ".....5.792.3", "....7.......", "...73.....4.", "....526...38", ".......34..2"] },
+  tuesday: { date: "Tuesday, September 1, 2026", rows: ["....23..7...", ".4.51.......", "8.2..4......", ".........3.9", "1..265......", ".5..........", "........4.1.", "....71.2.89.", "3...8.......", "......9...7.", ".........428", "...7.3.....5"] },
+  wednesday: { date: "Wednesday, September 2, 2026", rows: ["......4.....", "...2.537....", "425..9......", "293.7....2..", "............", "....2..18...", "......53.9..", ".32..7...52.", "..6.........", "......82.47.", "............", ".....937..5."] },
+  thursday: { date: "Thursday, September 3, 2026", rows: ["..5.9.......", ".7..5...4...", "4..1..3.....", ".......6..5.", ".832.4.....9", ".4..........", "..8..2..3...", "7...1..8..7.", "......2..5.1", "......6.8...", "...4.....8.2", "....2..5...."] },
+  friday: { date: "Friday, September 4, 2026", rows: [".6....7.....", "83..7.2.6...", "1..4........", "...6......5.", "3.8...4.7...", "............", ".....8....2.", "7.6.3..5..1.", "..9......5..", "............", "......7896..", "....2..46..3"] },
+  saturday: { date: "Saturday, September 5, 2026", rows: ["...375......", ".8...1......", "3..2....6...", ".72.9.......", "..3.2.1.....", ".......7.9..", "6....3..1...", "...4...9.3.8", ".........2.4", ".....8.5....", "......3.7.9.", "......2...5."] },
+  sunday: { date: "Sunday, September 6, 2026", rows: ["8...25......", "..5...3.....", ".7..84......", ".....85...6.", "..263.4.....", ".48.......9.", "....6..3...9", "..7.........", "...8....6.3.", "....2.74....", "........1.53", "....1...284."] }
+};
 const puzzles = { ...dailyPuzzles, unlimited: { date: "Unlimited", rows: Array(12).fill("............") } };
-let activeDay = "tuesday", rows = dailyPuzzles.tuesday.rows, puzzleDate = dailyPuzzles.tuesday.date;
+let activeWeek = "current", activeDay = "tuesday", rows = dailyPuzzles.tuesday.rows, puzzleDate = dailyPuzzles.tuesday.date;
 const digits = [1, 2, 3, 4, 5, 6, 7, 8, 9];
 const techniqueScores = { "Full House": 4, "Naked Single": 4, "Hidden Single": 14, "Locked Pair": 40, "Locked Triple": 60, "Pointing": 50, "Claiming": 50, "Naked Pair": 60, "Naked Triple": 80, "Hidden Pair": 70, "Hidden Triple": 100, "Naked Quad": 120, "Hidden Quad": 150, "X-Wing": 140, "XY-Wing": 160 };
 const techniqueLevels = { "Full House": "Beginner", "Naked Single": "Beginner", "Hidden Single": "Beginner", "Locked Pair": "Medium", "Locked Triple": "Medium", "Pointing": "Medium", "Claiming": "Medium", "Naked Pair": "Medium", "Naked Triple": "Medium", "Hidden Pair": "Medium", "Hidden Triple": "Medium", "Naked Quad": "Hard", "Hidden Quad": "Hard", "X-Wing": "Hard", "XY-Wing": "Tricky" };
@@ -33,7 +42,7 @@ const userNotes = { monday: blankNotes(), tuesday: blankNotes(), wednesday: blan
 const userColors = { monday: blankColors(), tuesday: blankColors(), wednesday: blankColors(), thursday: blankColors(), friday: blankColors(), saturday: blankColors(), sunday: blankColors(), unlimited: blankColors() };
 const histories = { monday: [], tuesday: [], wednesday: [], thursday: [], friday: [], saturday: [], sunday: [], unlimited: [] }, redoHistories = { monday: [], tuesday: [], wednesday: [], thursday: [], friday: [], saturday: [], sunday: [], unlimited: [] };
 const original = Array(144).fill(0); let human = userInputs.tuesday, playNotes = userNotes.tuesday, playColors = userColors.tuesday, sharedHighlight = true;
-function stateKey(day = activeDay) { return day; }
+function stateKey(day = activeDay) { return day === "unlimited" ? day : `${activeWeek}:${day}`; }
 function ensureState(key) {
   if (userInputs[key]) return;
   userInputs[key] = Array(144).fill(0); userNotes[key] = blankNotes(); userColors[key] = blankColors(); histories[key] = []; redoHistories[key] = [];
@@ -252,12 +261,14 @@ function renderBoard() {
 }
 function refresh() { renderStep(); renderBoard(); const givens = original.filter((value, index) => active.includes(index) && value).length, rating = rateSteps(steps), showingSolution = mode === "solver", unlimited = isUnlimited(); givenCount.textContent = unlimited ? `${givens} given cells · generated in ${(unlimitedGenerationMilliseconds / 1000).toFixed(2)} s` : `${givens} given cells`; document.querySelector("#difficultyLabel").textContent = unlimited && !unlimitedRated ? "Difficulty: Unrated (unique-only)" : `Difficulty: ${rating.rating} (${rating.score})`; solutionToggle.setAttribute("aria-pressed", String(showingSolution)); solutionToggle.textContent = unlimited ? (showingSolution ? "Hide final grid" : "Show final grid") : (showingSolution ? "Hide solution" : "Read solution"); guide.classList.toggle("hidden", mode === "human" || unlimited); boardCard.classList.toggle("solver-active", showingSolution); updateEntryControls(); setTimerRunning(mode === "human"); }
 function updateSidebar() {
-  document.querySelector("#weekLabel").textContent = "Daily";
+  const selectedWeek = activeWeek === "previous" ? previousWeekPuzzles : dailyPuzzles;
+  document.querySelector("#weekLabel").textContent = activeWeek === "previous" ? "Previous week" : "This week";
+  document.querySelector("#weekToggle").textContent = activeWeek === "previous" ? "This week" : "Previous week";
   document.querySelectorAll(".day-button").forEach(button => {
-    button.querySelector("small").textContent = dailyPuzzles[button.dataset.day].date.replace(/^\w+, /, "");
+    button.querySelector("small").textContent = selectedWeek[button.dataset.day].date.replace(/^\w+, /, "");
   });
 }
-function loadPuzzle(day) { activeDay = day; const selectedPuzzle = (day === "unlimited" ? puzzles : dailyPuzzles)[day]; rows = selectedPuzzle.rows; puzzleDate = selectedPuzzle.date; original.fill(0); rows.forEach((row, r) => [...row].forEach((value, c) => { if (value !== ".") original[r * 12 + c] = Number(value); })); const key = stateKey(); ensureState(key); human = userInputs[key]; playNotes = userNotes[key]; playColors = userColors[key]; selectedCell = null; steps = deriveSteps(["friday", "saturday", "sunday"].includes(day)); const walked = [...original]; steps.forEach(step => { if (step.index !== null) walked[step.index] = step.digit; }); unlimitedRated = day === "unlimited" && active.every(index => walked[index]); stepIndex = 0; document.querySelectorAll(".day-button").forEach(button => button.setAttribute("aria-pressed", String(button.dataset.day === day))); document.querySelector("#unlimitedMode").classList.toggle("active", day === "unlimited"); updateSidebar(); refresh(); }
+function loadPuzzle(day) { activeDay = day; const selectedWeek = activeWeek === "previous" ? previousWeekPuzzles : dailyPuzzles, selectedPuzzle = (day === "unlimited" ? puzzles : selectedWeek)[day]; rows = selectedPuzzle.rows; puzzleDate = selectedPuzzle.date; original.fill(0); rows.forEach((row, r) => [...row].forEach((value, c) => { if (value !== ".") original[r * 12 + c] = Number(value); })); const key = stateKey(); ensureState(key); human = userInputs[key]; playNotes = userNotes[key]; playColors = userColors[key]; selectedCell = null; steps = deriveSteps(["friday", "saturday", "sunday"].includes(day)); const walked = [...original]; steps.forEach(step => { if (step.index !== null) walked[step.index] = step.digit; }); unlimitedRated = day === "unlimited" && active.every(index => walked[index]); stepIndex = 0; document.querySelectorAll(".day-button").forEach(button => button.setAttribute("aria-pressed", String(button.dataset.day === day))); document.querySelector("#unlimitedMode").classList.toggle("active", day === "unlimited"); updateSidebar(); refresh(); }
 async function generateUnlimitedPuzzle() {
   const button = document.querySelector("#unlimitedMode"), title = button.querySelector("strong"), detail = button.querySelector("small"), started = performance.now();
   button.disabled = true; title.textContent = "Generating…"; detail.textContent = "Digging for uniqueness";
@@ -292,6 +303,7 @@ setInterval(() => { if (timerRunning) { elapsedSeconds += Math.floor((Date.now()
 document.querySelector("#firstStep").addEventListener("click", () => { stepIndex = 0; refresh(); }); document.querySelector("#previousStep").addEventListener("click", () => { if (stepIndex > 0) { stepIndex -= 1; refresh(); } }); document.querySelector("#nextStep").addEventListener("click", () => { if (stepIndex < steps.length - 1) { stepIndex += 1; refresh(); } }); document.querySelector("#lastStep").addEventListener("click", () => { stepIndex = steps.length - 1; refresh(); });
 solutionToggle.addEventListener("click", () => { mode = mode === "human" ? "solver" : "human"; guide.classList.toggle("hidden", mode === "human"); refresh(); });
 document.querySelectorAll(".day-button").forEach(button => button.addEventListener("click", () => loadPuzzle(button.dataset.day)));
+document.querySelector("#weekToggle").addEventListener("click", () => { activeWeek = activeWeek === "current" ? "previous" : "current"; loadPuzzle(activeDay); });
 document.querySelector("#unlimitedMode").addEventListener("click", generateUnlimitedPuzzle);
 document.querySelectorAll(".entry-button").forEach(button => button.addEventListener("click", () => { entryMode = button.dataset.entry; updateEntryControls(); }));
 document.querySelectorAll(".numpad [data-key]").forEach(button => button.addEventListener("click", () => applyEntry(Number(button.dataset.key))));
@@ -333,5 +345,5 @@ function addSidebarToggle(sidebar, label) {
 }
 addSidebarToggle(document.querySelector(".day-sidebar"), "daily puzzle sidebar");
 addSidebarToggle(document.querySelector(".control-sidebar"), "puzzle controls sidebar");
-document.querySelector(".generator-rule").textContent = "This seven-puzzle weekly set was regenerated and independently rechecked for exactly one solution. Every listed walkthrough resolves the entire Gattai using named Singles techniques only.";
+document.querySelector(".generator-rule").textContent = "Both published weeks are independently rechecked for exactly one solution. The previous week uses paired rotational digging; every listed walkthrough resolves the entire Gattai using named Singles techniques only.";
 refresh();
