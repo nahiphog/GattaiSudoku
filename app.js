@@ -367,4 +367,4 @@ function addSidebarToggle(sidebar, label) {
 }
 addSidebarToggle(document.querySelector(".control-sidebar"), "puzzle controls sidebar");
 document.querySelector(".generator-rule").textContent = "Both published weeks are independently rechecked for exactly one solution. The previous week uses paired rotational digging; every listed walkthrough resolves the entire Gattai using named Singles techniques only.";
-refresh();
+loadPuzzle(activeDay);
