@@ -157,3 +157,10 @@ a{color:inherit}
 .control-sidebar{justify-content:center}
 }
 .site-footer{padding:0 24px 26px;text-align:center;font-size:12px}.site-footer a{color:var(--ink);text-decoration:none;border-bottom:1px solid currentColor}.puzzle-date{display:flex;flex-direction:column;align-items:center;line-height:1.2}.puzzle-date .weekday{font-size:11px;font-weight:600;letter-spacing:.08em;text-transform:uppercase}.puzzle-date .calendar-date{font-size:14px;font-weight:700}
+/* Sidebar clarity and input focus */
+.control-sidebar button{display:flex;align-items:center;justify-content:center;text-align:center;color:var(--ink);border-color:var(--line)}
+.control-sidebar button:not(.sidebar-toggle):not(.numpad button){background:var(--muted)}
+.control-sidebar button:hover:not(:disabled),.control-sidebar button:focus-visible{background:var(--shared)}
+.cell.editable{caret-color:transparent;cursor:pointer;user-select:none;outline:none}
+.cell.editable:focus{outline:none}
+@media (min-width:800px){.board-card{max-width:960px;grid-template-columns:minmax(0,650px) 160px;column-gap:clamp(34px,5vw,68px);row-gap:18px}}
