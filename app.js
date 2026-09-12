@@ -41,7 +41,7 @@ const userInputs = { monday: Array(144).fill(0), tuesday: Array(144).fill(0), we
 const userNotes = { monday: blankNotes(), tuesday: blankNotes(), wednesday: blankNotes(), thursday: blankNotes(), friday: blankNotes(), saturday: blankNotes(), sunday: blankNotes(), unlimited: blankNotes() };
 const userColors = { monday: blankColors(), tuesday: blankColors(), wednesday: blankColors(), thursday: blankColors(), friday: blankColors(), saturday: blankColors(), sunday: blankColors(), unlimited: blankColors() };
 const histories = { monday: [], tuesday: [], wednesday: [], thursday: [], friday: [], saturday: [], sunday: [], unlimited: [] }, redoHistories = { monday: [], tuesday: [], wednesday: [], thursday: [], friday: [], saturday: [], sunday: [], unlimited: [] };
-const original = Array(144).fill(0); let human = userInputs.tuesday, playNotes = userNotes.tuesday, playColors = userColors.tuesday, sharedHighlight = true, autoMarkConflicts = true;
+const original = Array(144).fill(0); let human = userInputs.tuesday, playNotes = userNotes.tuesday, playColors = userColors.tuesday, sharedHighlight = true, autoMarkConflicts = true, difficultyVisible = true, givenCountVisible = true;
 function stateKey(day = activeDay) { return day === "unlimited" ? day : `${activeWeek}:${day}`; }
 function ensureState(key) {
   if (userInputs[key]) return;
@@ -247,7 +247,9 @@ function renderStep() {
   const step = steps[stepIndex], grouped = steps.reduce((groups, item, index) => { (groups[item.technique] ||= []).push(index + 1); return groups; }, {}), tallyList = document.querySelector("#techniqueTallyList"), table = document.createElement("table"), header = document.createElement("thead"), body = document.createElement("tbody");
   document.querySelector("#stepCount").textContent = `Step ${stepIndex + 1} of ${steps.length}`;
   document.querySelector("#stepTechnique").textContent = step.technique;
-  document.querySelector("#stepReasoning").textContent = step.text;
+  const grid = step.house?.startsWith("G2") || (!step.house && /\bG2\b/.test(step.text)) ? 2 : 1;
+  const plainText = step.text.replace(/In G[12],\s*/g, "").replace(/\bG[12]\s+/g, "");
+  document.querySelector("#stepReasoning").textContent = `Grid ${grid}: ${plainText}`;
   header.innerHTML = "<tr><th>Technique</th><th>Steps</th></tr>";
   Object.entries(grouped).sort(([left], [right]) => (levelOrder.indexOf(techniqueLevels[left] || "Nightmare") - levelOrder.indexOf(techniqueLevels[right] || "Nightmare")) || (techniqueScores[left] || 0) - (techniqueScores[right] || 0) || left.localeCompare(right)).forEach(([technique, stepNumbers]) => { const row = document.createElement("tr"), name = document.createElement("th"), details = document.createElement("td"); name.scope = "row"; name.textContent = technique; details.textContent = stepNumbers.join(", "); row.append(name, details); body.append(row); });
   table.append(header, body); tallyList.replaceChildren(table);
@@ -265,7 +267,7 @@ function renderBoard() {
   }
   drawBoardBoundaries();
 }
-function refresh() { renderStep(); renderBoard(); const givens = original.filter((value, index) => active.includes(index) && value).length, rating = rateSteps(steps), showingSolution = mode === "solver", unlimited = isUnlimited(); givenCount.textContent = unlimited ? `${givens} given cells · generated in ${(unlimitedGenerationMilliseconds / 1000).toFixed(2)} s` : `${givens} given cells`; document.querySelector("#puzzleDate").textContent = puzzleDate; document.querySelector("#difficultyLabel").textContent = unlimited && !unlimitedRated ? "Difficulty: Unrated (unique-only)" : `Difficulty: ${rating.rating} (${rating.score})`; solutionToggle.setAttribute("aria-pressed", String(showingSolution)); solutionToggle.textContent = unlimited ? (showingSolution ? "Hide final grid" : "Show final grid") : (showingSolution ? "Hide solution" : "Read solution"); guide.classList.toggle("hidden", mode === "human" || unlimited); boardCard.classList.toggle("solver-active", showingSolution); updateEntryControls(); setTimerRunning(mode === "human"); }
+function refresh() { renderStep(); renderBoard(); const givens = original.filter((value, index) => active.includes(index) && value).length, rating = rateSteps(steps), showingSolution = mode === "solver", unlimited = isUnlimited(); givenCount.textContent = unlimited ? `${givens} given cells · generated in ${(unlimitedGenerationMilliseconds / 1000).toFixed(2)} s` : `${givens} given cells`; document.querySelector("#puzzleDate").textContent = puzzleDate; document.querySelector("#difficultyLabel").textContent = unlimited && !unlimitedRated ? "Difficulty: Unrated (unique-only)" : `Difficulty: ${rating.rating} (${rating.score})`; document.querySelector("#difficultyLabel").classList.toggle("is-hidden", !difficultyVisible); givenCount.classList.toggle("is-hidden", !givenCountVisible); solutionToggle.setAttribute("aria-pressed", String(showingSolution)); solutionToggle.textContent = unlimited ? (showingSolution ? "Hide final grid" : "Show final grid") : (showingSolution ? "Hide solution" : "Read solution"); guide.classList.toggle("hidden", mode === "human" || unlimited); boardCard.classList.toggle("solver-active", showingSolution); updateEntryControls(); setTimerRunning(mode === "human"); }
 function loadPuzzle(day) { activeDay = day; const selectedWeek = activeWeek === "previous" ? previousWeekPuzzles : dailyPuzzles, selectedPuzzle = (day === "unlimited" ? puzzles : selectedWeek)[day]; rows = selectedPuzzle.rows; puzzleDate = selectedPuzzle.date; original.fill(0); rows.forEach((row, r) => [...row].forEach((value, c) => { if (value !== ".") original[r * 12 + c] = Number(value); })); const key = stateKey(); ensureState(key); human = userInputs[key]; playNotes = userNotes[key]; playColors = userColors[key]; selectedCell = null; steps = deriveSteps(["friday", "saturday", "sunday"].includes(day)); const walked = [...original]; steps.forEach(step => { if (step.index !== null) walked[step.index] = step.digit; }); unlimitedRated = day === "unlimited" && active.every(index => walked[index]); stepIndex = 0; document.querySelector("#unlimitedMode").classList.toggle("active", day === "unlimited"); refresh(); }
 const archiveEntries = [
   ["previous", "monday", 2026, 8, 31], ["previous", "tuesday", 2026, 9, 1], ["previous", "wednesday", 2026, 9, 2], ["previous", "thursday", 2026, 9, 3], ["previous", "friday", 2026, 9, 4], ["previous", "saturday", 2026, 9, 5], ["previous", "sunday", 2026, 9, 6],
@@ -318,7 +320,9 @@ function setTimerRunning(running) { if (timerRunning === running) return; if (ti
 function resetTimer() { elapsedSeconds = 0; timerBase = Date.now(); showTimer(); }
 setInterval(() => { if (timerRunning) { elapsedSeconds += Math.floor((Date.now() - timerBase) / 1000); timerBase = Date.now(); showTimer(); } }, 1000);
 document.querySelector("#firstStep").addEventListener("click", () => { stepIndex = 0; refresh(); }); document.querySelector("#previousStep").addEventListener("click", () => { if (stepIndex > 0) { stepIndex -= 1; refresh(); } }); document.querySelector("#nextStep").addEventListener("click", () => { if (stepIndex < steps.length - 1) { stepIndex += 1; refresh(); } }); document.querySelector("#lastStep").addEventListener("click", () => { stepIndex = steps.length - 1; refresh(); });
-solutionToggle.addEventListener("click", () => { mode = mode === "human" ? "solver" : "human"; guide.classList.toggle("hidden", mode === "human"); refresh(); });
+function toggleSolution() { mode = mode === "human" ? "solver" : "human"; guide.classList.toggle("hidden", mode === "human"); refresh(); }
+solutionToggle.addEventListener("click", toggleSolution);
+document.querySelector("#hideSolution")?.addEventListener("click", toggleSolution);
 document.querySelector("#unlimitedMode").addEventListener("click", generateUnlimitedPuzzle);
 document.querySelectorAll(".entry-button").forEach(button => button.addEventListener("click", () => { entryMode = button.dataset.entry; updateEntryControls(); }));
 document.querySelectorAll(".numpad [data-key]").forEach(button => button.addEventListener("click", () => applyEntry(Number(button.dataset.key))));
@@ -344,11 +348,21 @@ document.querySelector("#copyPng").addEventListener("click", async () => {
 const howToPlayDialog = document.querySelector("#howToPlayDialog"); document.querySelector("#howToPlay").addEventListener("click", () => howToPlayDialog.showModal()); document.querySelector("#closeHowToPlay").addEventListener("click", () => howToPlayDialog.close()); howToPlayDialog.addEventListener("click", event => { if (event.target === howToPlayDialog) howToPlayDialog.close(); });
 const archiveDialog = document.querySelector("#archiveDialog"); document.querySelector("#archive").addEventListener("click", () => { renderArchiveCalendar(); archiveDialog.showModal(); }); document.querySelector("#closeArchive").addEventListener("click", () => archiveDialog.close()); archiveDialog.addEventListener("click", event => { if (event.target === archiveDialog) archiveDialog.close(); });
 const settingsDialog = document.querySelector("#settingsDialog"); if (settingsDialog) { document.querySelector("#settings").addEventListener("click", () => settingsDialog.showModal()); document.querySelector("#closeSettings").addEventListener("click", () => settingsDialog.close()); settingsDialog.addEventListener("click", event => { if (event.target === settingsDialog) settingsDialog.close(); }); }
+if (settingsDialog) {
+  const timerRow = document.querySelector("#timerVisibility")?.closest("label");
+  if (timerRow && !document.querySelector("#difficultyVisibility")) timerRow.insertAdjacentHTML("afterend", '<label class="settings-row"><span>Show difficulty rating</span><input id="difficultyVisibility" type="checkbox" checked /></label><label class="settings-row"><span>Show given-cell count</span><input id="givenVisibility" type="checkbox" checked /></label>');
+  const conflictLabel = document.querySelector("#autoErrorToggle")?.closest("label")?.querySelector("span"); if (conflictLabel) conflictLabel.textContent = "Mark incorrect entries red";
+  const colourTitle = settingsDialog.querySelector(".settings-colours > span"); if (colourTitle) colourTitle.textContent = "Input number colour";
+  const colourPicker = settingsDialog.querySelector(".settings-colours .color-picker"); if (colourPicker) colourPicker.setAttribute("aria-label", "Colour selected input number");
+  const clearColour = settingsDialog.querySelector(".settings-colours .color-clear"); if (clearColour) clearColour.setAttribute("aria-label", "Clear input number colour");
+}
 const techniqueDialog = document.querySelector("#techniqueDialog"); document.querySelector("#techniqueTally").addEventListener("click", () => techniqueDialog.showModal()); document.querySelector("#closeTechniqueDialog").addEventListener("click", () => techniqueDialog.close()); techniqueDialog.addEventListener("click", event => { if (event.target === techniqueDialog) techniqueDialog.close(); });
 function setTheme(dark) { document.body.classList.toggle("dark", dark); document.querySelector("#darkTheme")?.setAttribute("aria-pressed", String(dark)); document.querySelector("#lightTheme")?.setAttribute("aria-pressed", String(!dark)); }
 document.querySelector("#darkTheme")?.addEventListener("click", () => setTheme(true));
 document.querySelector("#lightTheme")?.addEventListener("click", () => setTheme(false));
 document.querySelector("#timerVisibility")?.addEventListener("change", event => document.querySelector(".timer-controls")?.classList.toggle("timer-hidden", !event.target.checked));
+document.querySelector("#difficultyVisibility")?.addEventListener("change", event => { difficultyVisible = event.target.checked; refresh(); });
+document.querySelector("#givenVisibility")?.addEventListener("change", event => { givenCountVisible = event.target.checked; refresh(); });
 document.querySelector("#autoErrorToggle")?.addEventListener("change", event => { autoMarkConflicts = event.target.checked; refresh(); });
 document.querySelector("#settingsSharedToggle")?.addEventListener("change", event => setSharedHighlight(event.target.checked));
 function addSidebarToggle(sidebar, label) {
