@@ -44,6 +44,7 @@ main{padding:24px 0}
 .unlimited-button strong{font-size:13px}.unlimited-button small{font-size:11px}
 .unlimited-button.active{background:var(--ink);color:var(--surface)}
 .unlimited-button:disabled{opacity:.65;cursor:wait}
+dialog .unlimited-button{width:100%;margin:20px 0 0;text-align:center}
 .grid-button[aria-pressed=true]{background:var(--ink);color:var(--surface)}
 .grid-button{text-align:center}
 .shared-toggle{display:flex;align-items:center;gap:6px;font-size:11px;cursor:pointer}.shared-toggle input{accent-color:var(--ink);margin:0}
@@ -51,6 +52,7 @@ main{padding:24px 0}
 .entry-panel,.highlight-panel,.color-panel{display:flex;flex-direction:column;gap:7px}
 .entry-tabs,.play-actions{display:grid;grid-template-columns:1fr 1fr;gap:6px}
 .entry-button,.play-actions button{border:1px solid var(--ink);background:var(--muted);color:var(--ink);padding:7px 4px;cursor:pointer;font:inherit;font-size:11px}
+.history-icon{position:relative;display:grid;place-items:center;min-height:36px;padding:6px!important}.history-icon svg{width:19px;height:19px;fill:none;stroke:currentColor;stroke-width:1.9;stroke-linecap:round;stroke-linejoin:round;pointer-events:none}.history-icon::after{content:attr(data-tooltip);position:absolute;z-index:4;bottom:calc(100% + 6px);left:50%;transform:translateX(-50%);padding:4px 6px;border:1px solid var(--ink);background:var(--surface);color:var(--ink);white-space:nowrap;font:11px/1 'DM Mono',monospace;opacity:0;pointer-events:none;transition:opacity .12s ease}.history-icon:hover::after,.history-icon:focus-visible::after{opacity:1}
 .entry-button[aria-pressed=true]{background:var(--ink);color:var(--surface)}
 .play-actions #resetGrid{grid-column:span 2}
 .numpad{display:grid;grid-template-columns:repeat(3,1fr);gap:5px;margin:3px 0 4px}
@@ -58,7 +60,7 @@ main{padding:24px 0}
 .numpad .numpad-zero{grid-column:span 1}
 .numpad .numpad-delete{grid-column:span 2;font-size:24px}
 .numpad button:hover,.numpad button:focus-visible{background:#2da86a}
-.board-card.solver-active{grid-template-columns:minmax(0,650px);max-width:700px}
+.board-card.solver-active{grid-template-columns:minmax(0,650px) minmax(245px,285px);max-width:1010px}
 .board-card.solver-active .control-sidebar{display:none}
 .puzzle-surface{min-width:0}
 .puzzle-meta{display:flex;justify-content:flex-end;gap:14px;align-items:baseline;margin:0 0 8px;font-size:13px;font-weight:500}.puzzle-surface .puzzle-date,.difficulty-label{margin:0}.puzzle-surface .puzzle-date{display:none}
@@ -102,6 +104,7 @@ body.dark .cell.user-color-blue{color:#81bfff}body.dark .cell.user-color-green{c
 .board-footer #copyPng{margin-left:auto;background:var(--muted);color:var(--ink)}
 .sidebar-solution{position:absolute;top:24px;right:24px;width:150px;margin:0!important;text-align:left}.control-sidebar{padding-top:54px}.board-card.solver-active .sidebar-solution{display:none}.is-hidden{display:none!important}
 .guide{height:236px;margin-top:14px;padding:16px 18px;background:var(--ink);color:var(--surface);display:flex;flex-direction:column;overflow:hidden}
+.board-card.solver-active .guide{grid-column:2;grid-row:1;height:100%;min-height:520px;margin:0}
 .guide .eyebrow{color:var(--gold);font-size:12px;letter-spacing:.12em;margin:0 0 4px}
 .guide h3{font:600 26px/1.1 'Playfair Display',serif;margin:4px 0 8px;color:var(--gold)}
 .guide p:last-child{margin:0}
@@ -130,7 +133,7 @@ dialog h2{font:600 30px/1.1 'Playfair Display',serif;margin:4px 0 14px}
 a{color:inherit}
 @media(max-width:820px){.board-card{width:calc(100% - 24px);padding:12px 4px 22px;grid-template-columns:1fr}
 .sidebar-solution{position:static;width:auto;margin:16px 0 0!important}.control-sidebar{padding-top:0}
-.board-card.solver-active{grid-template-columns:1fr;max-width:none}
+.board-card.solver-active{grid-template-columns:1fr;max-width:none}.board-card.solver-active .guide{grid-column:1;grid-row:auto;min-height:0;height:236px;margin:14px 2% 0}
 .control-sidebar{flex-direction:row;align-items:stretch;padding:0}
 .control-sidebar{order:3;flex-wrap:wrap}
 .puzzle-surface{order:2}
