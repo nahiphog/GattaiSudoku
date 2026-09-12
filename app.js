@@ -259,16 +259,27 @@ function renderBoard() {
   }
   drawBoardBoundaries();
 }
-function refresh() { renderStep(); renderBoard(); const givens = original.filter((value, index) => active.includes(index) && value).length, rating = rateSteps(steps), showingSolution = mode === "solver", unlimited = isUnlimited(); givenCount.textContent = unlimited ? `${givens} given cells · generated in ${(unlimitedGenerationMilliseconds / 1000).toFixed(2)} s` : `${givens} given cells`; document.querySelector("#difficultyLabel").textContent = unlimited && !unlimitedRated ? "Difficulty: Unrated (unique-only)" : `Difficulty: ${rating.rating} (${rating.score})`; solutionToggle.setAttribute("aria-pressed", String(showingSolution)); solutionToggle.textContent = unlimited ? (showingSolution ? "Hide final grid" : "Show final grid") : (showingSolution ? "Hide solution" : "Read solution"); guide.classList.toggle("hidden", mode === "human" || unlimited); boardCard.classList.toggle("solver-active", showingSolution); updateEntryControls(); setTimerRunning(mode === "human"); }
-function updateSidebar() {
-  const selectedWeek = activeWeek === "previous" ? previousWeekPuzzles : dailyPuzzles;
-  document.querySelector("#weekLabel").textContent = activeWeek === "previous" ? "Previous week" : "This week";
-  document.querySelector("#weekToggle").textContent = activeWeek === "previous" ? "This week" : "Previous week";
-  document.querySelectorAll(".day-button").forEach(button => {
-    button.querySelector("small").textContent = selectedWeek[button.dataset.day].date.replace(/^\w+, /, "");
-  });
+function refresh() { renderStep(); renderBoard(); const givens = original.filter((value, index) => active.includes(index) && value).length, rating = rateSteps(steps), showingSolution = mode === "solver", unlimited = isUnlimited(); givenCount.textContent = unlimited ? `${givens} given cells · generated in ${(unlimitedGenerationMilliseconds / 1000).toFixed(2)} s` : `${givens} given cells`; document.querySelector("#puzzleDate").textContent = puzzleDate; document.querySelector("#difficultyLabel").textContent = unlimited && !unlimitedRated ? "Difficulty: Unrated (unique-only)" : `Difficulty: ${rating.rating} (${rating.score})`; solutionToggle.setAttribute("aria-pressed", String(showingSolution)); solutionToggle.textContent = unlimited ? (showingSolution ? "Hide final grid" : "Show final grid") : (showingSolution ? "Hide solution" : "Read solution"); guide.classList.toggle("hidden", mode === "human" || unlimited); boardCard.classList.toggle("solver-active", showingSolution); updateEntryControls(); setTimerRunning(mode === "human"); }
+function loadPuzzle(day) { activeDay = day; const selectedWeek = activeWeek === "previous" ? previousWeekPuzzles : dailyPuzzles, selectedPuzzle = (day === "unlimited" ? puzzles : selectedWeek)[day]; rows = selectedPuzzle.rows; puzzleDate = selectedPuzzle.date; original.fill(0); rows.forEach((row, r) => [...row].forEach((value, c) => { if (value !== ".") original[r * 12 + c] = Number(value); })); const key = stateKey(); ensureState(key); human = userInputs[key]; playNotes = userNotes[key]; playColors = userColors[key]; selectedCell = null; steps = deriveSteps(["friday", "saturday", "sunday"].includes(day)); const walked = [...original]; steps.forEach(step => { if (step.index !== null) walked[step.index] = step.digit; }); unlimitedRated = day === "unlimited" && active.every(index => walked[index]); stepIndex = 0; document.querySelector("#unlimitedMode").classList.toggle("active", day === "unlimited"); refresh(); }
+const archiveEntries = [
+  ["previous", "monday", 2026, 8, 31], ["previous", "tuesday", 2026, 9, 1], ["previous", "wednesday", 2026, 9, 2], ["previous", "thursday", 2026, 9, 3], ["previous", "friday", 2026, 9, 4], ["previous", "saturday", 2026, 9, 5], ["previous", "sunday", 2026, 9, 6],
+  ["current", "monday", 2026, 9, 7], ["current", "tuesday", 2026, 9, 8], ["current", "wednesday", 2026, 9, 9], ["current", "thursday", 2026, 9, 10], ["current", "friday", 2026, 9, 11], ["current", "saturday", 2026, 9, 12], ["current", "sunday", 2026, 9, 13]
+].map(([week, day, year, month, date]) => ({ week, day, year, month, date }));
+const archiveKey = (year, month, date) => `${year}-${month}-${date}`;
+const archiveByDate = new Map(archiveEntries.map(entry => [archiveKey(entry.year, entry.month, entry.date), entry]));
+function renderArchiveCalendar() {
+  const calendar = document.querySelector("#archiveCalendar");
+  calendar.replaceChildren();
+  for (let offset = 0; offset < 35; offset += 1) {
+    const date = new Date(2026, 7, 31 + offset), year = date.getFullYear(), month = date.getMonth() + 1, day = date.getDate(), entry = archiveByDate.get(archiveKey(year, month, day));
+    if (!entry) { const blank = document.createElement("span"); blank.textContent = day; if (month !== 9) blank.classList.add("outside"); calendar.append(blank); continue; }
+    const button = document.createElement("button");
+    button.type = "button"; button.textContent = day; button.title = (entry.week === "previous" ? previousWeekPuzzles : dailyPuzzles)[entry.day].date;
+    if (entry.week === activeWeek && entry.day === activeDay) button.classList.add("is-current");
+    button.addEventListener("click", () => { activeWeek = entry.week; mode = "human"; loadPuzzle(entry.day); document.querySelector("#archiveDialog").close(); });
+    calendar.append(button);
+  }
 }
-function loadPuzzle(day) { activeDay = day; const selectedWeek = activeWeek === "previous" ? previousWeekPuzzles : dailyPuzzles, selectedPuzzle = (day === "unlimited" ? puzzles : selectedWeek)[day]; rows = selectedPuzzle.rows; puzzleDate = selectedPuzzle.date; original.fill(0); rows.forEach((row, r) => [...row].forEach((value, c) => { if (value !== ".") original[r * 12 + c] = Number(value); })); const key = stateKey(); ensureState(key); human = userInputs[key]; playNotes = userNotes[key]; playColors = userColors[key]; selectedCell = null; steps = deriveSteps(["friday", "saturday", "sunday"].includes(day)); const walked = [...original]; steps.forEach(step => { if (step.index !== null) walked[step.index] = step.digit; }); unlimitedRated = day === "unlimited" && active.every(index => walked[index]); stepIndex = 0; document.querySelectorAll(".day-button").forEach(button => button.setAttribute("aria-pressed", String(button.dataset.day === day))); document.querySelector("#unlimitedMode").classList.toggle("active", day === "unlimited"); updateSidebar(); refresh(); }
 async function generateUnlimitedPuzzle() {
   const button = document.querySelector("#unlimitedMode"), title = button.querySelector("strong"), detail = button.querySelector("small"), started = performance.now();
   button.disabled = true; title.textContent = "Generating…"; detail.textContent = "Digging for uniqueness";
@@ -302,8 +313,6 @@ function resetTimer() { elapsedSeconds = 0; timerBase = Date.now(); showTimer();
 setInterval(() => { if (timerRunning) { elapsedSeconds += Math.floor((Date.now() - timerBase) / 1000); timerBase = Date.now(); showTimer(); } }, 1000);
 document.querySelector("#firstStep").addEventListener("click", () => { stepIndex = 0; refresh(); }); document.querySelector("#previousStep").addEventListener("click", () => { if (stepIndex > 0) { stepIndex -= 1; refresh(); } }); document.querySelector("#nextStep").addEventListener("click", () => { if (stepIndex < steps.length - 1) { stepIndex += 1; refresh(); } }); document.querySelector("#lastStep").addEventListener("click", () => { stepIndex = steps.length - 1; refresh(); });
 solutionToggle.addEventListener("click", () => { mode = mode === "human" ? "solver" : "human"; guide.classList.toggle("hidden", mode === "human"); refresh(); });
-document.querySelectorAll(".day-button").forEach(button => button.addEventListener("click", () => loadPuzzle(button.dataset.day)));
-document.querySelector("#weekToggle").addEventListener("click", () => { activeWeek = activeWeek === "current" ? "previous" : "current"; loadPuzzle(activeDay); });
 document.querySelector("#unlimitedMode").addEventListener("click", generateUnlimitedPuzzle);
 document.querySelectorAll(".entry-button").forEach(button => button.addEventListener("click", () => { entryMode = button.dataset.entry; updateEntryControls(); }));
 document.querySelectorAll(".numpad [data-key]").forEach(button => button.addEventListener("click", () => applyEntry(Number(button.dataset.key))));
@@ -326,6 +335,7 @@ document.querySelector("#copyPng").addEventListener("click", async () => {
   const button = document.querySelector("#copyPng"); try { const blob = await new Promise(resolve => canvas.toBlob(resolve, "image/png")); await navigator.clipboard.write([new ClipboardItem({ "image/png": blob })]); button.textContent = "Image copied"; } catch { button.textContent = "Image copy unavailable"; } setTimeout(() => { button.textContent = "Copy as a picture"; }, 2000);
 });
 const howToPlayDialog = document.querySelector("#howToPlayDialog"); document.querySelector("#howToPlay").addEventListener("click", () => howToPlayDialog.showModal()); document.querySelector("#closeHowToPlay").addEventListener("click", () => howToPlayDialog.close()); howToPlayDialog.addEventListener("click", event => { if (event.target === howToPlayDialog) howToPlayDialog.close(); });
+const archiveDialog = document.querySelector("#archiveDialog"); document.querySelector("#archive").addEventListener("click", () => { renderArchiveCalendar(); archiveDialog.showModal(); }); document.querySelector("#closeArchive").addEventListener("click", () => archiveDialog.close()); archiveDialog.addEventListener("click", event => { if (event.target === archiveDialog) archiveDialog.close(); });
 const aboutDialog = document.querySelector("#aboutDialog"); document.querySelector("#about").addEventListener("click", () => aboutDialog.showModal()); document.querySelector("#closeAbout").addEventListener("click", () => aboutDialog.close()); aboutDialog.addEventListener("click", event => { if (event.target === aboutDialog) aboutDialog.close(); });
 const techniqueDialog = document.querySelector("#techniqueDialog"); document.querySelector("#techniqueTally").addEventListener("click", () => techniqueDialog.showModal()); document.querySelector("#closeTechniqueDialog").addEventListener("click", () => techniqueDialog.close()); techniqueDialog.addEventListener("click", event => { if (event.target === techniqueDialog) techniqueDialog.close(); });
 document.querySelector("#themeToggle").addEventListener("click", () => { const button = document.querySelector("#themeToggle"), dark = document.body.classList.toggle("dark"); button.classList.toggle("is-dark", dark); button.setAttribute("aria-label", dark ? "Use light mode" : "Use dark mode"); });
@@ -343,7 +353,6 @@ function addSidebarToggle(sidebar, label) {
   });
   sidebar.prepend(button);
 }
-addSidebarToggle(document.querySelector(".day-sidebar"), "daily puzzle sidebar");
 addSidebarToggle(document.querySelector(".control-sidebar"), "puzzle controls sidebar");
 document.querySelector(".generator-rule").textContent = "Both published weeks are independently rechecked for exactly one solution. The previous week uses paired rotational digging; every listed walkthrough resolves the entire Gattai using named Singles techniques only.";
 refresh();
