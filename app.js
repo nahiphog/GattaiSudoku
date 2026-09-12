@@ -642,3 +642,46 @@ async function generateUnlimitedPuzzle() {
     refresh();
   });
 })();
+
+// Tally, typography, and unlimited-mode presentation refinements
+(() => {
+  const style = document.createElement('style');
+  style.textContent =
+    'body,button,input,textarea,select{font-family:Nunito,system-ui,sans-serif!important}' +
+    '.help-page{height:300px!important;min-height:300px!important;box-sizing:border-box;overflow:auto}' +
+    '#howToPlay{font-family:Arial,sans-serif!important;font-style:normal!important;font-weight:700!important}' +
+    '#difficultyLabel,#givenCount{font-size:1.22rem!important;line-height:1.45;font-weight:800}' +
+    '#puzzleTally{display:block;margin-top:2px;color:var(--ink);font-size:.82rem;font-weight:800;letter-spacing:.05em}' +
+    '.generation-clock{font-size:1rem!important;letter-spacing:.04em}';
+  document.head.append(style);
+  [...document.querySelectorAll('a')].find(link => link.textContent.includes('gattai-sudoku.vercel.app'))?.remove();
+  const tally = document.createElement('span');
+  tally.id = 'puzzleTally';
+  document.querySelector('#puzzleDate').after(tally);
+  const start = Date.UTC(2026, 7, 1);
+  const monthNumber = { January:0, February:1, March:2, April:3, May:4, June:5, July:6, August:7, September:8, October:9, November:10, December:11 };
+  const numberForDate = text => {
+    const match = text.match(/([A-Za-z]+)\s+(\d+),\s+(\d+)/);
+    if (!match || monthNumber[match[1]] === undefined) return null;
+    return Math.floor((Date.UTC(Number(match[3]), monthNumber[match[1]], Number(match[2])) - start) / 86400000) + 1;
+  };
+  const clock = document.querySelector('.generation-clock');
+  const normaliseClock = () => {
+    const seconds = clock?.textContent.match(/(\d+(?:\.\d+)?)/)?.[1];
+    if (seconds && !clock.textContent.trim().startsWith('∞')) clock.textContent = '∞ ' + seconds + ' s';
+  };
+  if (clock) new MutationObserver(normaliseClock).observe(clock, { childList:true, characterData:true, subtree:true });
+  const priorRefresh = refresh;
+  refresh = function () {
+    priorRefresh();
+    const unlimited = isUnlimited();
+    const evaluator = document.querySelector('.evaluation-button');
+    if (evaluator) evaluator.hidden = !unlimited;
+    tally.hidden = unlimited;
+    if (!unlimited) {
+      const number = numberForDate(puzzleDate);
+      tally.textContent = number ? 'Puzzle #' + number : '';
+    }
+  };
+  refresh();
+})();
