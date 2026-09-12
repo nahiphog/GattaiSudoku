@@ -24,8 +24,13 @@ header{display:grid;grid-template-columns:1fr auto 1fr;align-items:center;paddin
 main{padding:24px 0}
 .board-card{width:calc(100% - 48px);max-width:1100px;margin:0 auto;padding:18px 24px;background:var(--surface);box-shadow:none;display:grid;grid-template-columns:138px minmax(0,650px) 150px;justify-content:space-between;gap:14px;align-items:start}
 .day-sidebar,.control-sidebar{display:flex;flex-direction:column;gap:8px;padding-top:6px;font-size:12px}
+.sidebar-toggle{width:100%;min-height:32px;margin:0;border:1px solid var(--ink);background:transparent;color:var(--ink);cursor:pointer;font:600 20px/1 'DM Mono',monospace;letter-spacing:.06em}
+.sidebar-toggle:hover,.sidebar-toggle:focus-visible{background:var(--muted)}
+.sidebar-collapsed{align-self:start}
+.sidebar-collapsed>*:not(.sidebar-toggle){display:none}
 .day-sidebar>span,.entry-panel>span,.highlight-panel>span,.color-panel>span{font-weight:500;margin-bottom:3px;display:block}
 .day-button,.grid-button{margin:0;border:1px solid var(--ink);background:var(--muted);color:var(--ink);padding:8px;cursor:pointer;font:inherit;text-align:left}
+.week-toggle{margin:0 0 6px;border:1px solid var(--ink);background:transparent;color:var(--ink);padding:6px 8px;cursor:pointer;font:inherit;text-align:left;font-size:11px}
 .day-button strong,.day-button small{display:block}
 .day-button strong{font-size:13px}
 .day-button small{font-size:11px}
@@ -122,6 +127,8 @@ a{color:inherit}
 .day-sidebar{order:1}
 .day-sidebar>span,.entry-panel>span,.highlight-panel>span,.color-panel>span{margin:0;align-self:center}
 .day-button{flex:1}
+.week-toggle{flex:0 0 auto}
+.sidebar-toggle{width:36px;flex:0 0 36px}
 .entry-panel,.highlight-panel,.color-panel{flex:1;min-width:145px}.numpad{width:150px}.play-actions{width:145px;align-self:end}
 .board{width:min(96%,684px)}
 .guide{margin:14px 2% 0}
