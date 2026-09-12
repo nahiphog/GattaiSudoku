@@ -495,3 +495,150 @@ async function generateUnlimitedPuzzle() {
   };
   normaliseUnlimitedName();
 })();
+
+
+// Unlimited evaluation, generation timing, and help-panel refinements
+(() => {
+  ['#undoMove', '#redoMove'].forEach(selector => {
+    const button = document.querySelector(selector);
+    button.removeAttribute('title');
+    button.removeAttribute('data-tooltip');
+    delete button.dataset.tooltip;
+  });
+  const style = document.createElement('style');
+  style.textContent = ".help-page{min-height:270px}#howToPlay{font-family:'Lucida Console',monospace!important}.evaluation-button{width:100%;min-height:34px;border:1px solid var(--line);background:var(--muted);color:var(--ink);font:inherit;cursor:pointer}.evaluation-button:disabled{opacity:.45;cursor:not-allowed}.generation-clock{margin:0;color:var(--ink);font-weight:700}";
+  document.head.append(style);
+
+  const others = document.querySelector('.other-panel');
+  const evaluateButton = document.createElement('button');
+  evaluateButton.type = 'button';
+  evaluateButton.className = 'evaluation-button';
+  evaluateButton.textContent = 'Evaluate puzzle difficulty';
+  evaluateButton.disabled = true;
+  others.append(evaluateButton);
+  let evaluation = null;
+
+  const oldUnlimitedButton = document.querySelector('#unlimitedMode');
+  const unlimitedButton = oldUnlimitedButton.cloneNode(true);
+  oldUnlimitedButton.replaceWith(unlimitedButton);
+  const generationClock = document.createElement('p');
+  generationClock.className = 'generation-clock';
+  diggingDialog.querySelector('.digging-note').before(generationClock);
+
+  async function generateTimedUnlimitedPuzzle() {
+    const title = unlimitedButton.querySelector('strong');
+    const detail = unlimitedButton.querySelector('small');
+    const started = performance.now();
+    let timer = null;
+    document.querySelector('#archiveDialog')?.close();
+    unlimitedButton.disabled = true;
+    evaluateButton.disabled = true;
+    evaluation = null;
+    title.textContent = 'Generating…';
+    detail.textContent = 'Digging for uniqueness';
+    generationClock.textContent = 'Generation time: 0.00 seconds';
+    diggingMeter.max = active.length;
+    diggingMeter.value = active.length;
+    diggingStatus.textContent = 'Building a compatible Gattai grid…';
+    diggingDialog.showModal();
+    timer = setInterval(() => { generationClock.textContent = 'Generation time: ' + ((performance.now() - started) / 1000).toFixed(2) + ' seconds'; }, 100);
+    await nextPaint();
+    try {
+      const full = makeFullGattai();
+      const puzzle = [...full];
+      let changed = true;
+      let tested = 0;
+      showDiggingProgress(active.length);
+      while (changed) {
+        changed = false;
+        for (const cell of shuffle(active.filter(index => puzzle[index]))) {
+          const value = puzzle[cell];
+          puzzle[cell] = 0;
+          if (countGattaiSolutions(puzzle, 2) === 1) changed = true; else puzzle[cell] = value;
+          tested += 1;
+          if (tested % 4 === 0) {
+            showDiggingProgress(active.filter(index => puzzle[index]).length);
+            await nextPaint();
+          }
+        }
+      }
+      unlimitedGenerationMilliseconds = performance.now() - started;
+      generationClock.textContent = 'Generation time: ' + (unlimitedGenerationMilliseconds / 1000).toFixed(2) + ' seconds';
+      puzzles.unlimited = { date: 'unlimited', rows: rowsFromBoard(puzzle) };
+      unlimitedSolution = full;
+      userInputs.unlimited.fill(0);
+      userNotes.unlimited.forEach(note => note.clear());
+      userColors.unlimited.fill('');
+      histories.unlimited.length = 0;
+      redoHistories.unlimited.length = 0;
+      mode = 'human';
+      loadPuzzle('unlimited');
+      evaluateButton.disabled = false;
+      detail.textContent = 'Generate another';
+      diggingDialog.close();
+    } catch (error) {
+      diggingStatus.textContent = 'Generation could not complete. Please close this message and try again.';
+      detail.textContent = 'Try again';
+      diggingDialog.addEventListener('click', () => diggingDialog.close(), { once: true });
+    } finally {
+      clearInterval(timer);
+      unlimitedButton.disabled = false;
+      title.textContent = 'unlimited';
+    }
+  }
+  unlimitedButton.addEventListener('click', generateTimedUnlimitedPuzzle);
+
+  const evaluatedRefresh = refresh;
+  refresh = function () {
+    const showingEvaluatedWalkthrough = isUnlimited() && evaluation?.complete && mode === 'solver';
+    if (showingEvaluatedWalkthrough) {
+      const savedDay = activeDay;
+      activeDay = 'evaluation';
+      evaluatedRefresh();
+      activeDay = savedDay;
+    } else {
+      evaluatedRefresh();
+    }
+    if (!isUnlimited()) return;
+    const givens = original.filter((value, index) => active.includes(index) && value).length;
+    givenCount.textContent = givens + ' given cells';
+    const generationTime = document.querySelector('#unlimitedGenerationTime');
+    generationTime.hidden = false;
+    generationTime.textContent = 'Generation time: ' + (unlimitedGenerationMilliseconds / 1000).toFixed(2) + ' seconds';
+    document.querySelector('#puzzleDate').textContent = 'unlimited';
+    if (!evaluation) {
+      document.querySelector('#difficultyLabel').classList.add('is-hidden');
+      return;
+    }
+    const difficulty = document.querySelector('#difficultyLabel');
+    difficulty.classList.remove('is-hidden');
+    if (!evaluation.complete) {
+      difficulty.textContent = 'Difficulty: Over 9000';
+      return;
+    }
+    difficulty.textContent = 'Difficulty: ' + evaluation.rating.rating + ' (' + evaluation.rating.score + ')';
+    guide.classList.remove('hidden');
+    solutionRail.classList.remove('hidden');
+  };
+
+  evaluateButton.addEventListener('click', () => {
+    if (!isUnlimited() || !unlimitedSolution) return;
+    const savedDay = activeDay;
+    activeDay = 'evaluation';
+    const sequence = deriveSteps();
+    activeDay = savedDay;
+    const attempted = [...original];
+    sequence.forEach(step => { if (step.index !== null) attempted[step.index] = step.digit; });
+    if (!active.every(index => attempted[index])) {
+      evaluation = { complete: false };
+      mode = 'human';
+      refresh();
+      return;
+    }
+    evaluation = { complete: true, rating: rateSteps(sequence) };
+    steps = sequence;
+    stepIndex = 0;
+    mode = 'solver';
+    refresh();
+  });
+})();
