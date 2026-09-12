@@ -31,6 +31,7 @@ main{padding:24px 0}
 .day-sidebar>span,.entry-panel>span,.highlight-panel>span,.color-panel>span{font-weight:500;margin-bottom:3px;display:block}
 .day-button,.grid-button{margin:0;border:1px solid var(--ink);background:var(--muted);color:var(--ink);padding:8px;cursor:pointer;font:inherit;text-align:left}
 .week-toggle{margin:0 0 6px;border:1px solid var(--ink);background:transparent;color:var(--ink);padding:6px 8px;cursor:pointer;font:inherit;text-align:left;font-size:11px}
+.week-toggle,.unlimited-button{display:none}
 .day-button strong,.day-button small{display:block}
 .day-button strong{font-size:13px}
 .day-button small{font-size:11px}
