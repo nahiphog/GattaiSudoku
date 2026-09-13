@@ -1246,3 +1246,40 @@ document.head.insertAdjacentHTML("beforeend", "<style>[hidden]{display:none!impo
   }
   if (!addCheckerImport()) window.addEventListener('load', addCheckerImport, { once: true });
 })();
+
+
+/* Fix Custom Puzzle import after the checker redraws its selected cell. */
+(() => {
+  function repairCheckerImport() {
+    const dialog = document.querySelector('#manualCheckDialog');
+    const oldButton = dialog?.querySelector('#importManualString');
+    if (!oldButton || oldButton.dataset.fixedImport) return Boolean(oldButton);
+    const button = oldButton.cloneNode(true);
+    button.dataset.fixedImport = '1';
+    oldButton.replaceWith(button);
+    button.addEventListener('click', () => {
+      const text = dialog.querySelector('#manualStringImport').value.replace(/\s/g, '');
+      const status = dialog.querySelector('#manualCheckStatus');
+      if (!/^[1-9.]{144}$/.test(text)) {
+        status.textContent = 'Use exactly 144 characters: digits 1–9 and periods.';
+        return;
+      }
+      dialog.querySelector('#manualClear')?.click();
+      for (let index = 0; index < 144; index += 1) {
+        const digit = text[index];
+        if (digit === '.') continue;
+        const row = Math.floor(index / 12) + 1, column = (index % 12) + 1;
+        const cell = [...dialog.querySelectorAll('.manual-cell')].find(item => Number(item.style.gridRowStart) === row && Number(item.style.gridColumnStart) === column);
+        if (!cell) continue;
+        cell.click();
+        // Selecting a cell redraws the checker, so deliver the digit to the
+        // document-level keyboard handler rather than the old cell node.
+        document.dispatchEvent(new KeyboardEvent('keydown', { key: digit, bubbles: true }));
+      }
+      const count = [...text].filter(character => character !== '.').length;
+      status.textContent = 'Imported ' + count + ' given cells. You can now verify this puzzle.';
+    });
+    return true;
+  }
+  if (!repairCheckerImport()) window.addEventListener('load', repairCheckerImport, { once: true });
+})();
