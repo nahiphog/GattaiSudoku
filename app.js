@@ -1014,3 +1014,14 @@ document.head.insertAdjacentHTML("beforeend", "<style>[hidden]{display:none!impo
   new MutationObserver(decorateBuilder).observe(document.body, { childList:true, subtree:true });
   decorateBuilder();
 })();
+
+
+// Correct row-major picker mapping and reserve red for forbidden clues.
+(() => {
+  const update = () => document.querySelectorAll('#buildPicker .picker-cell').forEach(cell => {
+    const row = Number(cell.style.gridRowStart) - 1, column = Number(cell.style.gridColumnStart) - 1;
+    cell.dataset.builderIndex = String(row * 12 + column);
+  });
+  update(); new MutationObserver(update).observe(document.body,{childList:true,subtree:true});
+  const style=document.createElement('style');style.textContent='.picker-cell[data-state=remove]{background:#b83b3b!important}';document.head.append(style);
+})();
