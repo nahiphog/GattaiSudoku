@@ -1111,3 +1111,68 @@ document.head.insertAdjacentHTML("beforeend", "<style>[hidden]{display:none!impo
 
 /* Solver: outline only, and green wing pivots. */
 (()=>{const css=document.createElement('style');css.textContent='.board-card.solver-active .grid-a,.board-card.solver-active .grid-b{background:var(--paper)!important}.wing-pivot .snyder i{color:var(--select)!important;font-weight:800}';document.head.append(css);const before=renderBoard;renderBoard=function(){before();if(mode!=="solver"||isUnlimited())return;const step=steps[stepIndex]||{};if(!/wing/i.test(step.technique||''))return;const m=/pivot\s+(\d+)/i.exec(step.text||'');const pivot=step.pivot??step.pivotIndex??(m?+m[1]:null);if(pivot!==null)board.querySelector('[data-index="'+pivot+'"]')?.classList.add('wing-pivot')};})();
+
+
+/* September 14 puzzle and precise walkthrough highlighting. */
+(() => {
+  const september14Rows = [
+    "1.....89....", "86.....14...", ".72.....6...", "..64.....16.",
+    "...93.....87", "....6......5", "2...........", "64....12....",
+    ".31....48...", "...3....67..", "...81....35.", "....52....49"
+  ];
+  if (!dailyPuzzles.september14) {
+    dailyPuzzles.september14 = { date: "Monday, September 14, 2026", rows: september14Rows };
+    puzzles.september14 = dailyPuzzles.september14;
+    if (typeof archiveEntries !== "undefined" && typeof archiveByDate !== "undefined") {
+      const entry = { week: "current", day: "september14", year: 2026, month: 9, date: 14 };
+      if (!archiveEntries.some(item => item.year === 2026 && item.month === 9 && item.date === 14)) archiveEntries.push(entry);
+      archiveByDate.set(archiveKey(2026, 9, 14), entry);
+    }
+  }
+
+  const style = document.createElement("style");
+  style.textContent = "#board .cell.walkthrough-grid-highlight { background: transparent !important; box-shadow: none !important; } #board .cell.wing-pivot .snyder i.wing-candidate { color: #16803c !important; font-weight: 800; text-shadow: 0 0 0.01px currentColor; }";
+  document.head.append(style);
+
+  const priorRenderBoard = renderBoard;
+  renderBoard = function renderBoardWithPreciseWingPivot() {
+    priorRenderBoard();
+    if (mode !== "solver" || isUnlimited()) return;
+    board.querySelectorAll(".walkthrough-grid-highlight").forEach(cell => cell.classList.remove("walkthrough-grid-highlight"));
+
+    const step = steps[stepIndex] || {};
+    if (!/wing/i.test(String(step.technique || ""))) return;
+    const beforeNotes = step.beforeNotes || {};
+    const pivotIndexes = new Set();
+    const addIndex = value => {
+      const index = Number(value);
+      if (Number.isInteger(index) && beforeNotes[index]) pivotIndexes.add(index);
+    };
+    addIndex(step.pivot); addIndex(step.pivotIndex);
+
+    const pivotMatch = /pivot[^R]*(?:G([12])\s*)?R(\d+)C(\d+)/i.exec(String(step.text || ""));
+    if (pivotMatch) {
+      const grid = Number(pivotMatch[1] || (/\bG2\b|Grid 2/i.test(String(step.house || step.text || "")) ? 2 : 1));
+      const row = Number(pivotMatch[2]), column = Number(pivotMatch[3]);
+      addIndex(grid === 2 ? (row + 2) * 12 + column + 2 : (row - 1) * 12 + column - 1);
+    }
+    if (!pivotIndexes.size) {
+      const referenced = [
+        ...(Array.isArray(step.highlight) ? step.highlight : []),
+        ...(Array.isArray(step.emphasis) ? step.emphasis.map(item => item.index) : [])
+      ];
+      const pair = referenced.find(index => (beforeNotes[index] || []).length === 2);
+      if (pair !== undefined) addIndex(pair);
+    }
+
+    pivotIndexes.forEach(index => {
+      const cell = board.querySelector('[data-index="' + index + '"]');
+      if (!cell) return;
+      cell.classList.add("wing-pivot");
+      const candidates = new Set(beforeNotes[index] || []);
+      cell.querySelectorAll(".snyder i").forEach(mark => {
+        if (candidates.has(Number(mark.textContent))) mark.classList.add("wing-candidate");
+      });
+    });
+  };
+})();
