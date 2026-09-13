@@ -1434,3 +1434,64 @@ document.head.insertAdjacentHTML("beforeend", "<style>[hidden]{display:none!impo
   }
   if (!installBuildWorkspace()) window.addEventListener('load', installBuildWorkspace, { once: true });
 })();
+
+/* Build: the extra-clue dropdown is the only clue-addition limit. */
+(() => {
+  function removeLegacyBuildCap() {
+    const picker = document.querySelector('#buildPicker');
+    const previous = document.querySelector('#buildCreate');
+    const select = document.querySelector('#buildAdditionCap');
+    if (!picker || !previous || !select || picker.dataset.noLegacyCap) return Boolean(picker && previous && select);
+    picker.dataset.noLegacyCap = '1';
+    const dialog = picker.closest('dialog') || picker.parentElement;
+    const status = dialog.querySelector('.builder-status');
+    const halt = dialog.querySelector('.build-halt');
+    const final = dialog.querySelector('.builder-final');
+    const cells = [...picker.querySelectorAll('button')];
+    const draw = puzzle => {
+      final.hidden = false; final.replaceChildren();
+      const note = document.createElement('p'); note.className = 'builder-final-count';
+      note.textContent = 'Final grid: ' + active.filter(index => puzzle[index]).length + ' given cells';
+      final.append(note);
+    };
+    const button = previous.cloneNode(true); previous.replaceWith(button);
+    let stopped = false;
+    halt.onclick = () => { stopped = true; status.textContent = 'Building halted. Your selections are unchanged.'; };
+    const paint = () => new Promise(resolve => setTimeout(resolve, 0));
+    button.onclick = async () => {
+      const keep = new Set(cells.filter(cell => cell.dataset.state === 'keep').map(cell => +cell.dataset.builderIndex));
+      const empty = new Set(cells.filter(cell => cell.dataset.state === 'remove').map(cell => +cell.dataset.builderIndex));
+      const extraLimit = Number(select.value);
+      stopped = false; halt.hidden = false; button.disabled = true; final.hidden = true;
+      const started = performance.now(); let attempt = 0; let result = null;
+      while (!stopped && !result) {
+        attempt += 1;
+        const full = makeFullGattai(), puzzle = Array(144).fill(0);
+        keep.forEach(index => { puzzle[index] = full[index]; });
+        const pool = shuffle(active.filter(index => !keep.has(index) && !empty.has(index)));
+        let added = 0;
+        while (!stopped && countGattaiSolutions(puzzle, 2) !== 1 && added < extraLimit && pool.length) {
+          const index = pool.pop(); puzzle[index] = full[index]; added += 1;
+          status.textContent = 'Adding clues: ' + added + ' of ' + extraLimit + ' · ' + Math.floor((performance.now() - started) / 1000) + ' s';
+          await paint();
+        }
+        if (!stopped && countGattaiSolutions(puzzle, 2) === 1) result = { puzzle, full };
+        else if (!stopped) { status.textContent = 'Restarting · attempt ' + attempt + ' (limit: ' + extraLimit + ' extra clues)'; await paint(); }
+      }
+      halt.hidden = true; button.disabled = false;
+      if (!result) return;
+      window.lastBuiltGattai = { puzzle: result.puzzle, solution: result.full };
+      draw(result.puzzle);
+      status.textContent = 'Finished in ' + Math.floor((performance.now() - started) / 1000) + ' s · Added ' + (active.filter(index => result.puzzle[index]).length - keep.size) + ' clue(s).';
+    };
+    return true;
+  }
+  if (!removeLegacyBuildCap()) window.addEventListener('load', removeLegacyBuildCap, { once: true });
+})();
+
+/* Compact desktop controls without affecting the mobile layout. */
+(() => {
+  const style = document.createElement('style');
+  style.textContent = '@media (min-width: 821px) { .control-sidebar { width: 210px !important; max-width: 210px; } .control-sidebar > *, .control-sidebar .entry-tabs, .control-sidebar .other-panel, .control-sidebar .highlight-panel { max-width: 210px; box-sizing: border-box; } .control-sidebar button { width: 100%; max-width: 210px; box-sizing: border-box; } .control-sidebar .numpad { width: 210px; max-width: 210px; grid-template-columns: repeat(3, minmax(0, 1fr)); } .control-sidebar .numpad button { width: 100%; min-width: 0; } dialog.build-workspace-page button:not(.picker-cell) { max-width: 240px; } }';
+  document.head.append(style);
+})();
