@@ -745,3 +745,41 @@ document.head.insertAdjacentHTML("beforeend", "<style>[hidden]{display:none!impo
   });
   const style=document.createElement("style");style.textContent=".complete-grid-dialog{width:max-content;max-width:calc(100vw - 32px);max-height:calc(100vh - 32px);padding:22px;border:1px solid var(--line);border-radius:16px;background:var(--surface);color:var(--ink)}.complete-grid-dialog::backdrop{background:rgba(19,58,76,.35)}.complete-title{display:flex;align-items:center;justify-content:space-between;gap:32px}.complete-title h2{margin:0}.complete-scroll{overflow:auto;max-width:calc(100vw - 76px);padding:3px}.complete-board{margin:0 auto}.complete-board .filled-complete{color:#1c6fa1}.complete-board .given{color:#111}.complete-grid-dialog>#copyComplete,.reveal-complete-grid{width:100%;min-height:34px;margin-top:14px;border:1px solid var(--line);border-radius:8px;background:var(--muted);color:var(--ink);font:inherit;font-weight:700;cursor:pointer}";document.head.append(style);
 })();
+
+
+// Header ordering, corrected puzzle tally, and walkthrough grid focus
+(() => {
+  const priorRefreshForHeader = refresh;
+  const priorRenderForFocus = renderBoard;
+  const tally = document.querySelector('#puzzleTally');
+  function numberForDate(dateText) {
+    const match = String(dateText).match(/([A-Za-z]+)\s+(\d+),\s+(\d+)/);
+    const months = { January:0, February:1, March:2, April:3, May:4, June:5, July:6, August:7, September:8, October:9, November:10, December:11 };
+    if (!match || months[match[1]] === undefined) return null;
+    return Math.floor((Date.UTC(Number(match[3]), months[match[1]], Number(match[2])) - Date.UTC(2026, 7, 31)) / 86400000) + 1;
+  }
+  refresh = function () {
+    priorRefreshForHeader();
+    if (isUnlimited()) return;
+    const [weekday, ...dateParts] = puzzleDate.split(', ');
+    const dateNode = document.querySelector('#puzzleDate');
+    dateNode.innerHTML = '<span class="calendar-date">' + dateParts.join(', ') + '</span><span class="weekday">' + weekday + '</span>';
+    const number = numberForDate(puzzleDate);
+    if (tally) { tally.textContent = number ? 'Puzzle #' + number : ''; tally.hidden = false; dateNode.before(tally); }
+  };
+  renderBoard = function () {
+    priorRenderForFocus();
+    if (mode !== 'solver' || isUnlimited()) return;
+    const step = steps[stepIndex] || {};
+    const stepText = [step.house, step.text, step.explanation].filter(Boolean).join(' ');
+    const highlightGridTwo = /(?:\bG2\b|Grid\s*2)/i.test(stepText);
+    board.querySelectorAll('.cell').forEach(cell => {
+      const index = Number(cell.dataset.index), row = Math.floor(index / 12), column = index % 12;
+      cell.classList.toggle('walkthrough-grid-highlight', highlightGridTwo ? row >= 3 && column >= 3 : row < 9 && column < 9);
+    });
+  };
+  const focusStyle = document.createElement('style');
+  focusStyle.textContent = '#puzzleTally{display:block;margin:0;font-size:.95rem;font-weight:800}#puzzleDate{display:flex;flex-direction:column}#puzzleDate .calendar-date{order:0}#puzzleDate .weekday{order:1;margin-top:2px}.board .cell.walkthrough-grid-highlight{background-color:rgba(60,130,246,.13)!important}';
+  document.head.append(focusStyle);
+  refresh();
+})();
