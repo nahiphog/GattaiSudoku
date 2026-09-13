@@ -783,3 +783,71 @@ document.head.insertAdjacentHTML("beforeend", "<style>[hidden]{display:none!impo
   document.head.append(focusStyle);
   refresh();
 })();
+
+
+// Build-a-puzzle studio, constrained Unlimited generator, and header refinements.
+(() => {
+  const allDays = ['Sunday','Monday','Tuesday','Wednesday','Thursday','Friday','Saturday'];
+  const allKeys = ['sunday','monday','tuesday','wednesday','thursday','friday','saturday'];
+  const buildSelected = new Set();
+  let buildDraft = null;
+  const toRows = values => Array.from({length:12}, (_,r) => Array.from({length:12}, (_,c) => values[r*12+c] || '.').join(''));
+  const toDate = value => { const parts = value.split('-').map(Number); return new Date(Date.UTC(parts[0],parts[1]-1,parts[2])); };
+  const dateLabel = date => date.toLocaleDateString('en-US',{month:'long',day:'numeric',year:'numeric',timeZone:'UTC'});
+  const logicResult = values => {
+    const saved = [...original], savedDay = activeDay;
+    original.splice(0,original.length,...values); activeDay = 'logic-check';
+    let path=[]; try { path=deriveSteps(); } finally { original.splice(0,original.length,...saved); activeDay=savedDay; }
+    const solved=[...values]; path.forEach(step=>{if(step.index!==null)solved[step.index]=step.digit;});
+    return {complete:active.every(index=>solved[index]),path};
+  };
+  const picker = (target,state,onPress) => {
+    target.replaceChildren();
+    for(let row=0;row<12;row+=1)for(let column=0;column<12;column+=1){
+      if(!hasCell(row,column))continue;
+      const index=row*12+column,cell=document.createElement('button');
+      cell.type='button';cell.className='picker-cell';cell.style.gridColumnStart=column+1;cell.style.gridRowStart=row+1;
+      const paint=()=>cell.dataset.state=state.get(index)||''; paint();
+      cell.addEventListener('click',()=>{onPress(index);paint();});target.append(cell);
+    }
+  };
+  const buildDialog=document.createElement('dialog');
+  buildDialog.className='build-dialog';
+  buildDialog.innerHTML='<button class="dialog-close" type="button" aria-label="Close">×</button><p class="eyebrow">BUILD A PUZZLE</p><h2>Choose starting clues</h2><p>Tap any cells to retain. A full Gattai is generated, all unselected cells are removed, then clues are restored in random pairs until the result is unique.</p><div class="picker-board" id="buildPicker"></div><p id="buildCount" class="builder-count">0 selected cells</p><button id="buildCreate" class="primary-build" type="button">Create puzzle</button><section id="buildResult" hidden><p id="buildSummary"></p><label>Publish date <input id="buildDate" type="date" /></label><button id="buildPublish" class="primary-build" type="button">Publish to selected date</button><p class="cloud-note">Public publishing uses the configured Supabase endpoint.</p></section>';
+  document.body.append(buildDialog);
+  const buildState=new Map(), buildCount=buildDialog.querySelector('#buildCount');
+  picker(buildDialog.querySelector('#buildPicker'),buildState,index=>{if(buildSelected.has(index)){buildSelected.delete(index);buildState.delete(index);}else{buildSelected.add(index);buildState.set(index,'keep');}buildCount.textContent=buildSelected.size+' selected cell'+(buildSelected.size===1?'':'s');});
+  buildDialog.querySelector('.dialog-close').addEventListener('click',()=>buildDialog.close());
+  buildDialog.querySelector('#buildCreate').addEventListener('click',()=>{
+    const full=makeFullGattai(),values=Array(144).fill(0),rest=shuffle(active.filter(index=>!buildSelected.has(index)));
+    buildSelected.forEach(index=>values[index]=full[index]);
+    let offset=0;while(countGattaiSolutions(values,2)!==1&&offset<rest.length){rest.slice(offset,offset+2).forEach(index=>values[index]=full[index]);offset+=2;}
+    const unique=countGattaiSolutions(values,2)===1,report=buildDialog.querySelector('#buildResult'),summary=buildDialog.querySelector('#buildSummary');report.hidden=false;
+    if(!unique){summary.textContent='This selection could not be completed as a unique puzzle. Add more selected cells and try again.';return;}
+    const logic=logicResult(values),rating=logic.complete?rateSteps(logic.path):{rating:'Over 9000',score:null};buildDraft={values,rows:toRows(values),rating};
+    const givens=active.filter(index=>values[index]).length;summary.textContent='Unique puzzle created with '+givens+' givens. Difficulty: '+rating.rating+(rating.score===null?'':' ('+rating.score+')')+'.';buildDialog.querySelector('#buildDate').value=new Date().toISOString().slice(0,10);
+  });
+  buildDialog.querySelector('#buildPublish').addEventListener('click',async()=>{
+    if(!buildDraft)return;const input=buildDialog.querySelector('#buildDate').value;if(!input)return;
+    const day=toDate(input),key=allKeys[day.getUTCDay()],date=allDays[day.getUTCDay()]+', '+dateLabel(day),endpoint=window.GATTAI_PUZZLE_PUBLISH_ENDPOINT;
+    const payload={puzzle_date:input,day:key,date,rows:buildDraft.rows,difficulty:buildDraft.rating};
+    if(!endpoint){buildDialog.querySelector('#buildSummary').textContent='The public Supabase publish endpoint has not been configured yet, so this draft cannot be shared from other browsers.';return;}
+    try{const response=await fetch(endpoint,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(payload)});if(!response.ok)throw new Error('Publish service returned an error');dailyPuzzles[key]={date,rows:buildDraft.rows};activeWeek='current';mode='human';loadPuzzle(key);buildDialog.close();}catch(error){buildDialog.querySelector('#buildSummary').textContent='Publishing failed: '+error.message;}
+  });
+  const archive=document.querySelector('#archiveDialog'),openBuild=document.createElement('button');openBuild.type='button';openBuild.className='build-category-button';openBuild.textContent='Build a puzzle';openBuild.addEventListener('click',()=>{archive.close();buildDialog.showModal();});archive.append(openBuild);
+
+  const setup=document.createElement('dialog');setup.className='build-dialog';setup.innerHTML='<button class="dialog-close" type="button" aria-label="Close">×</button><p class="eyebrow">UNLIMITED</p><h2>Set digging constraints</h2><p>Select <b>Keep clues</b> for cells that cannot be removed, or <b>Remove clues</b> for cells that must be empty in the final puzzle.</p><div class="constraint-actions"><button data-mark="keep" type="button">Keep clues</button><button data-mark="remove" type="button">Remove clues</button><button data-mark="" type="button">Clear mark</button></div><div class="picker-board" id="constraintPicker"></div><button id="constraintStart" class="primary-build" type="button">Generate unlimited puzzle</button>';
+  document.body.append(setup);let mark='keep';const constraints=new Map();
+  picker(setup.querySelector('#constraintPicker'),constraints,index=>{if(mark)constraints.set(index,mark);else constraints.delete(index);});
+  setup.querySelectorAll('[data-mark]').forEach(button=>button.addEventListener('click',()=>{mark=button.dataset.mark;setup.querySelectorAll('[data-mark]').forEach(item=>item.classList.toggle('active',item===button));}));setup.querySelector('[data-mark=keep]').classList.add('active');setup.querySelector('.dialog-close').addEventListener('click',()=>setup.close());
+  const oldUnlimited=document.querySelector('#unlimitedMode'),unlimited=oldUnlimited.cloneNode(true);oldUnlimited.replaceWith(unlimited);unlimited.addEventListener('click',()=>setup.showModal());
+  setup.querySelector('#constraintStart').addEventListener('click',async()=>{
+    setup.close();unlimited.disabled=true;const locked=new Set([...constraints].filter(([,value])=>value==='keep').map(([index])=>index)),empty=new Set([...constraints].filter(([,value])=>value==='remove').map(([index])=>index));
+    const started=performance.now(),clock=document.querySelector('.generation-clock');let working=null,timer=null;diggingDialog.showModal();
+    const paint=()=>{const remain=working?active.filter(index=>working[index]).length:active.length;diggingMeter.max=active.length;diggingMeter.value=remain;diggingStatus.textContent='Digging the puzzle now. '+remain+' cells remaining.';if(clock)clock.textContent='∞ '+((performance.now()-started)/1000).toFixed(2)+' s';};
+    try{const full=makeFullGattai();working=[...full];empty.forEach(index=>working[index]=0);paint();timer=setInterval(paint,100);await nextPaint();let changed=true;while(changed){changed=false;for(const index of shuffle(active.filter(index=>working[index]&&!locked.has(index)))){const value=working[index];working[index]=0;const logical=logicResult(working).complete;const unique=countGattaiSolutions(working,2)===1;if(unique)changed=true;else working[index]=value;diggingStatus.textContent=logical?'Digging with named techniques. '+active.filter(cell=>working[cell]).length+' cells remaining.':'Digging the puzzle now. '+active.filter(cell=>working[cell]).length+' cells remaining.';await nextPaint();}}if(countGattaiSolutions(working,2)!==1)throw new Error('Those forced removals prevent a unique puzzle');unlimitedGenerationMilliseconds=performance.now()-started;puzzles.unlimited={date:'unlimited',rows:toRows(working)};unlimitedSolution=full;userInputs.unlimited.fill(0);userNotes.unlimited.forEach(note=>note.clear());userColors.unlimited.fill('');histories.unlimited.length=0;redoHistories.unlimited.length=0;mode='human';loadPuzzle('unlimited');diggingDialog.close();}catch(error){diggingStatus.textContent=error.message+'. Close this message and adjust the marked cells.';}finally{clearInterval(timer);unlimited.disabled=false;unlimited.querySelector('strong').textContent='unlimited';}
+  });
+  const baseLoad=loadPuzzle;loadPuzzle=function(day){resetTimer();return baseLoad(day);};
+  document.querySelector('header .header-end').prepend(document.querySelector('.timer-controls'));document.querySelector('.gattai-logo')?.remove();document.querySelectorAll('.settings-colours .color-clear').forEach(button=>button.remove());
+  const style=document.createElement('style');style.textContent='.header-end{display:flex;align-items:center;gap:9px}.header-end .timer-controls{margin-right:2px}.build-category-button{width:100%;margin-top:18px;border:1px solid var(--line);background:var(--muted);color:var(--ink);padding:10px;font:inherit;font-weight:700;cursor:pointer}.build-dialog{width:min(94vw,650px);max-width:none}.picker-board{display:grid;grid-template-columns:repeat(12,1fr);grid-template-rows:repeat(12,1fr);width:min(100%,470px);aspect-ratio:1;margin:16px auto}.picker-cell{padding:0;border:1px solid var(--thin);background:var(--paper);cursor:pointer}.picker-cell[data-state=keep]{background:#2f9e63}.picker-cell[data-state=remove]{background:#d39d1e}.constraint-actions{display:flex;gap:8px;flex-wrap:wrap}.constraint-actions button,.primary-build{border:1px solid var(--line);background:var(--muted);color:var(--ink);padding:8px 10px;font:inherit;cursor:pointer}.constraint-actions button.active,.primary-build{background:var(--ink);color:var(--surface)}.builder-count{text-align:center;font-weight:700}.build-dialog label{display:grid;gap:5px;margin:14px 0}.cloud-note{font-size:12px;color:var(--thin)}.settings-colours .color-button{box-shadow:none!important;background-clip:border-box!important}';document.head.append(style);
+})();
