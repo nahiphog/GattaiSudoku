@@ -1176,3 +1176,36 @@ document.head.insertAdjacentHTML("beforeend", "<style>[hidden]{display:none!impo
     });
   };
 })();
+
+
+/* Build result: export the finished grid as a 144-character string. */
+(() => {
+  function addBuildExport() {
+    const final = document.querySelector('.builder-final');
+    if (!final || final.dataset.exportReady) return Boolean(final);
+    final.dataset.exportReady = '1';
+    const observer = new MutationObserver(() => {
+      if (final.hidden || final.querySelector('.builder-string-export')) return;
+      const source = window.lastBuiltGattai?.puzzle;
+      if (!Array.isArray(source)) return;
+      const button = document.createElement('button');
+      button.type = 'button';
+      button.className = 'builder-string-export';
+      button.textContent = 'Copy 144-character string';
+      button.addEventListener('click', async () => {
+        const text = rowsFromBoard(window.lastBuiltGattai.puzzle).join('');
+        try {
+          await navigator.clipboard.writeText(text);
+          button.textContent = 'Copied 144-character string';
+          setTimeout(() => { button.textContent = 'Copy 144-character string'; }, 1600);
+        } catch {
+          button.textContent = text;
+        }
+      });
+      final.append(button);
+    });
+    observer.observe(final, { childList: true, subtree: true, attributes: true, attributeFilter: ['hidden'] });
+    return true;
+  }
+  if (!addBuildExport()) window.addEventListener('load', addBuildExport, { once: true });
+})();
