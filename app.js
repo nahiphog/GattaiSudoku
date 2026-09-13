@@ -829,10 +829,10 @@ document.head.insertAdjacentHTML("beforeend", "<style>[hidden]{display:none!impo
   });
   buildDialog.querySelector('#buildPublish').addEventListener('click',async()=>{
     if(!buildDraft)return;const input=buildDialog.querySelector('#buildDate').value;if(!input)return;
-    const day=toDate(input),key=allKeys[day.getUTCDay()],date=allDays[day.getUTCDay()]+', '+dateLabel(day),endpoint=window.GATTAI_PUZZLE_PUBLISH_ENDPOINT;
+    const day=toDate(input),key=allKeys[day.getUTCDay()],date=allDays[day.getUTCDay()]+', '+dateLabel(day),endpoint='https://zoqztntaoogbkmcqfmhx.supabase.co/rest/v1/gattai_puzzles';
     const payload={puzzle_date:input,day:key,date,rows:buildDraft.rows,difficulty:buildDraft.rating};
     if(!endpoint){buildDialog.querySelector('#buildSummary').textContent='The public Supabase publish endpoint has not been configured yet, so this draft cannot be shared from other browsers.';return;}
-    try{const response=await fetch(endpoint,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(payload)});if(!response.ok)throw new Error('Publish service returned an error');dailyPuzzles[key]={date,rows:buildDraft.rows};activeWeek='current';mode='human';loadPuzzle(key);buildDialog.close();}catch(error){buildDialog.querySelector('#buildSummary').textContent='Publishing failed: '+error.message;}
+    try{const response=await fetch(endpoint,{method:'POST',headers:{'Content-Type':'application/json','apikey':'sb_publishable_iJ7sxYm4oGnkZqXevbj-Qw_2l7bs7rr','Authorization':'Bearer sb_publishable_iJ7sxYm4oGnkZqXevbj-Qw_2l7bs7rr','Prefer':'return=minimal'},body:JSON.stringify({puzzle_date:input,puzzle:payload,difficulty:buildDraft.rating,given_count:buildDraft.rows.reduce((total,row)=>total+[...row].filter(value=>value!=='.').length,0)})});if(!response.ok)throw new Error('Publish service returned an error');const publishedKey='published-'+input;dailyPuzzles[publishedKey]={date,rows:buildDraft.rows};archiveByDate.set(archiveKey(day.getFullYear(),day.getMonth()+1,day.getDate()),{week:'published',day:publishedKey});activeWeek='published';mode='human';loadPuzzle(publishedKey);buildDialog.close();}catch(error){buildDialog.querySelector('#buildSummary').textContent='Publishing failed: '+error.message;}
   });
   const archive=document.querySelector('#archiveDialog'),openBuild=document.createElement('button');openBuild.type='button';openBuild.className='build-category-button';openBuild.textContent='Build a puzzle';openBuild.addEventListener('click',()=>{archive.close();buildDialog.showModal();});archive.append(openBuild);
 
@@ -850,4 +850,26 @@ document.head.insertAdjacentHTML("beforeend", "<style>[hidden]{display:none!impo
   const baseLoad=loadPuzzle;loadPuzzle=function(day){resetTimer();return baseLoad(day);};
   document.querySelector('header .header-end').prepend(document.querySelector('.timer-controls'));document.querySelector('.gattai-logo')?.remove();document.querySelectorAll('.settings-colours .color-clear').forEach(button=>button.remove());
   const style=document.createElement('style');style.textContent='.header-end{display:flex;align-items:center;gap:9px}.header-end .timer-controls{margin-right:2px}.build-category-button{width:100%;margin-top:18px;border:1px solid var(--line);background:var(--muted);color:var(--ink);padding:10px;font:inherit;font-weight:700;cursor:pointer}.build-dialog{width:min(94vw,650px);max-width:none}.picker-board{display:grid;grid-template-columns:repeat(12,1fr);grid-template-rows:repeat(12,1fr);width:min(100%,470px);aspect-ratio:1;margin:16px auto}.picker-cell{padding:0;border:1px solid var(--thin);background:var(--paper);cursor:pointer}.picker-cell[data-state=keep]{background:#2f9e63}.picker-cell[data-state=remove]{background:#d39d1e}.constraint-actions{display:flex;gap:8px;flex-wrap:wrap}.constraint-actions button,.primary-build{border:1px solid var(--line);background:var(--muted);color:var(--ink);padding:8px 10px;font:inherit;cursor:pointer}.constraint-actions button.active,.primary-build{background:var(--ink);color:var(--surface)}.builder-count{text-align:center;font-weight:700}.build-dialog label{display:grid;gap:5px;margin:14px 0}.cloud-note{font-size:12px;color:var(--thin)}.settings-colours .color-button{box-shadow:none!important;background-clip:border-box!important}';document.head.append(style);
+})();
+
+
+(()=>{
+  const PUBLISHED_URL='https://zoqztntaoogbkmcqfmhx.supabase.co/rest/v1/gattai_puzzles';
+  const PUBLISHED_KEY='sb_publishable_iJ7sxYm4oGnkZqXevbj-Qw_2l7bs7rr';
+  async function loadPublishedPuzzles(){
+    try {
+      const response=await fetch(PUBLISHED_URL+'?select=puzzle_date,puzzle',{headers:{apikey:PUBLISHED_KEY,Authorization:'Bearer '+PUBLISHED_KEY}});
+      if(!response.ok) throw new Error('Unable to load published puzzles');
+      const entries=await response.json();
+      entries.forEach(entry=>{
+        const puzzle=entry.puzzle; if(!puzzle||!Array.isArray(puzzle.rows)) return;
+        const date=toDate(entry.puzzle_date), id='published-'+entry.puzzle_date;
+        const label=puzzle.date||allDays[date.getUTCDay()]+', '+dateLabel(date);
+        dailyPuzzles[id]={date:label,rows:puzzle.rows};
+        archiveByDate.set(archiveKey(date.getUTCFullYear(),date.getUTCMonth()+1,date.getUTCDate()),{week:'published',day:id});
+      });
+      renderArchiveCalendar();
+    } catch(error) { console.warn('Published puzzles could not be loaded.',error); }
+  }
+  loadPublishedPuzzles();
 })();
