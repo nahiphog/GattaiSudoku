@@ -1283,3 +1283,154 @@ document.head.insertAdjacentHTML("beforeend", "<style>[hidden]{display:none!impo
   }
   if (!repairCheckerImport()) window.addEventListener('load', repairCheckerImport, { once: true });
 })();
+
+
+/* Build a puzzle: cap the number of automatically added clues. */
+(() => {
+  function installAdditionCap() {
+    const picker = document.querySelector('#buildPicker');
+    const oldButton = document.querySelector('#buildCreate');
+    if (!picker || !oldButton || picker.dataset.additionCap) return Boolean(picker && oldButton);
+    picker.dataset.additionCap = '1';
+    const dialog = picker.closest('dialog') || picker.parentElement;
+    const status = dialog.querySelector('.builder-status') || document.createElement('p');
+    status.className = 'builder-status'; if (!status.parentElement) oldButton.before(status);
+    const label = document.createElement('label'); label.className = 'builder-addition-cap'; label.textContent = 'Maximum extra clues: ';
+    const select = document.createElement('select'); select.id = 'buildAdditionCap';
+    for (let n = 0; n <= 30; n += 1) { const option = document.createElement('option'); option.value = String(n); option.textContent = String(n); if (n === 30) option.selected = true; select.append(option); }
+    label.append(select); oldButton.before(label);
+    const halt = dialog.querySelector('.build-halt') || Object.assign(document.createElement('button'), { type: 'button', className: 'build-halt', textContent: 'Halt building', hidden: true });
+    if (!halt.parentElement) oldButton.after(halt);
+    const final = dialog.querySelector('.builder-final') || Object.assign(document.createElement('section'), { className: 'builder-final', hidden: true });
+    if (!final.parentElement) halt.after(final);
+    const cells = [...picker.querySelectorAll('button')];
+    cells.forEach(cell => { const r = Number(cell.style.gridRowStart) - 1, c = Number(cell.style.gridColumnStart) - 1; cell.dataset.builderIndex = String(r * 12 + c); });
+    let stopped = false; halt.onclick = () => { stopped = true; status.textContent = 'Building halted. Your selections are unchanged.'; };
+    const nextPaint = () => new Promise(resolve => setTimeout(resolve, 0));
+    const draw = puzzle => { final.hidden = false; final.replaceChildren(); const note = document.createElement('p'); note.className = 'builder-final-count'; note.textContent = 'Final grid: ' + active.filter(index => puzzle[index]).length + ' given cells'; final.append(note); };
+    const button = oldButton.cloneNode(true); oldButton.replaceWith(button);
+    button.onclick = async () => {
+      const keep = new Set(cells.filter(cell => cell.dataset.state === 'keep').map(cell => +cell.dataset.builderIndex));
+      const empty = new Set(cells.filter(cell => cell.dataset.state === 'remove').map(cell => +cell.dataset.builderIndex));
+      const extraLimit = Number(select.value), totalLimit = Math.min(45, keep.size + extraLimit);
+      stopped = false; halt.hidden = false; button.disabled = true; final.hidden = true;
+      const started = performance.now(); let attempt = 0, result = null;
+      while (!stopped && !result) {
+        attempt += 1; const full = makeFullGattai(), puzzle = Array(144).fill(0); keep.forEach(index => puzzle[index] = full[index]);
+        const pool = shuffle(active.filter(index => !keep.has(index) && !empty.has(index))); let added = 0;
+        while (!stopped && countGattaiSolutions(puzzle, 2) !== 1 && added < extraLimit && active.filter(index => puzzle[index]).length < totalLimit && pool.length) {
+          const cell = pool.pop(); puzzle[cell] = full[cell]; added += 1;
+          status.textContent = 'Adding clues: ' + added + ' of ' + extraLimit + ' · ' + Math.floor((performance.now() - started) / 1000) + ' s'; await nextPaint();
+        }
+        if (!stopped && countGattaiSolutions(puzzle, 2) === 1) result = { puzzle, full }; else if (!stopped) { status.textContent = 'Restarting · attempt ' + attempt + ' (limit: ' + extraLimit + ' extra clues)'; await nextPaint(); }
+      }
+      halt.hidden = true; button.disabled = false; if (!result) return;
+      draw(result.puzzle); window.lastBuiltGattai = { puzzle: result.puzzle, solution: result.full };
+      status.textContent = 'Finished in ' + Math.floor((performance.now() - started) / 1000) + ' s · Added ' + (active.filter(index => result.puzzle[index]).length - keep.size) + ' clue(s).';
+    };
+    return true;
+  }
+  if (!installAdditionCap()) window.addEventListener('load', installAdditionCap, { once: true });
+})();
+
+
+/* Keep the finished grid visible after the capped Build flow. */
+(() => {
+  function restoreCappedBuildPreview() {
+    const final = document.querySelector('.builder-final'); if (!final || final.dataset.cappedPreview) return Boolean(final);
+    final.dataset.cappedPreview = '1';
+    new MutationObserver(() => queueMicrotask(() => {
+      const puzzle = window.lastBuiltGattai?.puzzle;
+      if (final.hidden || !Array.isArray(puzzle) || final.querySelector('.builder-final-grid')) return;
+      const grid = document.createElement('div'); grid.className = 'builder-final-grid';
+      for (let row = 0; row < 12; row += 1) for (let column = 0; column < 12; column += 1) {
+        if (!hasCell(row, column)) continue; const index = row * 12 + column, cell = document.createElement('span');
+        cell.style.gridRowStart = row + 1; cell.style.gridColumnStart = column + 1; cell.textContent = puzzle[index] || ''; grid.append(cell);
+      }
+      ['h-0','h-3','h-6','h-9','h-12'].forEach(name => { const line = document.createElement('i'); line.className = 'builder-boundary horizontal ' + name; grid.append(line); });
+      ['v-0','v-3','v-6','v-9','v-12'].forEach(name => { const line = document.createElement('i'); line.className = 'builder-boundary vertical ' + name; grid.append(line); });
+      final.append(grid);
+    })).observe(final, { childList: true, subtree: true });
+    return true;
+  }
+  if (!restoreCappedBuildPreview()) window.addEventListener('load', restoreCappedBuildPreview, { once: true });
+})();
+
+/* Build a puzzle as a dedicated workspace and show its completed result. */
+(() => {
+  function installBuildWorkspace() {
+    const picker = document.querySelector('#buildPicker');
+    const dialog = picker && picker.closest('dialog');
+    const archiveButton = document.querySelector('.build-category-button');
+    if (!picker || !dialog || dialog.dataset.buildWorkspace) return Boolean(picker && dialog);
+    dialog.dataset.buildWorkspace = '1';
+    const style = document.createElement('style');
+    style.textContent = `
+      dialog.build-workspace-page[open] { position: fixed; inset: 0; width: 100vw; max-width: none; height: 100vh; max-height: none; margin: 0; padding: clamp(18px, 4vw, 52px); border: 0; border-radius: 0; background: var(--paper, #fff); color: var(--ink, #1b2230); overflow: auto; z-index: 1000; }
+      .build-workspace-page .builder-final { display: flex; flex-wrap: wrap; gap: 24px; align-items: flex-start; margin-top: 24px; }
+      .build-workspace-page .builder-final-count, .build-workspace-page .builder-string-export { flex-basis: 100%; }
+      .build-workspace-page .builder-final-grid, .build-workspace-page .builder-solution-preview { flex: 1 1 310px; max-width: 480px; }
+      .build-workspace-page .builder-solution-preview h2 { margin: 0 0 8px; font-size: 1.05rem; }
+      .build-workspace-page .builder-solution-rating { margin: 0 0 12px; font-weight: 700; }
+      .build-workspace-page .builder-solution-grid { position: relative; display: grid; grid-template: repeat(12, minmax(0, 1fr)) / repeat(12, minmax(0, 1fr)); width: min(100%, 430px); aspect-ratio: 1; }
+      .build-workspace-page .builder-solution-grid span { display: grid; place-items: center; min-width: 0; border: 1px solid var(--line, #8390a5); font-size: clamp(18px, 3.5vw, 29px); font-weight: 700; }
+      .build-workspace-page .builder-solution-grid .given { color: #15171b; }
+      .build-workspace-page .builder-solution-grid .filled { color: #2667be; }
+      .build-workspace-page .builder-exit { float: right; }
+      @media (max-width: 720px) { .build-workspace-page .builder-final-grid, .build-workspace-page .builder-solution-preview { flex-basis: 100%; max-width: none; } }
+    `;
+    document.head.append(style);
+    const exit = Object.assign(document.createElement('button'), { type: 'button', className: 'builder-exit', textContent: 'Exit build page' });
+    exit.addEventListener('click', () => dialog.close());
+    dialog.prepend(exit);
+    if (archiveButton) {
+      const opener = archiveButton.cloneNode(true);
+      archiveButton.replaceWith(opener);
+      opener.addEventListener('click', () => {
+        const archive = document.querySelector('#archiveDialog');
+        if (archive && archive.open) archive.close();
+        location.hash = 'build';
+      });
+    }
+    const applyRoute = () => {
+      const open = location.hash === '#build';
+      dialog.classList.toggle('build-workspace-page', open);
+      if (open && !dialog.open) dialog.showModal();
+      if (!open && dialog.open) dialog.close();
+    };
+    window.addEventListener('hashchange', applyRoute);
+    dialog.addEventListener('close', () => {
+      dialog.classList.remove('build-workspace-page');
+      if (location.hash === '#build') history.replaceState(null, '', location.pathname + location.search);
+    });
+    applyRoute();
+    const final = dialog.querySelector('.builder-final');
+    if (final) new MutationObserver(() => queueMicrotask(() => {
+      const built = window.lastBuiltGattai;
+      if (final.hidden || !built || !Array.isArray(built.solution) || final.querySelector('.builder-solution-preview')) return;
+      let rating = { rating: 'Over 9000', score: 9001 };
+      try {
+        const saved = original.slice();
+        original.splice(0, original.length, ...built.puzzle);
+        rating = rateSteps(deriveSteps());
+        original.splice(0, original.length, ...saved);
+      } catch (error) { console.warn('Difficulty evaluation failed', error); }
+      const panel = document.createElement('section'); panel.className = 'builder-solution-preview';
+      const title = document.createElement('h2'); title.textContent = 'Complete solution';
+      const difficulty = document.createElement('p'); difficulty.className = 'builder-solution-rating'; difficulty.textContent = 'Difficulty: ' + rating.rating + ' (' + rating.score + ')';
+      const grid = document.createElement('div'); grid.className = 'builder-solution-grid';
+      for (let row = 0; row < 12; row += 1) for (let column = 0; column < 12; column += 1) {
+        if (!hasCell(row, column)) continue;
+        const index = row * 12 + column, cell = document.createElement('span');
+        cell.style.gridRowStart = row + 1; cell.style.gridColumnStart = column + 1;
+        cell.className = built.puzzle[index] ? 'given' : 'filled'; cell.textContent = built.solution[index] || '';
+        grid.append(cell);
+      }
+      ['h-0','h-3','h-6','h-9','h-12'].forEach(name => { const line = document.createElement('i'); line.className = 'builder-boundary horizontal ' + name; grid.append(line); });
+      ['v-0','v-3','v-6','v-9','v-12'].forEach(name => { const line = document.createElement('i'); line.className = 'builder-boundary vertical ' + name; grid.append(line); });
+      panel.append(title, difficulty, grid); final.append(panel);
+    })).observe(final, { childList: true, subtree: true });
+    return true;
+  }
+  if (!installBuildWorkspace()) window.addEventListener('load', installBuildWorkspace, { once: true });
+})();
