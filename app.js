@@ -1495,3 +1495,23 @@ document.head.insertAdjacentHTML("beforeend", "<style>[hidden]{display:none!impo
   style.textContent = '@media (min-width: 821px) { .control-sidebar { width: 210px !important; max-width: 210px; } .control-sidebar > *, .control-sidebar .entry-tabs, .control-sidebar .other-panel, .control-sidebar .highlight-panel { max-width: 210px; box-sizing: border-box; } .control-sidebar button { width: 100%; max-width: 210px; box-sizing: border-box; } .control-sidebar .numpad { width: 210px; max-width: 210px; grid-template-columns: repeat(3, minmax(0, 1fr)); } .control-sidebar .numpad button { width: 100%; min-width: 0; } dialog.build-workspace-page button:not(.picker-cell) { max-width: 240px; } }';
   document.head.append(style);
 })();
+
+
+// Published September 15–17 daily puzzles.
+(() => {
+  const additions = {
+    september15: { date: "Tuesday, September 15, 2026", rows: [".9.4.6......", "7.2.........", "8......1....", ".2........4.", "....3.2....8", "..5.....19..", "......6....2", ".........5..", "..1.27.3....", "...3........", "....8.......", ".......4.19."] },
+    september16: { date: "Wednesday, September 16, 2026", rows: ["2...3...5...", ".9.....4....", "..8.9.7.....", "...4.1.....2", "1.3.6.4...8.", "...7.3.8.9..", "..9.1.8.4...", ".5...6.7.5.8", "3.....9.1...", ".....5.4.3..", "....3.....2.", "...1...9...4"] },
+    september17: { date: "Thursday, September 17, 2026", rows: [".....8..1...", "..6..2.5....", "5.7.........", ".4326.......", "...........8", "..5..1..6..2", ".3........9.", "......1397..", "....2.......", "...91......3", "....7.6..8..", "....4......."] }
+  };
+  Object.assign(dailyPuzzles, additions);
+  [
+    ["september15", 15],
+    ["september16", 16],
+    ["september17", 17]
+  ].forEach(([day, date]) => {
+    const entry = { week: "current", day, year: 2026, month: 9, date };
+    archiveEntries.push(entry);
+    archiveByDate.set(archiveKey(entry.year, entry.month, entry.date), entry);
+  });
+})();
