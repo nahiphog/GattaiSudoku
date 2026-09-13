@@ -1209,3 +1209,40 @@ document.head.insertAdjacentHTML("beforeend", "<style>[hidden]{display:none!impo
   }
   if (!addBuildExport()) window.addEventListener('load', addBuildExport, { once: true });
 })();
+
+
+/* Custom Puzzle checker: import a 144-character grid string. */
+(() => {
+  function addCheckerImport() {
+    const dialog = document.querySelector('#manualCheckDialog');
+    if (!dialog || dialog.querySelector('#manualStringImport')) return Boolean(dialog);
+    const panel = document.createElement('section');
+    panel.className = 'manual-string-import';
+    panel.innerHTML = '<label for="manualStringImport">Import 144-character grid</label><textarea id="manualStringImport" rows="3" spellcheck="false" placeholder="Use only 1–9 and ."></textarea><button type="button" id="importManualString">Import string</button>';
+    const actions = dialog.querySelector('.manual-actions');
+    (actions || dialog).before(panel);
+    const input = panel.querySelector('#manualStringImport');
+    const status = dialog.querySelector('#manualCheckStatus');
+    panel.querySelector('#importManualString').addEventListener('click', () => {
+      const text = input.value.replace(/\s/g, '');
+      if (!/^[1-9.]{144}$/.test(text)) {
+        status.textContent = 'Use exactly 144 characters: digits 1–9 and periods.';
+        return;
+      }
+      dialog.querySelector('#manualClear')?.click();
+      for (let index = 0; index < 144; index += 1) {
+        const digit = text[index];
+        if (digit === '.') continue;
+        const row = Math.floor(index / 12) + 1, column = (index % 12) + 1;
+        const cell = [...dialog.querySelectorAll('.manual-cell')].find(item => Number(item.style.gridRowStart) === row && Number(item.style.gridColumnStart) === column);
+        if (!cell) continue;
+        cell.click();
+        cell.dispatchEvent(new KeyboardEvent('keydown', { key: digit, bubbles: true }));
+      }
+      const count = [...text].filter(character => character !== '.').length;
+      status.textContent = 'Imported ' + count + ' given cells. You can now verify this puzzle.';
+    });
+    return true;
+  }
+  if (!addCheckerImport()) window.addEventListener('load', addCheckerImport, { once: true });
+})();
