@@ -884,3 +884,36 @@ document.head.insertAdjacentHTML("beforeend", "<style>[hidden]{display:none!impo
   const style=document.createElement('style');style.textContent='.picker-board{position:relative}.picker-boundary{z-index:4;pointer-events:none;background:var(--line)}.picker-h{align-self:start;height:3px;transform:translateY(-1.5px)}.picker-v{justify-self:start;width:3px;transform:translateX(-1.5px)}.halt-digging{margin-top:12px;width:100%;min-height:38px;border:1px solid var(--line);border-radius:8px;background:#a83d3d;color:#fff;font:inherit;font-weight:800;cursor:pointer}.halt-digging:disabled{opacity:.55;cursor:wait}';document.head.append(style);
   const clock=document.querySelector('.generation-clock');if(clock){const secondsOnly=()=>{const match=clock.textContent.match(/(\d+(?:\.\d+)?)/);if(!match)return;const text='∞ '+Math.floor(Number(match[1]))+' s';if(clock.textContent!==text)clock.textContent=text;};new MutationObserver(secondsOnly).observe(clock,{childList:true,characterData:true,subtree:true});secondsOnly();}
 })();
+
+// Builder tallies and mobile notation safeguards
+(() => {
+  const style = document.createElement('style');
+  style.textContent = '.build-dialog .picker-board{width:min(100%,376px)!important}' + '.colour-tally{display:flex;justify-content:center;gap:12px;flex-wrap:wrap;margin:8px 0 14px;font-size:13px;font-weight:800}' + '.colour-tally span{display:inline-flex;align-items:center;gap:5px}' + '.colour-tally i{width:11px;height:11px;border-radius:50%;border:1px solid var(--line);display:inline-block}' + '.colour-tally .tally-keep i{background:#2f9e63}.colour-tally .tally-remove i{background:#d39d1e}' + '.board .snyder{min-width:0!important;min-height:0!important;overflow:hidden!important}' + '@media(max-width:520px){.board .snyder{padding:1px!important;font-size:clamp(6px,2.5vw,11px)!important}.board .snyder i{line-height:1!important;white-space:nowrap!important}}' + '@media(max-width:360px){.board{width:100%!important}.board .snyder{padding:0!important;font-size:clamp(6px,2.35vw,9px)!important}}';
+  document.head.append(style);
+  function addColourTally(selector, labels) {
+    const picker = document.querySelector(selector);
+    if (!picker || picker.nextElementSibling?.classList.contains('colour-tally')) return;
+    const tally = document.createElement('p');
+    tally.className = 'colour-tally';
+    picker.after(tally);
+    const update = () => tally.replaceChildren(...labels.map(([state, label]) => {
+      const item = document.createElement('span'); item.className = 'tally-' + state;
+      const swatch = document.createElement('i');
+      const count = picker.querySelectorAll('.picker-cell[data-state="' + state + '"]').length;
+      item.append(swatch, document.createTextNode(label + ': ' + count));
+      return item;
+    }));
+    picker.addEventListener('click', () => requestAnimationFrame(update));
+    new MutationObserver(update).observe(picker, {subtree:true, attributes:true, attributeFilter:['data-state']});
+    update();
+  }
+  addColourTally('#buildPicker', [['keep', 'Green kept clues']]);
+  addColourTally('#constraintPicker', [['keep', 'Green kept clues'], ['remove', 'Gold removed clues']]);
+  const evaluate = document.querySelector('.evaluation-button');
+  const loadWithEvaluation = loadPuzzle;
+  loadPuzzle = function(day) {
+    const result = loadWithEvaluation(day);
+    if (day === 'unlimited' && typeof unlimitedSolution !== 'undefined' && unlimitedSolution && evaluate) evaluate.disabled = false;
+    return result;
+  };
+})();
