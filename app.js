@@ -818,16 +818,37 @@ document.head.insertAdjacentHTML("beforeend", "<style>[hidden]{display:none!impo
   const buildState=new Map(), buildCount=buildDialog.querySelector('#buildCount');
   picker(buildDialog.querySelector('#buildPicker'),buildState,index=>{if(buildSelected.has(index)){buildSelected.delete(index);buildState.delete(index);}else{buildSelected.add(index);buildState.set(index,'keep');}buildCount.textContent=buildSelected.size+' selected cell'+(buildSelected.size===1?'':'s');});
   buildDialog.querySelector('.dialog-close').addEventListener('click',()=>buildDialog.close());
-  buildDialog.querySelector('#buildCreate').addEventListener('click',()=>{
-    const full=makeFullGattai(),values=Array(144).fill(0),rest=shuffle(active.filter(index=>!buildSelected.has(index)));
-    buildSelected.forEach(index=>values[index]=full[index]);
-    let offset=0;while(countGattaiSolutions(values,2)!==1&&offset<rest.length){rest.slice(offset,offset+2).forEach(index=>values[index]=full[index]);offset+=2;}
-    const unique=countGattaiSolutions(values,2)===1,report=buildDialog.querySelector('#buildResult'),summary=buildDialog.querySelector('#buildSummary');report.hidden=false;
-    if(!unique){summary.textContent='This selection could not be completed as a unique puzzle. Add more selected cells and try again.';return;}
-    const logic=logicResult(values),rating=logic.complete?rateSteps(logic.path):{rating:'Over 9000',score:null};buildDraft={values,rows:toRows(values),rating};
-    const givens=active.filter(index=>values[index]).length;summary.textContent='Unique puzzle created with '+givens+' givens. Difficulty: '+rating.rating+(rating.score===null?'':' ('+rating.score+')')+'.';buildDialog.querySelector('#buildDate').value=new Date().toISOString().slice(0,10);
+  const buildStatus=document.createElement('p');buildStatus.id='buildGenerationStatus';buildStatus.className='builder-status';buildCount.before(buildStatus);
+  buildDialog.querySelector('#buildCreate').addEventListener('click',async()=>{
+    const create=buildDialog.querySelector('#buildCreate'),report=buildDialog.querySelector('#buildResult'),summary=buildDialog.querySelector('#buildSummary');
+    if(buildSelected.size>45){report.hidden=false;summary.textContent='Choose 45 or fewer starting clues so the builder can enforce the 45-given limit.';return;}
+    const started=performance.now();let attempts=0,timer=null,values=null;
+    const showStatus=detail=>{const seconds=Math.floor((performance.now()-started)/1000);buildStatus.textContent='Build time: '+seconds+' s · '+detail;};
+    create.disabled=true;report.hidden=true;showStatus('Generating a complete 126-cell Gattai…');timer=setInterval(()=>showStatus(attempts?'Restart '+attempts+' in progress…':'Generating a complete 126-cell Gattai…'),250);
+    await nextPaint();
+    try{
+      while(!values&&attempts<40){
+        attempts+=1;showStatus('Attempt '+attempts+': generating a complete 126-cell Gattai…');
+        const full=makeFullGattai(),candidate=Array(144).fill(0),rest=shuffle(active.filter(index=>!buildSelected.has(index)));
+        buildSelected.forEach(index=>candidate[index]=full[index]);
+        let offset=0,discard=false;
+        while(countGattaiSolutions(candidate,2)!==1&&offset<rest.length){
+          if(active.filter(index=>candidate[index]).length>=45){discard=true;break;}
+          rest.slice(offset,offset+2).forEach(index=>candidate[index]=full[index]);offset+=2;
+          if(active.filter(index=>candidate[index]).length>45){discard=true;break;}
+          if(offset%10===0){showStatus('Attempt '+attempts+': restoring clues…');await nextPaint();}
+        }
+        const givens=active.filter(index=>candidate[index]).length;
+        if(!discard&&givens<=45&&countGattaiSolutions(candidate,2)===1)values=candidate;
+        else {showStatus('Attempt '+attempts+' exceeded the limit; restarting from a new 126-cell grid…');await nextPaint();}
+      }
+      report.hidden=false;
+      if(!values){summary.textContent='No unique puzzle with 45 or fewer givens was found after 40 fresh 126-cell grids. Adjust the selected cells and try again.';return;}
+      const logic=logicResult(values),rating=logic.complete?rateSteps(logic.path):{rating:'Over 9000',score:null};buildDraft={values,rows:toRows(values),rating};
+      const givens=active.filter(index=>values[index]).length;showStatus('Complete in '+Math.floor((performance.now()-started)/1000)+' s.');summary.textContent='Unique puzzle created with '+givens+' givens. Difficulty: '+rating.rating+(rating.score===null?'':' ('+rating.score+')')+'.';buildDialog.querySelector('#buildDate').value=new Date().toISOString().slice(0,10);
+    }finally{clearInterval(timer);create.disabled=false;}
   });
-  buildDialog.querySelector('#buildPublish').addEventListener('click',async()=>{
+    buildDialog.querySelector('#buildPublish').addEventListener('click',async()=>{
     if(!buildDraft)return;const input=buildDialog.querySelector('#buildDate').value;if(!input)return;
     const day=toDate(input),key=allKeys[day.getUTCDay()],date=allDays[day.getUTCDay()]+', '+dateLabel(day),endpoint='https://zoqztntaoogbkmcqfmhx.supabase.co/rest/v1/gattai_puzzles';
     const payload={puzzle_date:input,day:key,date,rows:buildDraft.rows,difficulty:buildDraft.rating};
@@ -916,4 +937,11 @@ document.head.insertAdjacentHTML("beforeend", "<style>[hidden]{display:none!impo
     if (day === 'unlimited' && typeof unlimitedSolution !== 'undefined' && unlimitedSolution && evaluate) evaluate.disabled = false;
     return result;
   };
+})();
+
+// Clear sidebar visibility control and compact mobile control layout
+(() => {
+  const sidebar=document.querySelector('.control-sidebar'); const previous=sidebar?.querySelector('.sidebar-toggle');
+  if(previous){const toggle=previous.cloneNode(false);toggle.type='button';toggle.className='sidebar-toggle';previous.replaceWith(toggle);const render=()=>{const hidden=sidebar.classList.contains('sidebar-collapsed');toggle.textContent=hidden?'Show sidebar':'Hide sidebar';toggle.setAttribute('aria-expanded',String(!hidden));toggle.setAttribute('aria-label',hidden?'Show puzzle controls sidebar':'Hide puzzle controls sidebar');};toggle.addEventListener('click',()=>{sidebar.classList.toggle('sidebar-collapsed');render();});render();}
+  const style=document.createElement('style');style.textContent='.builder-status{min-height:1.5em;margin:6px 0;text-align:center;font-weight:800;color:var(--ink)}.primary-build:disabled{opacity:.55;cursor:wait}@media(min-width:821px){.control-sidebar{grid-column:2;grid-row:1;align-self:start}.sidebar-toggle{font-size:13px;letter-spacing:0}}@media(max-width:820px){.control-sidebar{display:grid!important;grid-template-columns:repeat(2,minmax(0,1fr));gap:9px;width:100%;padding:8px 4px;align-items:start}.control-sidebar .sidebar-toggle,.control-sidebar .entry-panel,.control-sidebar .numpad,.control-sidebar .highlight-panel,.control-sidebar .other-panel{grid-column:1/-1;width:100%;min-width:0;margin:0}.control-sidebar .entry-panel{display:grid;grid-template-columns:1fr;gap:5px}.control-sidebar .entry-tabs{width:100%}.control-sidebar .numpad{grid-template-columns:repeat(3,minmax(0,1fr))}.control-sidebar .highlight-panel{display:grid;grid-template-columns:auto 1fr 1fr;align-items:center;gap:8px}.control-sidebar .other-panel{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:7px}.control-sidebar .other-panel>span{grid-column:1/-1}.control-sidebar .other-panel button,.control-sidebar .other-panel input{width:100%;min-width:0}.control-sidebar.sidebar-collapsed{display:block!important;width:auto;padding:0}.control-sidebar.sidebar-collapsed .sidebar-toggle{width:100%}}@media(max-width:430px){.control-sidebar{grid-template-columns:1fr}.control-sidebar .highlight-panel{grid-template-columns:1fr 1fr}.control-sidebar .highlight-panel>span{grid-column:1/-1}.control-sidebar .other-panel{grid-template-columns:1fr}}';document.head.append(style);
 })();
