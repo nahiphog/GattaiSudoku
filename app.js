@@ -1025,3 +1025,56 @@ document.head.insertAdjacentHTML("beforeend", "<style>[hidden]{display:none!impo
   update(); new MutationObserver(update).observe(document.body,{childList:true,subtree:true});
   const style=document.createElement('style');style.textContent='.picker-cell[data-state=remove]{background:#b83b3b!important}';document.head.append(style);
 })();
+
+
+/* Manual Gattai checker and solution-perimeter highlight. */
+(() => {
+  const waitForManualChecker = () => {
+    const settings = document.querySelector("#settings");
+    if (!settings || document.querySelector("#manualCheck")) return false;
+    const plus = document.createElement("button");
+    plus.id = "manualCheck"; plus.type = "button"; plus.className = "header-round-button manual-check-button";
+    plus.setAttribute("aria-label", "Check a custom Gattai puzzle"); plus.title = "Check a custom puzzle"; plus.textContent = "+"; settings.after(plus);
+    const dialog = document.createElement("dialog"); dialog.id = "manualCheckDialog"; dialog.setAttribute("aria-labelledby", "manualCheckTitle");
+    dialog.innerHTML = '<button type="button" class="dialog-close" aria-label="Close">×</button><p class="eyebrow">CUSTOM PUZZLE CHECKER</p><h2 id="manualCheckTitle">Check a Gattai puzzle</h2><p>Click a cell, then use the keypad or your keyboard to enter a digit. The checker verifies uniqueness and reports a logical difficulty rating.</p><div id="manualBoard" class="manual-board" aria-label="Empty Gattai puzzle"></div><div id="manualPad" class="manual-pad" aria-label="Custom puzzle number pad"></div><p id="manualCheckStatus" class="manual-check-status">0 given cells</p><div class="manual-actions"><button type="button" id="manualClear">Clear grid</button><button type="button" id="manualVerify">Check puzzle</button></div>';
+    document.body.append(dialog);
+    const values = Array(144).fill(0); let selected = null;
+    const manualBoard = dialog.querySelector("#manualBoard"), status = dialog.querySelector("#manualCheckStatus"), pad = dialog.querySelector("#manualPad");
+    const clueCount = () => active.filter(index => values[index]).length;
+    const gridFor = index => { const row = Math.floor(index / 12), column = index % 12; return row >= 3 && column >= 3 && !(row < 9 && column < 9) ? "Grid 2" : "Grid 1"; };
+    const render = () => {
+      manualBoard.replaceChildren();
+      for (let row = 0; row < 12; row += 1) for (let column = 0; column < 12; column += 1) {
+        if (!hasCell(row, column)) continue;
+        const index = row * 12 + column, cell = document.createElement("button");
+        cell.type = "button"; cell.className = "manual-cell"; cell.style.gridRowStart = row + 1; cell.style.gridColumnStart = column + 1; cell.textContent = values[index] || "";
+        cell.title = gridFor(index) + " — " + nameFor(index, gridFor(index) === "Grid 1" ? "G1" : "G2"); cell.setAttribute("aria-label", cell.title + (values[index] ? ": " + values[index] : ", empty"));
+        if (selected === index) cell.classList.add("selected");
+        cell.addEventListener("click", () => { selected = index; status.textContent = clueCount() + " given cells"; render(); }); manualBoard.append(cell);
+      }
+      ["h-0", "h-3", "h-6", "h-9", "h-12"].forEach(name => { const line = document.createElement("i"); line.className = "manual-boundary horizontal " + name; manualBoard.append(line); });
+      ["v-0", "v-3", "v-6", "v-9", "v-12"].forEach(name => { const line = document.createElement("i"); line.className = "manual-boundary vertical " + name; manualBoard.append(line); });
+    };
+    const enter = digit => { if (selected === null) { status.textContent = "Choose a cell first."; return; } values[selected] = digit; status.textContent = clueCount() + " given cells"; render(); };
+    for (let digit = 1; digit <= 9; digit += 1) { const button = document.createElement("button"); button.type = "button"; button.textContent = digit; button.addEventListener("click", () => enter(digit)); pad.append(button); }
+    const clearCell = document.createElement("button"); clearCell.type = "button"; clearCell.textContent = "Clear"; clearCell.addEventListener("click", () => enter(0)); pad.append(clearCell);
+    dialog.querySelector("#manualClear").addEventListener("click", () => { values.fill(0); selected = null; status.textContent = "0 given cells"; render(); });
+    dialog.querySelector(".dialog-close").addEventListener("click", () => dialog.close()); dialog.addEventListener("click", event => { if (event.target === dialog) dialog.close(); });
+    document.addEventListener("keydown", event => { if (!dialog.open) return; if (/^[1-9]$/.test(event.key)) { event.preventDefault(); enter(Number(event.key)); } if (event.key === "Backspace" || event.key === "Delete" || event.key === "0") { event.preventDefault(); enter(0); } });
+    dialog.querySelector("#manualVerify").addEventListener("click", () => {
+      const invalid = units.some(([, house]) => { const seen = values.filter((value, index) => house.includes(index) && value); return seen.length !== new Set(seen).size; });
+      if (invalid) { status.textContent = "This grid has conflicting givens. Correct the duplicate first."; return; }
+      if (!clueCount()) { status.textContent = "Enter at least one clue before checking."; return; }
+      status.textContent = "Checking uniqueness…";
+      setTimeout(() => { const solutions = countGattaiSolutions(values, 2); if (solutions !== 1) { status.textContent = solutions ? "This puzzle has multiple solutions." : "This puzzle has no solution."; return; } const saved = [...original]; original.splice(0, original.length, ...values); const customSteps = deriveSteps(); original.splice(0, original.length, ...saved); const rating = rateSteps(customSteps); status.textContent = "Unique solution confirmed • Difficulty: " + rating.rating + " (" + rating.score + ") • " + clueCount() + " given cells"; }, 30);
+    });
+    plus.addEventListener("click", () => { render(); dialog.showModal(); }); return true;
+  };
+  if (!waitForManualChecker()) window.addEventListener("load", waitForManualChecker, { once: true });
+  const previousRenderBoard = renderBoard;
+  renderBoard = function renderBoardWithSolverOutline() {
+    previousRenderBoard(); if (mode !== "solver" || isUnlimited() || !steps.length) return;
+    const step = steps[stepIndex] || {}, gridTwo = step.house?.startsWith("G2") || (!step.house && /\bG2\b/.test(step.text || ""));
+    const outline = document.createElement("i"); outline.className = "solver-grid-outline " + (gridTwo ? "solver-grid-two" : "solver-grid-one"); outline.setAttribute("aria-hidden", "true"); board.append(outline);
+  };
+})();
