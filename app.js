@@ -1078,3 +1078,24 @@ document.head.insertAdjacentHTML("beforeend", "<style>[hidden]{display:none!impo
     const outline = document.createElement("i"); outline.className = "solver-grid-outline " + (gridTwo ? "solver-grid-two" : "solver-grid-one"); outline.setAttribute("aria-hidden", "true"); board.append(outline);
   };
 })();
+
+
+/* One-cell, unlimited-retry builder revision. */
+(() => {
+  const nextPaint=()=>new Promise(r=>setTimeout(r,0));
+  function installOneCellBuilder(){
+    const picker=document.querySelector('#buildPicker'), old=document.querySelector('#buildCreate');
+    if(!picker||!old||picker.dataset.oneCell)return false; picker.dataset.oneCell='1';
+    const dialog=picker.closest('dialog')||picker.parentElement;
+    const status=dialog.querySelector('.builder-status')||document.createElement('p'); status.className='builder-status'; if(!status.parentElement)old.before(status);
+    const halt=document.createElement('button'); halt.type='button'; halt.className='build-halt'; halt.textContent='Halt building'; halt.hidden=true; old.after(halt);
+    const final=document.createElement('section'); final.className='builder-final'; final.hidden=true; halt.after(final);
+    const cells=[...picker.querySelectorAll('button')]; cells.forEach(cell=>{const r=Number(cell.style.gridRowStart)-1,c=Number(cell.style.gridColumnStart)-1;cell.dataset.builderIndex=String(r*12+c)});
+    let stopped=false; halt.onclick=()=>{stopped=true;status.textContent='Building halted. Your selections are unchanged.'};
+    function draw(puzzle){final.hidden=false;final.replaceChildren();const note=document.createElement('p');note.textContent='Final grid: '+active.filter(i=>puzzle[i]).length+' given cells';note.className='builder-final-count';const grid=document.createElement('div');grid.className='builder-final-grid';for(let r=0;r<12;r++)for(let c=0;c<12;c++){if(!hasCell(r,c))continue;const i=r*12+c,x=document.createElement('span');x.style.gridRowStart=r+1;x.style.gridColumnStart=c+1;x.textContent=puzzle[i]||'';grid.append(x)};['h-0','h-3','h-6','h-9','h-12'].forEach(n=>{const x=document.createElement('i');x.className='builder-boundary horizontal '+n;grid.append(x)});['v-0','v-3','v-6','v-9','v-12'].forEach(n=>{const x=document.createElement('i');x.className='builder-boundary vertical '+n;grid.append(x)});final.append(note,grid)}
+    const create=old.cloneNode(true); old.replaceWith(create);
+    create.onclick=async()=>{const keep=new Set(cells.filter(x=>x.dataset.state==='keep').map(x=>+x.dataset.builderIndex)),empty=new Set(cells.filter(x=>x.dataset.state==='remove').map(x=>+x.dataset.builderIndex));if(keep.size>45){status.textContent='Choose 45 or fewer required clues.';return}stopped=false;halt.hidden=false;create.disabled=true;final.hidden=true;const start=performance.now();let attempt=0,result=null;while(!stopped&&!result){attempt++;const full=makeFullGattai(),puzzle=Array(144).fill(0);keep.forEach(i=>puzzle[i]=full[i]);const pool=shuffle(active.filter(i=>!keep.has(i)&&!empty.has(i)));let count=keep.size;while(!stopped&&countGattaiSolutions(puzzle,2)!==1){if(count>=45||!pool.length)break;const cell=pool.pop();puzzle[cell]=full[cell];count++;status.textContent='Adding one clue · '+count+' cells · '+Math.floor((performance.now()-start)/1000)+' s';await nextPaint()}if(!stopped&&countGattaiSolutions(puzzle,2)===1)result={puzzle,full};else if(!stopped){status.textContent='Restarting with a fresh 126-cell Gattai · attempt '+attempt;await nextPaint()}}halt.hidden=true;create.disabled=false;if(!result)return;draw(result.puzzle);window.lastBuiltGattai={puzzle:result.puzzle,solution:result.full};status.textContent='Finished in '+Math.floor((performance.now()-start)/1000)+' s · Final grid: '+active.filter(i=>result.puzzle[i]).length+' cells'};
+    return true;
+  }
+  if(!installOneCellBuilder())window.addEventListener('load',installOneCellBuilder,{once:true});
+})();
