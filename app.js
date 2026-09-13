@@ -945,3 +945,72 @@ document.head.insertAdjacentHTML("beforeend", "<style>[hidden]{display:none!impo
   if(previous){const toggle=previous.cloneNode(false);toggle.type='button';toggle.className='sidebar-toggle';previous.replaceWith(toggle);const render=()=>{const hidden=sidebar.classList.contains('sidebar-collapsed');toggle.textContent=hidden?'Show sidebar':'Hide sidebar';toggle.setAttribute('aria-expanded',String(!hidden));toggle.setAttribute('aria-label',hidden?'Show puzzle controls sidebar':'Hide puzzle controls sidebar');};toggle.addEventListener('click',()=>{sidebar.classList.toggle('sidebar-collapsed');render();});render();}
   const style=document.createElement('style');style.textContent='.builder-status{min-height:1.5em;margin:6px 0;text-align:center;font-weight:800;color:var(--ink)}.primary-build:disabled{opacity:.55;cursor:wait}@media(min-width:821px){.control-sidebar{grid-column:2;grid-row:1;align-self:start}.sidebar-toggle{font-size:13px;letter-spacing:0}}@media(max-width:820px){.control-sidebar{display:grid!important;grid-template-columns:repeat(2,minmax(0,1fr));gap:9px;width:100%;padding:8px 4px;align-items:start}.control-sidebar .sidebar-toggle,.control-sidebar .entry-panel,.control-sidebar .numpad,.control-sidebar .highlight-panel,.control-sidebar .other-panel{grid-column:1/-1;width:100%;min-width:0;margin:0}.control-sidebar .entry-panel{display:grid;grid-template-columns:1fr;gap:5px}.control-sidebar .entry-tabs{width:100%}.control-sidebar .numpad{grid-template-columns:repeat(3,minmax(0,1fr))}.control-sidebar .highlight-panel{display:grid;grid-template-columns:auto 1fr 1fr;align-items:center;gap:8px}.control-sidebar .other-panel{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:7px}.control-sidebar .other-panel>span{grid-column:1/-1}.control-sidebar .other-panel button,.control-sidebar .other-panel input{width:100%;min-width:0}.control-sidebar.sidebar-collapsed{display:block!important;width:auto;padding:0}.control-sidebar.sidebar-collapsed .sidebar-toggle{width:100%}}@media(max-width:430px){.control-sidebar{grid-template-columns:1fr}.control-sidebar .highlight-panel{grid-template-columns:1fr 1fr}.control-sidebar .highlight-panel>span{grid-column:1/-1}.control-sidebar .other-panel{grid-template-columns:1fr}}';document.head.append(style);
 })();
+
+    
+// Custom builder: fixed and forbidden clue selection with completed preview
+(() => {
+  const css = document.createElement('style');
+  css.textContent = '.build-mode{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin:8px 0}.build-mode button{min-height:34px;border:1px solid var(--line);border-radius:8px;background:var(--muted);color:var(--ink);font:inherit;font-weight:800;cursor:pointer}.build-mode button.active{outline:3px solid var(--gold)}.build-mode .keep-mode{background:#2f9e63;color:#fff}.build-mode .empty-mode{background:#b83b3b;color:#fff}.builder-tally{min-height:1.5em;text-align:center;margin:6px 0;font-weight:800}.builder-preview{margin:14px auto 4px;max-width:360px}.builder-preview h3{text-align:center;margin:0 0 8px;font-size:15px}.builder-preview-grid{display:grid;grid-template-columns:repeat(12,1fr);border:2px solid var(--line);background:var(--surface)}.builder-preview-grid span{aspect-ratio:1;display:grid;place-items:center;border:1px solid var(--thin);font-weight:800;color:#111}.builder-preview-grid .blank{visibility:hidden;border:0}.builder-preview-grid .shared{background:color-mix(in srgb,var(--gold) 18%,var(--surface))}.builder-status{min-height:1.5em;text-align:center;font-weight:800;margin:8px 0}';
+  document.head.append(css);
+  const paint = () => new Promise(resolve => setTimeout(resolve, 0));
+  function decorateBuilder() {
+    const picker = document.querySelector('#buildPicker');
+    const create = document.querySelector('#buildCreate');
+    if (!picker || !create || picker.dataset.customBuilder === 'ready') return;
+    picker.dataset.customBuilder = 'ready';
+    const dialog = picker.closest('dialog') || picker.parentElement;
+    const chosen = new Set(), forbidden = new Set();
+    let mode = 'keep';
+    const modeBar = document.createElement('div');
+    modeBar.className = 'build-mode';
+    modeBar.innerHTML = '<button type="button" class="keep-mode active">Green: must keep</button><button type="button" class="empty-mode">Red: must be empty</button>';
+    picker.before(modeBar);
+    const tally = document.createElement('p'); tally.className = 'builder-tally'; picker.after(tally);
+    const status = document.createElement('p'); status.className = 'builder-status'; tally.after(status);
+    const preview = document.createElement('section'); preview.className = 'builder-preview'; preview.hidden = true; status.after(preview);
+    const cells = [...picker.querySelectorAll('button')];
+    cells.forEach((cell, n) => cell.dataset.builderIndex = String(active[n]));
+    const render = () => {
+      cells.forEach(cell => { const index = Number(cell.dataset.builderIndex); cell.dataset.state = chosen.has(index) ? 'keep' : forbidden.has(index) ? 'remove' : ''; });
+      tally.textContent = 'Green kept clues: ' + chosen.size + ' · Red empty cells: ' + forbidden.size;
+      modeBar.querySelector('.keep-mode').classList.toggle('active', mode === 'keep');
+      modeBar.querySelector('.empty-mode').classList.toggle('active', mode === 'remove');
+    };
+    modeBar.querySelector('.keep-mode').addEventListener('click', () => { mode = 'keep'; render(); });
+    modeBar.querySelector('.empty-mode').addEventListener('click', () => { mode = 'remove'; render(); });
+    picker.addEventListener('click', event => { const cell = event.target.closest('button[data-builder-index]'); if (!cell) return; event.preventDefault(); event.stopImmediatePropagation(); const index = Number(cell.dataset.builderIndex); const set = mode === 'keep' ? chosen : forbidden; const other = mode === 'keep' ? forbidden : chosen; if (set.has(index)) set.delete(index); else { other.delete(index); set.add(index); } render(); }, true);
+    const replacement = create.cloneNode(true); create.replaceWith(replacement);
+    replacement.addEventListener('click', async () => {
+      if (chosen.size > 45) { status.textContent = 'Choose 45 or fewer green cells.'; return; }
+      replacement.disabled = true; preview.hidden = true;
+      const started = performance.now(); let result = null; let attempt = 0;
+      const show = text => { status.textContent = 'Build time: ' + Math.floor((performance.now() - started) / 1000) + ' s · ' + text; };
+      try {
+        while (!result && attempt < 40) {
+          attempt += 1; show('Attempt ' + attempt + ': creating a full 126-cell Gattai…'); await paint();
+          const full = makeFullGattai(); const candidate = Array(144).fill(0);
+          chosen.forEach(index => candidate[index] = full[index]);
+          const available = shuffle(active.filter(index => !chosen.has(index) && !forbidden.has(index)));
+          let cursor = 0, failed = false;
+          while (countGattaiSolutions(candidate, 2) !== 1 && cursor < available.length) {
+            if (active.filter(index => candidate[index]).length >= 45) { failed = true; break; }
+            available.slice(cursor, cursor + 2).forEach(index => candidate[index] = full[index]); cursor += 2;
+            if (active.filter(index => candidate[index]).length > 45) { failed = true; break; }
+            if (cursor % 10 === 0) { show('Attempt ' + attempt + ': testing uniqueness…'); await paint(); }
+          }
+          if (!failed && countGattaiSolutions(candidate, 2) === 1) result = candidate;
+          else show('Attempt ' + attempt + ' exceeded 45 clues; restarting from a new full grid…');
+        }
+        const elapsed = Math.floor((performance.now() - started) / 1000);
+        if (!result) { status.textContent = 'No eligible unique puzzle was found within 40 fresh full grids (' + elapsed + ' s). Try fewer red constraints.'; return; }
+        status.textContent = 'Finished creating the puzzle in ' + elapsed + ' s.';
+        preview.hidden = false; preview.innerHTML = '<h3>Your generated puzzle</h3><div class="builder-preview-grid"></div>';
+        const grid = preview.querySelector('div');
+        for (let index = 0; index < 144; index += 1) { const cell = document.createElement('span'); if (!active.includes(index)) cell.className = 'blank'; else { cell.textContent = result[index] || ''; const row = Math.floor(index / 12), col = index % 12; if (row >= 3 && row <= 8 && col >= 3 && col <= 8) cell.classList.add('shared'); } grid.append(cell); }
+      } finally { replacement.disabled = false; }
+    });
+    render();
+  }
+  new MutationObserver(decorateBuilder).observe(document.body, { childList:true, subtree:true });
+  decorateBuilder();
+})();
