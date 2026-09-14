@@ -433,6 +433,7 @@ loadPuzzle(activeDay);
   document.body.append(page);
   const style = document.createElement("style");
   style.textContent = `
+    #unlimitedMode[hidden], .build-category-button[hidden], .generate-puzzle-page [hidden] { display: none !important; }
     .generate-puzzle-launcher { margin: 1rem auto 0; display: block; }
     .generate-puzzle-page { width: min(680px, calc(100vw - 2rem)); border: 0; border-radius: 18px; padding: 0; color: var(--ink, #173a4c); background: var(--surface, #fff); }
     .generate-puzzle-page::backdrop { background: rgba(11, 24, 34, .48); }
