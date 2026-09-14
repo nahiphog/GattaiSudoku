@@ -48,7 +48,7 @@ const userInputs = { monday: Array(144).fill(0), tuesday: Array(144).fill(0), we
 const userNotes = { monday: blankNotes(), tuesday: blankNotes(), wednesday: blankNotes(), thursday: blankNotes(), friday: blankNotes(), saturday: blankNotes(), sunday: blankNotes(), unlimited: blankNotes() };
 const userColors = { monday: blankColors(), tuesday: blankColors(), wednesday: blankColors(), thursday: blankColors(), friday: blankColors(), saturday: blankColors(), sunday: blankColors(), unlimited: blankColors() };
 const histories = { monday: [], tuesday: [], wednesday: [], thursday: [], friday: [], saturday: [], sunday: [], unlimited: [] }, redoHistories = { monday: [], tuesday: [], wednesday: [], thursday: [], friday: [], saturday: [], sunday: [], unlimited: [] };
-const original = Array(144).fill(0); let human = userInputs.tuesday, playNotes = userNotes.tuesday, playColors = userColors.tuesday, sharedHighlight = true, autoMarkConflicts = true, difficultyVisible = true, givenCountVisible = true;
+const original = Array(144).fill(0); let human = userInputs.tuesday, playNotes = userNotes.tuesday, playColors = userColors.tuesday, sharedHighlight = false, autoMarkConflicts = true, difficultyVisible = true, givenCountVisible = true;
 function stateKey(day = activeDay) { return day === "unlimited" ? day : `${activeWeek}:${day}`; }
 function ensureState(key) {
   if (userInputs[key]) return;
@@ -519,6 +519,21 @@ loadPuzzle(activeDay);
   });
 })();
 
+/* Keep the controls visually coherent and start every puzzle with the shared
+   overlap unshaded; players can opt into the highlight in Settings. */
+(() => {
+  document.querySelector("#sharedToggle").checked = false;
+  document.querySelector("#settingsSharedToggle").checked = false;
+  const style = document.createElement("style");
+  style.textContent = `
+    body, button, input, select, textarea, .cell, .snyder { font-family:'Fredoka',sans-serif!important; }
+    .control-sidebar, .control-sidebar * { color:var(--ink)!important; }
+    .control-sidebar button, .control-sidebar .entry-panel, .control-sidebar .highlight-panel { background:var(--muted)!important; }
+    .control-sidebar .numpad button { border-color:var(--ink)!important; box-shadow:none!important; }
+  `;
+  document.head.append(style);
+})();
+
 /* The build workspace is intentionally a separate page-like dialog: selections
    are made on an empty Gattai, then the builder adds individual clues only when
    a unique solution cannot yet be certified. */
@@ -543,9 +558,10 @@ loadPuzzle(activeDay);
     .build-puzzle-page { width:min(1100px, calc(100vw - 2rem)); max-height:calc(100vh - 2rem); border:0; border-radius:18px; padding:0; color:var(--ink,#173a4c); background:var(--surface,#fff); }
     .build-puzzle-page::backdrop { background:rgba(11,24,34,.48); } .build-puzzle-content { padding:clamp(1rem,3vw,2rem); overflow:auto; max-height:calc(100vh - 2rem); box-sizing:border-box; }
     .build-intro { max-width:65rem; } .build-layout { display:grid; grid-template-columns:minmax(300px,1fr) minmax(220px,.48fr); align-items:start; gap:1.5rem; }
-    .build-grid { display:grid; grid-template-columns:repeat(12, 1fr); width:min(100%, 530px); aspect-ratio:1; border:3px solid var(--ink,#173a4c); background:var(--page,#f8fbfb); }
+    .build-grid { position:relative; display:grid; grid-template-columns:repeat(12, 1fr); width:min(100%, 530px); aspect-ratio:1; border:3px solid var(--ink,#173a4c); background:var(--page,#f8fbfb); }
     .build-grid .build-cell { min-width:0; min-height:0; border:1px solid color-mix(in srgb,var(--ink,#173a4c) 45%,transparent); display:grid; place-items:center; font-size:clamp(.7rem,2.2vw,1.45rem); font-weight:700; cursor:pointer; background:var(--page,#f8fbfb); }
     .build-grid .build-cell.keep { background:#a9e8bd; } .build-grid .build-cell.empty { background:#f6b6b6; } .build-grid .build-cell.inactive { visibility:hidden; pointer-events:none; }
+    .build-grid .build-boundary { position:absolute; z-index:5; display:block; background:var(--ink,#173a4c); pointer-events:none; } .build-grid .build-boundary.horizontal { height:3px; transform:translateY(-1.5px); } .build-grid .build-boundary.vertical { width:3px; transform:translateX(-1.5px); }
     .build-controls { display:grid; gap:1rem; } .build-controls label { display:grid; gap:.4rem; font-weight:700; } .build-controls select { min-height:2.5rem; } .constraint-switch { display:grid; grid-template-columns:1fr 1fr; gap:.5rem; } .constraint-switch button { font-size:.85rem; }
     .constraint-switch button[aria-pressed=true] { outline:3px solid currentColor; } .build-counts { margin:.65rem 0 0; font-weight:700; }
     .build-result { margin-top:1.5rem; padding-top:1.25rem; border-top:1px solid color-mix(in srgb,var(--ink,#173a4c) 25%,transparent); display:grid; grid-template-columns:repeat(2,minmax(220px,1fr)) minmax(160px,.55fr); gap:1rem; align-items:start; } .build-result h3 { margin:0 0 .5rem; }
@@ -558,6 +574,10 @@ loadPuzzle(activeDay);
   for (let extra = 0; extra <= 30; extra += 1) { const option = document.createElement("option"); option.value = String(extra); option.textContent = String(extra); if (extra === 30) option.selected = true; extraSelect.append(option); }
   const keep = new Set(), empty = new Set(); let selectedMode = "keep", haltRequested = false, latestString = "";
   const activeCount = values => active.reduce((total, cell) => total + Boolean(values[cell]), 0);
+  function drawBuildBoundaries(target) {
+    [["horizontal", 0, 0, 9], ["horizontal", 3, 0, 12], ["horizontal", 6, 0, 12], ["horizontal", 9, 0, 12], ["horizontal", 12, 3, 9]].forEach(([direction, position, start, length]) => { const line = document.createElement("span"); line.className = `build-boundary ${direction}`; line.style.top = `${position / 12 * 100}%`; line.style.left = `${start / 12 * 100}%`; line.style.width = `${length / 12 * 100}%`; target.append(line); });
+    [["vertical", 0, 0, 9], ["vertical", 3, 0, 12], ["vertical", 6, 0, 12], ["vertical", 9, 0, 12], ["vertical", 12, 3, 9]].forEach(([direction, position, start, length]) => { const line = document.createElement("span"); line.className = `build-boundary ${direction}`; line.style.left = `${position / 12 * 100}%`; line.style.top = `${start / 12 * 100}%`; line.style.height = `${length / 12 * 100}%`; target.append(line); });
+  }
   function renderSelection() {
     selectionGrid.replaceChildren();
     for (let row = 0; row < 12; row += 1) for (let column = 0; column < 12; column += 1) {
@@ -565,6 +585,7 @@ loadPuzzle(activeDay);
       if (!hasCell(row, column)) node.classList.add("inactive"); else { if (keep.has(cell)) node.classList.add("keep"); if (empty.has(cell)) node.classList.add("empty"); node.setAttribute("aria-label", `Cell ${row + 1}, ${column + 1}`); node.addEventListener("click", () => { if (selectedMode === "keep") { if (keep.has(cell)) keep.delete(cell); else { empty.delete(cell); keep.add(cell); } } else if (empty.has(cell)) empty.delete(cell); else { keep.delete(cell); empty.add(cell); } renderSelection(); }); }
       selectionGrid.append(node);
     }
+    drawBuildBoundaries(selectionGrid);
     counts.textContent = `${keep.size} must keep · ${empty.size} must be empty`;
   }
   function renderResult(target, values, clues, solutionView = false) {
@@ -574,6 +595,7 @@ loadPuzzle(activeDay);
       if (!hasCell(row, column)) node.classList.add("inactive"); else if (values[index]) { node.textContent = values[index]; node.classList.add(!solutionView || clues[index] ? "given" : "solved"); }
       target.append(node);
     }
+    drawBuildBoundaries(target);
   }
   function namedTechniqueResult(puzzle) {
     const saved = [...original];
