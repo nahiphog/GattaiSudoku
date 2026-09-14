@@ -225,3 +225,5 @@ if __name__ == '__main__':
             rows,subsets,fish,single_digit_patterns,wings=result
             print(json.dumps({'seed':seed+offset*31,'rows':rows,'subsets':subsets,'fish':fish,'single_digit_patterns':single_digit_patterns,'wings':wings,'symmetry':os.environ.get('GATTAI_SYMMETRY','none')}))
             break
+
+# print(generate(9000))  # Run one logic-gated generation trial.
