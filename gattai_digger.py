@@ -1,8 +1,12 @@
-"""Generate a locally minimal unique Gattai Sudoku.
+"""Minimal-clue Gattai Sudoku generator.
 
-A full Gattai grid is dug one clue at a time. A removal survives only if the
-combined 126-cell puzzle still has exactly one solution. The public generator
-returns the clue count, the 144-character puzzle string, and elapsed time.
+This module creates a complete overlapping Gattai solution, then removes
+clues one at a time.  A removal is kept only when the combined 126-cell
+Gattai structure still has exactly one solution.  It makes no logical-technique
+or difficulty requirement: uniqueness is the sole digging rule.
+
+The public generator returns the clue count, the 144-character puzzle string,
+and the elapsed generation time.
 """
 
 from __future__ import annotations
@@ -13,6 +17,7 @@ from collections.abc import Callable
 from dataclasses import dataclass
 
 from generate_logical_gattai import N, active as ACTIVE, count_solutions, make_full
+
 
 Progress = Callable[[int, int], None]
 ACTIVE_SET = frozenset(ACTIVE)
@@ -28,11 +33,12 @@ class DugPuzzle:
 
 
 def board_to_string(board: list[int]) -> str:
-    """Encode a 12x12 board as exactly 144 characters."""
-    return "".join(
-        str(board[cell]) if cell in ACTIVE_SET and board[cell] else "."
-        for cell in range(N * N)
-    )
+    """Encode a 12×12 board as exactly 144 characters.
+
+    The 18 non-Gattai corner cells and all removed clues are represented by
+    periods, so the result can be imported directly by the website.
+    """
+    return "".join(str(board[cell]) if cell in ACTIVE_SET and board[cell] else "." for cell in range(N * N))
 
 
 def dig_unique_gattai(
@@ -42,8 +48,9 @@ def dig_unique_gattai(
 ) -> DugPuzzle | None:
     """Return a locally minimal unique Gattai puzzle and its run statistics.
 
-    The optional progress callback receives remaining and tested clue counts.
-    Returning true from should_halt stops construction and returns None.
+    ``progress`` receives ``(remaining_clues, tested_clues)`` after each
+    uniqueness test.  If ``should_halt`` ever returns true, the function
+    returns ``None`` without claiming that an unfinished board is minimal.
     """
     started = time.perf_counter()
     rng = random.Random(seed)
@@ -54,7 +61,8 @@ def dig_unique_gattai(
     puzzle = full[:]
     tested = 0
 
-    # Repeat passes so every retained clue is tested against the final board.
+    # Repeating passes makes the terminal condition explicit: every retained
+    # clue has been considered against the final board state.
     while True:
         if should_halt and should_halt():
             return None
@@ -78,7 +86,7 @@ def dig_unique_gattai(
         if not removed_any:
             break
 
-    # Independently prove no retained clue can be removed while unique.
+    # Defend the stated invariant with a final exhaustive removal check.
     for cell in ACTIVE:
         if should_halt and should_halt():
             return None
@@ -89,7 +97,7 @@ def dig_unique_gattai(
         still_unique = count_solutions(puzzle, limit=2) == 1
         puzzle[cell] = value
         if still_unique:
-            raise RuntimeError("Digging stopped before a minimal unique-clue state.")
+            raise RuntimeError("Digging stopped before reaching a minimal unique-clue state.")
 
     if count_solutions(puzzle, limit=2) != 1:
         raise RuntimeError("Final puzzle failed uniqueness validation.")
@@ -98,3 +106,5 @@ def dig_unique_gattai(
         puzzle_string=board_to_string(puzzle),
         elapsed_seconds=time.perf_counter() - started,
     )
+
+# print(dig_unique_gattai(seed=1))  # Run one reproducible digging trial.

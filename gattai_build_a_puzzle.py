@@ -71,3 +71,5 @@ def build_a_puzzle(
             )
 
     return None
+
+# print(build_a_puzzle(max_extra_clues=30, seed=1))  # Run one build trial.

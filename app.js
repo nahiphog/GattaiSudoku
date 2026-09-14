@@ -620,3 +620,28 @@ loadPuzzle(activeDay);
   });
   renderSelection();
 })();
+
+/* Header polish: use the generated minimalist Gattai mark and retain both
+   the puzzle number and its complete date/day in the front-page heading. */
+(() => {
+  const existingLogo = document.querySelector(".brand .gattai-logo");
+  if (existingLogo && !document.querySelector(".brand-logo-image")) {
+    const logo = document.createElement("img");
+    logo.className = "gattai-logo brand-logo-image";
+    logo.src = "gattai-logo-minimal.png";
+    logo.alt = "Gattai Sudoku grid";
+    existingLogo.replaceWith(logo);
+  }
+  const style = document.createElement("style");
+  style.textContent = ".brand-logo-image{object-fit:contain;mix-blend-mode:multiply}.dark .brand-logo-image{filter:invert(1) grayscale(1);mix-blend-mode:screen}";
+  document.head.append(style);
+  const label = document.querySelector("#puzzleDate");
+  const writeHeading = () => {
+    if (!label || activeDay === "unlimited") return;
+    const position = currentPuzzlePosition();
+    const heading = `Puzzle ${position + 1}: ${puzzleDate}`;
+    if (label.textContent !== heading) label.textContent = heading;
+  };
+  new MutationObserver(writeHeading).observe(label, { childList: true, characterData: true, subtree: true });
+  writeHeading();
+})();

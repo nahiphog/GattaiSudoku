@@ -88,3 +88,5 @@ def dig_human_solver_first(
         puzzle_string=board_to_string(puzzle),
         elapsed_seconds=time.perf_counter() - started,
     )
+
+# print(dig_human_solver_first(seed=1))  # Run one reproducible logic-first trial.
