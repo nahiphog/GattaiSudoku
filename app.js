@@ -5,7 +5,10 @@ const dailyPuzzles = {
   thursday: { date: "Thursday, September 10, 2026", rows: [".3..28......", "..5....7....", "2....3..1...", ".....23...6.", "...4....2...", ".........1..", ".4....9..7..", "............", "19.5.......9", "......65....", "....6....8.4", ".......9...7"] },
   friday: { date: "Friday, September 11, 2026", rows: ["5...2..8....", ".9..5..2....", "..27.6......", "9..5....3.1.", "7.4...9.....", ".....4.....2", ".1....8..6..", "...4..3.1.7.", "....69......", ".....1..7..4", ".....6.89...", "............"] },
   saturday: { date: "Saturday, September 12, 2026", rows: ["1..6.2..7...", "......1.....", ".9..73......", "..1..9..2...", ".....8.1.3..", "2.......9...", "..28....125.", "98..2.....6.", "..7....4....", ".....5..71..", "............", ".....2....95"] },
-  sunday: { date: "Sunday, September 13, 2026", rows: ["......1.8...", "....26..4...", "7..15...2...", ".8..9.....8.", ".3....28.1..", "..4......9..", "..357.......", "....49.....1", ".2..........", "...7.....29.", "....3......7", ".....83....."] }
+  sunday: { date: "Sunday, September 13, 2026", rows: ["......1.8...", "....26..4...", "7..15...2...", ".8..9.....8.", ".3....28.1..", "..4......9..", "..357.......", "....49.....1", ".2..........", "...7.....29.", "....3......7", ".....83....."] },
+  september15: { date: "Tuesday, September 15, 2026", rows: [".9.4.6......", "7.2.........", "8......1....", ".2........4.", "....3.2....8", "..5.....19..", "......6....2", ".........5..", "..1.27.3....", "...3........", "....8.......", ".......4.19."] },
+  september16: { date: "Wednesday, September 16, 2026", rows: ["2...3...5...", ".9.....4....", "..8.9.7.....", "...4.1.....2", "1.3.6.4...8.", "...7.3.8.9..", "..9.1.8.4...", ".5...6.7.5.8", "3.....9.1...", ".....5.4.3..", "....3.....2.", "...1...9...4"] },
+  september17: { date: "Thursday, September 17, 2026", rows: [".....8..1...", "..6..2.5....", "5.7.........", ".4326.......", "...........8", "..5..1..6..2", ".3........9.", "......1397..", "....2.......", "...91......3", "....7.6..8..", "....4......."] }
 };
 const previousWeekPuzzles = {
   monday: { date: "Monday, August 31, 2026", rows: ["..6.59......", "81.4........", "...8.2......", "......8.....", "...19....75.", "..8.......19", "..........9.", ".....5.792.3", "....7.......", "...73.....4.", "....526...38", ".......34..2"] },
@@ -35,7 +38,7 @@ const active = [...new Set(units.flatMap(([, house]) => house))];
 const housesFor = Object.fromEntries(active.map(index => [index, units.filter(([, house]) => house.includes(index)).map(([, house]) => house)]));
 const peers = Object.fromEntries(active.map(index => [index, new Set(housesFor[index].flat().filter(other => other !== index))]));
 const board = document.querySelector("#board"), guide = document.querySelector("#guide"), givenCount = document.querySelector("#givenCount"), solutionToggle = document.querySelector("#solutionToggle"), copyPng = document.querySelector("#copyPng"), boardCard = document.querySelector("#boardCard"), puzzleSurface = document.querySelector(".puzzle-surface"), controlSidebar = document.querySelector(".control-sidebar");
-copyPng.textContent = "Copy grid"; controlSidebar.append(solutionToggle, copyPng);
+copyPng.textContent = "Copy grid"; controlSidebar.prepend(copyPng); controlSidebar.prepend(solutionToggle);
 const solutionRail = document.createElement("aside"), stepControls = document.querySelector(".step-controls"), techniqueTallyButton = document.querySelector("#techniqueTally"); solutionRail.className = "solution-rail hidden"; guide.before(solutionRail); solutionRail.append(techniqueTallyButton, guide); guide.prepend(stepControls);
 const historyIcons = { undoMove: '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M9 7 4 12l5 5M5 12h9a5 5 0 0 1 0 10h-1" /></svg>', redoMove: '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="m15 7 5 5-5 5m4-5h-9a5 5 0 0 0 0 10h1" /></svg>' };
 Object.entries(historyIcons).forEach(([id, icon]) => { const button = document.querySelector(`#${id}`), label = id === "undoMove" ? "Undo" : "Redo"; button.classList.add("history-icon"); button.dataset.tooltip = label; button.setAttribute("aria-label", label); button.title = label; button.innerHTML = icon; });
@@ -271,14 +274,18 @@ function renderBoard() {
   }
   drawBoardBoundaries();
 }
-function refresh() { const showingSolution = mode === "solver", unlimited = isUnlimited(); if (showingSolution) boardCard.append(solutionRail); else puzzleSurface.append(solutionRail); renderStep(); renderBoard(); const givens = original.filter((value, index) => active.includes(index) && value).length, rating = rateSteps(steps); givenCount.textContent = unlimited ? `${givens} given cells · generated in ${(unlimitedGenerationMilliseconds / 1000).toFixed(2)} s` : `${givens} given cells`; const dateParts = puzzleDate.split(/,\s*/); document.querySelector("#puzzleDate").innerHTML = unlimited ? "Unlimited" : `<span class="weekday">${dateParts[0]}</span><span class="calendar-date">${dateParts.slice(1).join(", ")}</span>`; document.querySelector("#difficultyLabel").textContent = unlimited && !unlimitedRated ? "Difficulty: Unrated (unique-only)" : `Difficulty: ${rating.rating} (${rating.score})`; document.querySelector("#difficultyLabel").classList.toggle("is-hidden", !difficultyVisible); givenCount.classList.toggle("is-hidden", !givenCountVisible); solutionToggle.setAttribute("aria-pressed", String(showingSolution)); solutionToggle.textContent = unlimited ? (showingSolution ? "Hide final grid" : "Show final grid") : (showingSolution ? "Hide solution" : "Read solution"); guide.classList.toggle("hidden", mode === "human" || unlimited); solutionRail.classList.toggle("hidden", mode === "human" || unlimited); boardCard.classList.toggle("solver-active", showingSolution); updateEntryControls(); setTimerRunning(mode === "human"); }
+function refresh() { const showingSolution = mode === "solver", unlimited = isUnlimited(); if (showingSolution) boardCard.append(solutionRail); else puzzleSurface.append(solutionRail); renderStep(); renderBoard(); const givens = original.filter((value, index) => active.includes(index) && value).length, rating = rateSteps(steps); givenCount.textContent = unlimited ? `${givens} given cells · generated in ${(unlimitedGenerationMilliseconds / 1000).toFixed(2)} s` : `${givens} given cells`; document.querySelector("#puzzleDate").textContent = puzzleDate.replace(/^[^,]+,\s*/, ""); updatePuzzleNavigation(); document.querySelector("#difficultyLabel").textContent = unlimited && !unlimitedRated ? "Difficulty: Unrated (unique-only)" : `Difficulty: ${rating.rating} (${rating.score})`; document.querySelector("#difficultyLabel").classList.toggle("is-hidden", !difficultyVisible); givenCount.classList.toggle("is-hidden", !givenCountVisible); solutionToggle.setAttribute("aria-pressed", String(showingSolution)); solutionToggle.textContent = unlimited ? (showingSolution ? "Hide final grid" : "Show final grid") : (showingSolution ? "Hide solution" : "Read solution"); guide.classList.toggle("hidden", mode === "human" || unlimited); solutionRail.classList.toggle("hidden", mode === "human" || unlimited); boardCard.classList.toggle("solver-active", showingSolution); updateEntryControls(); setTimerRunning(mode === "human"); }
 function loadPuzzle(day) { activeDay = day; const selectedWeek = activeWeek === "previous" ? previousWeekPuzzles : dailyPuzzles, selectedPuzzle = (day === "unlimited" ? puzzles : selectedWeek)[day]; rows = selectedPuzzle.rows; puzzleDate = selectedPuzzle.date; original.fill(0); rows.forEach((row, r) => [...row].forEach((value, c) => { if (value !== ".") original[r * 12 + c] = Number(value); })); const key = stateKey(); ensureState(key); human = userInputs[key]; playNotes = userNotes[key]; playColors = userColors[key]; selectedCell = null; steps = deriveSteps(["friday", "saturday", "sunday"].includes(day)); const walked = [...original]; steps.forEach(step => { if (step.index !== null) walked[step.index] = step.digit; }); unlimitedRated = day === "unlimited" && active.every(index => walked[index]); stepIndex = 0; document.querySelector("#unlimitedMode").classList.toggle("active", day === "unlimited"); refresh(); }
 const archiveEntries = [
   ["previous", "monday", 2026, 8, 31], ["previous", "tuesday", 2026, 9, 1], ["previous", "wednesday", 2026, 9, 2], ["previous", "thursday", 2026, 9, 3], ["previous", "friday", 2026, 9, 4], ["previous", "saturday", 2026, 9, 5], ["previous", "sunday", 2026, 9, 6],
-  ["current", "monday", 2026, 9, 7], ["current", "tuesday", 2026, 9, 8], ["current", "wednesday", 2026, 9, 9], ["current", "thursday", 2026, 9, 10], ["current", "friday", 2026, 9, 11], ["current", "saturday", 2026, 9, 12], ["current", "sunday", 2026, 9, 13]
+  ["current", "monday", 2026, 9, 7], ["current", "tuesday", 2026, 9, 8], ["current", "wednesday", 2026, 9, 9], ["current", "thursday", 2026, 9, 10], ["current", "friday", 2026, 9, 11], ["current", "saturday", 2026, 9, 12], ["current", "sunday", 2026, 9, 13],
+  ["current", "september15", 2026, 9, 15], ["current", "september16", 2026, 9, 16], ["current", "september17", 2026, 9, 17]
 ].map(([week, day, year, month, date]) => ({ week, day, year, month, date }));
 const archiveKey = (year, month, date) => `${year}-${month}-${date}`;
 const archiveByDate = new Map(archiveEntries.map(entry => [archiveKey(entry.year, entry.month, entry.date), entry]));
+function currentPuzzlePosition() { return archiveEntries.findIndex(entry => entry.week === activeWeek && entry.day === activeDay); }
+function updatePuzzleNavigation() { const previous = document.querySelector("#previousPuzzle"), next = document.querySelector("#nextPuzzle"), position = currentPuzzlePosition(), unavailable = activeDay === "unlimited" || position === -1; previous.disabled = unavailable || position === 0; next.disabled = unavailable || position === archiveEntries.length - 1; }
+function navigatePuzzle(offset) { const position = currentPuzzlePosition(), target = archiveEntries[position + offset]; if (!target || activeDay === "unlimited") return; activeWeek = target.week; mode = "human"; loadPuzzle(target.day); }
 function renderArchiveCalendar() {
   const calendar = document.querySelector("#archiveCalendar");
   calendar.replaceChildren();
@@ -326,6 +333,8 @@ function resetTimer() { elapsedSeconds = 0; timerBase = Date.now(); showTimer();
 setInterval(() => { if (timerRunning) { elapsedSeconds += Math.floor((Date.now() - timerBase) / 1000); timerBase = Date.now(); showTimer(); } }, 1000);
 document.querySelector("#firstStep").addEventListener("click", () => { stepIndex = 0; refresh(); }); document.querySelector("#previousStep").addEventListener("click", () => { if (stepIndex > 0) { stepIndex -= 1; refresh(); } }); document.querySelector("#nextStep").addEventListener("click", () => { if (stepIndex < steps.length - 1) { stepIndex += 1; refresh(); } }); document.querySelector("#lastStep").addEventListener("click", () => { stepIndex = steps.length - 1; refresh(); });
 function toggleSolution() { mode = mode === "human" ? "solver" : "human"; guide.classList.toggle("hidden", mode === "human"); refresh(); }
+document.querySelector("#previousPuzzle").addEventListener("click", () => navigatePuzzle(-1));
+document.querySelector("#nextPuzzle").addEventListener("click", () => navigatePuzzle(1));
 solutionToggle.addEventListener("click", toggleSolution);
 document.querySelector("#hideSolution")?.addEventListener("click", toggleSolution);
 document.querySelector("#unlimitedMode").addEventListener("click", generateUnlimitedPuzzle);
@@ -386,1132 +395,125 @@ function addSidebarToggle(sidebar, label) {
 }
 addSidebarToggle(document.querySelector(".control-sidebar"), "puzzle controls sidebar");
 document.querySelector(".generator-rule").textContent = "Both published weeks are independently rechecked for exactly one solution. The previous week uses paired rotational digging; every listed walkthrough resolves the entire Gattai using named Singles techniques only.";
-const puzzleNav=["previous:monday","previous:tuesday","previous:wednesday","previous:thursday","previous:friday","previous:saturday","previous:sunday","current:monday","current:tuesday","current:wednesday","current:thursday","current:friday","current:saturday","current:sunday"];const movePuzzle=offset=>{const target=puzzleNav[puzzleNav.indexOf(`${activeWeek}:${activeDay}`)+offset];if(!target)return;[activeWeek,activeDay]=target.split(":");mode="human";loadPuzzle(activeDay);};document.querySelector("#previousPuzzle").addEventListener("click",()=>movePuzzle(-1));document.querySelector("#nextPuzzle").addEventListener("click",()=>movePuzzle(1));loadPuzzle(activeDay);
-const diggingDialog = document.createElement("dialog");
-diggingDialog.className = "dig-progress";
-diggingDialog.innerHTML = '<h2>Generating Unlimited puzzle</h2><p id="diggingStatus" aria-live="polite">Preparing the Gattai grid…</p><progress id="diggingMeter" value="0" max="126"></progress><p class="digging-note">This window stays open until the puzzle is ready.</p>';
-document.body.append(diggingDialog);
-const diggingStatus = diggingDialog.querySelector("#diggingStatus"), diggingMeter = diggingDialog.querySelector("#diggingMeter");
-const nextPaint = () => new Promise(resolve => requestAnimationFrame(() => requestAnimationFrame(resolve)));
-function showDiggingProgress(remaining) { diggingMeter.value = remaining; diggingStatus.textContent = `Digging the puzzle now. ${remaining} cells remaining.`; }
-async function generateUnlimitedPuzzle() {
-  const button = document.querySelector("#unlimitedMode"), title = button.querySelector("strong"), detail = button.querySelector("small"), started = performance.now();
-  document.querySelector("#archiveDialog")?.close();
-  button.disabled = true; title.textContent = "Generating…"; detail.textContent = "Digging for uniqueness";
-  diggingMeter.max = active.length; diggingMeter.value = active.length; diggingStatus.textContent = "Building a compatible Gattai grid…"; diggingDialog.showModal();
-  await nextPaint();
-  try {
-    const full = makeFullGattai(), puzzle = [...full]; let changed = true, tested = 0;
-    showDiggingProgress(active.length);
-    while (changed) {
-      changed = false;
-      for (const cell of shuffle(active.filter(index => puzzle[index]))) {
-        const value = puzzle[cell]; puzzle[cell] = 0;
-        if (countGattaiSolutions(puzzle, 2) === 1) changed = true; else puzzle[cell] = value;
-        tested += 1;
-        if (tested % 4 === 0) { showDiggingProgress(active.filter(index => puzzle[index]).length); await nextPaint(); }
-      }
-    }
-    showDiggingProgress(active.filter(index => puzzle[index]).length);
-    puzzles.unlimited = { date: "Unlimited", rows: rowsFromBoard(puzzle) };
-    unlimitedSolution = full; unlimitedGenerationMilliseconds = performance.now() - started;
-    userInputs.unlimited.fill(0); userNotes.unlimited.forEach(note => note.clear()); userColors.unlimited.fill(""); histories.unlimited.length = 0; redoHistories.unlimited.length = 0;
-    mode = "human"; loadPuzzle("unlimited"); detail.textContent = "Generate another";
-    diggingDialog.close();
-  } catch (error) {
-    diggingStatus.textContent = "Generation could not complete. Please close this message and try again.";
-    title.textContent = "Unlimited"; detail.textContent = "Try again";
-    diggingDialog.addEventListener("click", () => diggingDialog.close(), { once: true });
-  } finally { button.disabled = false; if (!diggingDialog.open) title.textContent = "Unlimited"; }
-}
+loadPuzzle(activeDay);
 
-
-// Help pages and refined sidebar controls
+/* One home for the two generator workflows.  This intentionally leaves the
+   existing build workspace intact, but makes it reachable through a single
+   Archive entry and gives digging its own, explicit controls. */
 (() => {
-  const dialog = document.querySelector("#howToPlayDialog");
-  const oldAbout = document.querySelector("#settingsDialog .settings-about");
-  const about = oldAbout ? oldAbout.innerHTML.replace(/^<h3>About<\/h3>/, "") : "<p>Inspired by the Cracking the Cryptic YouTube channel.</p><p>Technique names and explanations reference AImenes/sudokUI.</p><p>Made primarily using ChatGPT Plus.</p>";
-  oldAbout?.remove();
-  dialog.innerHTML = `<button id="closeHowToPlay" class="dialog-close" aria-label="Close">×</button><p class="eyebrow">HOW TO PLAY</p><section class="help-page"><h2>How to play</h2><p>Fill each 9×9 grid so every row, column, and 3×3 house contains 1–9 exactly once. The shared six-by-six area obeys both grids at once.</p><p>A daily puzzle is available every day. Unlimited mode generates a fresh, uniquely solvable puzzle through clue digging.</p></section><section class="help-page" hidden><h2>Difficulty guide</h2><div class="table-wrap"><table class="difficulty-guide"><thead><tr><th>Difficulty</th><th>Techniques</th></tr></thead><tbody><tr><th>Beginner · ≤400</th><td>Full House and Naked Single.</td></tr><tr><th>Easy · ≤800</th><td>Everything in Beginner, plus Hidden Single.</td></tr><tr><th>Medium · ≤1000</th><td>Everything in Easy, plus intersections and Naked or Hidden Pairs and Triples.</td></tr><tr><th>Tricky · ≤1150</th><td>Everything in Medium, with Wings and other bookkeeping-heavy patterns.</td></tr><tr><th>Hard · ≤1600</th><td>Everything in Tricky, plus Basic Fish and other advanced eliminations.</td></tr><tr><th>Unfair, Extreme, Nightmare</th><td>Each later band includes every earlier technique, then adds more complex chains, colouring, ALSs, and last-resort patterns.</td></tr></tbody></table></div></section><section class="help-page" hidden><h2>About</h2>${about}</section><nav class="help-pagination"><button id="helpPrevious" aria-label="Previous page">‹</button><span id="helpPageCount">Page 1 of 3</span><button id="helpNext" aria-label="Next page">›</button></nav>`;
-  const pages = [...dialog.querySelectorAll(".help-page")]; let page = 0;
-  const render = () => { pages.forEach((item, index) => item.hidden = index !== page); dialog.querySelector("#helpPageCount").textContent = "Page " + (page + 1) + " of " + pages.length; dialog.querySelector("#helpPrevious").disabled = page === 0; dialog.querySelector("#helpNext").disabled = page === pages.length - 1; };
-  dialog.querySelector("#closeHowToPlay").addEventListener("click", () => dialog.close());
-  dialog.querySelector("#helpPrevious").addEventListener("click", () => { if (page) { page--; render(); } });
-  dialog.querySelector("#helpNext").addEventListener("click", () => { if (page < pages.length - 1) { page++; render(); } }); render();
-  const controls = document.querySelector(".control-sidebar"), others = document.createElement("section"); others.className = "other-panel"; others.innerHTML = "<span>Others</span>"; others.append(solutionToggle, copyPng); controls.append(others);
-  const tabs = document.querySelector(".entry-tabs"); tabs.setAttribute("role", "radiogroup"); tabs.setAttribute("aria-label", "Input mode");
-  const sync = () => document.querySelectorAll(".entry-button").forEach(button => { button.setAttribute("role", "radio"); button.setAttribute("aria-checked", String(button.getAttribute("aria-pressed") === "true")); }); sync(); document.querySelectorAll(".entry-button").forEach(button => button.addEventListener("click", sync));
-  const css = `.help-page[hidden]{display:none}.help-pagination{display:flex;align-items:center;justify-content:center;gap:12px;margin-top:20px;padding-top:12px;border-top:1px solid var(--thin)}.help-pagination button{width:32px;height:32px;border:1px solid var(--line);border-radius:50%;background:var(--muted);color:var(--ink);font:600 21px/1 Nunito,sans-serif;cursor:pointer}.help-pagination button:disabled{opacity:.35}.other-panel{display:flex;flex-direction:column;gap:7px;margin-top:4px;padding-top:8px;border-top:1px solid var(--thin)}.other-panel>span{font-weight:700;color:var(--ink)}.control-sidebar .other-panel button{width:100%;margin:0!important;text-align:center;color:var(--ink)!important;background:var(--muted)!important}.control-sidebar .sidebar-solution,.control-sidebar #copyPng,.control-sidebar .entry-button,.control-sidebar .grid-button,.control-sidebar #resetGrid,.control-sidebar .history-icon{color:var(--ink)!important}.entry-tabs{display:grid;grid-template-columns:1fr 1fr;gap:0;border:1px solid var(--line);border-radius:8px;overflow:hidden;background:var(--muted)}.entry-tabs .entry-button{min-height:36px;margin:0;border:0!important;border-radius:0!important;background:transparent!important;text-align:center}.entry-tabs .entry-button+.entry-button{border-left:1px solid var(--line)!important}.entry-tabs .entry-button[aria-pressed=true]{background:var(--ink)!important;color:var(--surface)!important;box-shadow:inset 0 -3px 0 var(--gold)}.entry-tabs .entry-button[aria-pressed=false]{color:var(--ink)!important}`; const style = document.createElement("style"); style.textContent = css; document.head.append(style);
-})();
+  const archive = document.querySelector("#archiveDialog");
+  const oldDigging = document.querySelector("#unlimitedMode");
+  const oldBuild = document.querySelector(".build-category-button") || [...document.querySelectorAll("button")].find(button => button.textContent.trim() === "Build a puzzle");
+  if (!archive || document.querySelector("#generatePuzzleLauncher")) return;
 
+  [oldDigging, oldBuild].filter(Boolean).forEach(button => { button.hidden = true; });
+  const launcher = document.createElement("button");
+  launcher.type = "button";
+  launcher.id = "generatePuzzleLauncher";
+  launcher.className = "generate-puzzle-launcher";
+  launcher.textContent = "Generate a puzzle";
+  archive.append(launcher);
 
-// Sidebar control labels, order, and confirmations
-(() => {
-  const controls = document.querySelector(".control-sidebar");
-  const digit = document.querySelector(".entry-button[data-entry=digit]");
-  const snyder = document.querySelector(".entry-button[data-entry=snyder]");
-  digit.innerHTML = "<span>Digit</span><b class='digit-symbol'>9</b>";
-  snyder.innerHTML = "<span>Snyder</span><b class='snyder-symbol'><i>1</i><i>2</i><i>3</i><i>4</i><i>5</i><i>6</i><i>7</i><i>8</i><i>9</i></b>";
-  const undo = document.querySelector("#undoMove"), redo = document.querySelector("#redoMove");
-  undo.innerHTML = "<span>Undo</span>" + historyIcons.undoMove; redo.innerHTML = "<span>Redo</span>" + historyIcons.redoMove;
-  const others = controls.querySelector(".other-panel") || document.createElement("section");
-  others.className = "other-panel"; if (!others.parentNode) { others.innerHTML = "<span>Others</span>"; controls.append(others); }
-  const resetGridButton = document.querySelector("#resetGrid");
-  const oldTimerButton = document.querySelector("#resetTimer");
-  const resetTimerButton = oldTimerButton.cloneNode(false);
-  resetTimerButton.id = "resetTimer"; resetTimerButton.type = "button"; resetTimerButton.className = "sidebar-reset"; resetTimerButton.textContent = "Reset timer"; resetTimerButton.setAttribute("aria-label", "Reset timer");
-  oldTimerButton.replaceWith(resetTimerButton);
-  resetTimerButton.addEventListener("click", () => { if (window.confirm("Reset the timer to 00:00?")) resetTimer(); });
-  others.append(resetGridButton, resetTimerButton, solutionToggle, copyPng);
-  const errorLabel = document.querySelector("#autoErrorToggle")?.closest("label")?.querySelector("span"); if (errorLabel) errorLabel.textContent = "Mark obvious incorrect entries as red";
-  const css = `.entry-tabs .entry-button{display:flex;align-items:center;justify-content:space-between;gap:6px;padding:6px 8px!important}.digit-symbol{font:700 19px/1 Nunito,sans-serif}.snyder-symbol{width:20px;height:20px;display:grid;grid-template-columns:repeat(3,1fr);grid-template-rows:repeat(3,1fr);place-items:center;font:700 7px/1 Arial,sans-serif}.snyder-symbol i{font-style:normal}.history-icon{display:flex!important;align-items:center;justify-content:center;gap:7px}.history-icon span{font:inherit}.history-icon svg{width:17px;height:17px}.other-panel #resetGrid,.other-panel .sidebar-reset{width:100%;min-height:34px;border:1px solid var(--line);background:var(--muted);color:var(--ink);font:inherit;cursor:pointer}.other-panel #resetGrid:disabled,.other-panel .sidebar-reset:disabled{opacity:.45;cursor:not-allowed}`; const style = document.createElement("style"); style.textContent = css; document.head.append(style);
-})();
-
-
-// Unlimited mode: uniqueness-only generation and timing
-(() => {
-  const deriveUnlimitedSafe = deriveSteps;
-  deriveSteps = function (...args) { return activeDay === 'unlimited' ? [] : deriveUnlimitedSafe(...args); };
-  const refreshUnlimitedSafe = refresh;
-  const generationTime = document.createElement('p');
-  generationTime.id = 'unlimitedGenerationTime';
-  generationTime.className = 'unlimited-generation-time';
-  givenCount.after(generationTime);
-  const normaliseUnlimitedName = () => {
-    const title = document.querySelector('#unlimitedMode strong');
-    if (title && title.textContent === 'Unlimited') title.textContent = 'unlimited';
-  };
-  const unlimitedButton = document.querySelector('#unlimitedMode');
-  new MutationObserver(normaliseUnlimitedName).observe(unlimitedButton, { childList: true, subtree: true, characterData: true });
-  refresh = function () {
-    refreshUnlimitedSafe();
-    const unlimited = isUnlimited();
-    generationTime.hidden = !unlimited;
-    if (!unlimited) return;
-    document.querySelector('#puzzleDate').textContent = 'unlimited';
-    document.querySelector('#difficultyLabel').classList.add('is-hidden');
-    generationTime.textContent = 'Generation time: ' + (unlimitedGenerationMilliseconds / 1000).toFixed(2) + ' seconds';
-    normaliseUnlimitedName();
-  };
-  normaliseUnlimitedName();
-})();
-
-
-// Unlimited evaluation, generation timing, and help-panel refinements
-(() => {
-  ['#undoMove', '#redoMove'].forEach(selector => {
-    const button = document.querySelector(selector);
-    button.removeAttribute('title');
-    button.removeAttribute('data-tooltip');
-    delete button.dataset.tooltip;
-  });
-  const style = document.createElement('style');
-  style.textContent = ".help-page{min-height:270px}#howToPlay{font-family:'Lucida Console',monospace!important}.evaluation-button{width:100%;min-height:34px;border:1px solid var(--line);background:var(--muted);color:var(--ink);font:inherit;cursor:pointer}.evaluation-button:disabled{opacity:.45;cursor:not-allowed}.generation-clock{margin:0;color:var(--ink);font-weight:700}";
-  document.head.append(style);
-
-  const others = document.querySelector('.other-panel');
-  const evaluateButton = document.createElement('button');
-  evaluateButton.type = 'button';
-  evaluateButton.className = 'evaluation-button';
-  evaluateButton.textContent = 'Evaluate puzzle difficulty';
-  evaluateButton.disabled = true;
-  others.append(evaluateButton);
-  let evaluation = null;
-
-  const oldUnlimitedButton = document.querySelector('#unlimitedMode');
-  const unlimitedButton = oldUnlimitedButton.cloneNode(true);
-  oldUnlimitedButton.replaceWith(unlimitedButton);
-  const generationClock = document.createElement('p');
-  generationClock.className = 'generation-clock';
-  diggingDialog.querySelector('.digging-note').before(generationClock);
-
-  async function generateTimedUnlimitedPuzzle() {
-    const title = unlimitedButton.querySelector('strong');
-    const detail = unlimitedButton.querySelector('small');
-    const started = performance.now();
-    let timer = null;
-    document.querySelector('#archiveDialog')?.close();
-    unlimitedButton.disabled = true;
-    evaluateButton.disabled = true;
-    evaluation = null;
-    title.textContent = 'Generating…';
-    detail.textContent = 'Digging for uniqueness';
-    generationClock.textContent = 'Generation time: 0.00 seconds';
-    diggingMeter.max = active.length;
-    diggingMeter.value = active.length;
-    diggingStatus.textContent = 'Building a compatible Gattai grid…';
-    diggingDialog.showModal();
-    timer = setInterval(() => { generationClock.textContent = 'Generation time: ' + ((performance.now() - started) / 1000).toFixed(2) + ' seconds'; }, 100);
-    await nextPaint();
-    try {
-      const full = makeFullGattai();
-      const puzzle = [...full];
-      let changed = true;
-      let tested = 0;
-      showDiggingProgress(active.length);
-      while (changed) {
-        changed = false;
-        for (const cell of shuffle(active.filter(index => puzzle[index]))) {
-          const value = puzzle[cell];
-          puzzle[cell] = 0;
-          if (countGattaiSolutions(puzzle, 2) === 1) changed = true; else puzzle[cell] = value;
-          tested += 1;
-          if (tested % 4 === 0) {
-            showDiggingProgress(active.filter(index => puzzle[index]).length);
-            await nextPaint();
-          }
-        }
-      }
-      unlimitedGenerationMilliseconds = performance.now() - started;
-      generationClock.textContent = 'Generation time: ' + (unlimitedGenerationMilliseconds / 1000).toFixed(2) + ' seconds';
-      puzzles.unlimited = { date: 'unlimited', rows: rowsFromBoard(puzzle) };
-      unlimitedSolution = full;
-      userInputs.unlimited.fill(0);
-      userNotes.unlimited.forEach(note => note.clear());
-      userColors.unlimited.fill('');
-      histories.unlimited.length = 0;
-      redoHistories.unlimited.length = 0;
-      mode = 'human';
-      loadPuzzle('unlimited');
-      evaluateButton.disabled = false;
-      detail.textContent = 'Generate another';
-      diggingDialog.close();
-    } catch (error) {
-      diggingStatus.textContent = 'Generation could not complete. Please close this message and try again.';
-      detail.textContent = 'Try again';
-      diggingDialog.addEventListener('click', () => diggingDialog.close(), { once: true });
-    } finally {
-      clearInterval(timer);
-      unlimitedButton.disabled = false;
-      title.textContent = 'unlimited';
-    }
-  }
-  unlimitedButton.addEventListener('click', generateTimedUnlimitedPuzzle);
-
-  const evaluatedRefresh = refresh;
-  refresh = function () {
-    const showingEvaluatedWalkthrough = isUnlimited() && evaluation?.complete && mode === 'solver';
-    if (showingEvaluatedWalkthrough) {
-      const savedDay = activeDay;
-      activeDay = 'evaluation';
-      evaluatedRefresh();
-      activeDay = savedDay;
-    } else {
-      evaluatedRefresh();
-    }
-    if (!isUnlimited()) return;
-    const givens = original.filter((value, index) => active.includes(index) && value).length;
-    givenCount.textContent = givens + ' given cells';
-    const generationTime = document.querySelector('#unlimitedGenerationTime');
-    generationTime.hidden = false;
-    generationTime.textContent = 'Generation time: ' + (unlimitedGenerationMilliseconds / 1000).toFixed(2) + ' seconds';
-    document.querySelector('#puzzleDate').textContent = 'unlimited';
-    if (!evaluation) {
-      document.querySelector('#difficultyLabel').classList.add('is-hidden');
-      return;
-    }
-    const difficulty = document.querySelector('#difficultyLabel');
-    difficulty.classList.remove('is-hidden');
-    if (!evaluation.complete) {
-      difficulty.textContent = 'Difficulty: Over 9000';
-      return;
-    }
-    difficulty.textContent = 'Difficulty: ' + evaluation.rating.rating + ' (' + evaluation.rating.score + ')';
-    guide.classList.remove('hidden');
-    solutionRail.classList.remove('hidden');
-  };
-
-  evaluateButton.addEventListener('click', () => {
-    if (!isUnlimited() || !unlimitedSolution) return;
-    const savedDay = activeDay;
-    activeDay = 'evaluation';
-    const sequence = deriveSteps();
-    activeDay = savedDay;
-    const attempted = [...original];
-    sequence.forEach(step => { if (step.index !== null) attempted[step.index] = step.digit; });
-    if (!active.every(index => attempted[index])) {
-      evaluation = { complete: false };
-      mode = 'human';
-      refresh();
-      return;
-    }
-    evaluation = { complete: true, rating: rateSteps(sequence) };
-    steps = sequence;
-    stepIndex = 0;
-    mode = 'solver';
-    refresh();
-  });
-})();
-
-// Tally, typography, and unlimited-mode presentation refinements
-(() => {
-  const style = document.createElement('style');
-  style.textContent =
-    'body,button,input,textarea,select{font-family:Nunito,system-ui,sans-serif!important}' +
-    '.help-page{height:300px!important;min-height:300px!important;box-sizing:border-box;overflow:auto}' +
-    '#howToPlay{font-family:Arial,sans-serif!important;font-style:normal!important;font-weight:700!important}' +
-    '#difficultyLabel,#givenCount{font-size:1.22rem!important;line-height:1.45;font-weight:800}' +
-    '#puzzleTally{display:block;margin-top:2px;color:var(--ink);font-size:.82rem;font-weight:800;letter-spacing:.05em}' +
-    '.generation-clock{font-size:1rem!important;letter-spacing:.04em}';
-  document.head.append(style);
-  [...document.querySelectorAll('a')].find(link => link.textContent.includes('gattai-sudoku.vercel.app'))?.remove();
-  const tally = document.createElement('span');
-  tally.id = 'puzzleTally';
-  document.querySelector('#puzzleDate').after(tally);
-  const start = Date.UTC(2026, 7, 1);
-  const monthNumber = { January:0, February:1, March:2, April:3, May:4, June:5, July:6, August:7, September:8, October:9, November:10, December:11 };
-  const numberForDate = text => {
-    const match = text.match(/([A-Za-z]+)\s+(\d+),\s+(\d+)/);
-    if (!match || monthNumber[match[1]] === undefined) return null;
-    return Math.floor((Date.UTC(Number(match[3]), monthNumber[match[1]], Number(match[2])) - start) / 86400000) + 1;
-  };
-  const clock = document.querySelector('.generation-clock');
-  const normaliseClock = () => {
-    const seconds = clock?.textContent.match(/(\d+(?:\.\d+)?)/)?.[1];
-    if (seconds && !clock.textContent.trim().startsWith('∞')) clock.textContent = '∞ ' + seconds + ' s';
-  };
-  if (clock) new MutationObserver(normaliseClock).observe(clock, { childList:true, characterData:true, subtree:true });
-  const priorRefresh = refresh;
-  refresh = function () {
-    priorRefresh();
-    const unlimited = isUnlimited();
-    const evaluator = document.querySelector('.evaluation-button');
-    if (evaluator) evaluator.hidden = !unlimited;
-    tally.hidden = unlimited;
-    if (!unlimited) {
-      const number = numberForDate(puzzleDate);
-      tally.textContent = number ? 'Puzzle #' + number : '';
-    }
-  };
-  refresh();
-})();
-
-// Keep controls that are logically hidden out of sidebar layouts.
-document.head.insertAdjacentHTML("beforeend", "<style>[hidden]{display:none!important}</style>");
-
-
-// Complete-grid viewer and logical-first unlimited digging
-(() => {
-  function completeGattai(givens) {
-    const values = [...givens];
-    const search = () => {
-      let selected = -1, options = null;
-      for (const index of active) if (!values[index]) {
-        const available = candidates(values, index);
-        if (!available.length) return null;
-        if (!options || available.length < options.length) { selected = index; options = available; }
-      }
-      if (selected < 0) return [...values];
-      for (const digit of options) { values[selected] = digit; const result = search(); if (result) return result; values[selected] = 0; }
-      return null;
-    };
-    return search();
-  }
-  function namedSolve(givens) {
-    const saved = [...original], savedDay = activeDay;
-    original.splice(0, original.length, ...givens); activeDay = "logic-check";
-    let logic = [];
-    try { logic = deriveSteps(); } finally { activeDay = savedDay; original.splice(0, original.length, ...saved); }
-    const values = [...givens]; logic.forEach(step => { if (step.index !== null) values[step.index] = step.digit; });
-    return active.every(index => values[index]);
-  }
-  const reveal = document.createElement("button");
-  reveal.type = "button"; reveal.className = "reveal-complete-grid"; reveal.textContent = "Reveal complete grid";
-  (document.querySelector(".other-panel") || document.querySelector(".control-sidebar")).append(reveal);
-  const dialog = document.createElement("dialog");
-  dialog.className = "complete-grid-dialog";
-  dialog.innerHTML = '<div class="complete-title"><h2>Complete grid</h2><button type="button" class="dialog-close" aria-label="Close">×</button></div><p>Given cells are black. Filled cells are blue.</p><div class="complete-scroll"><div id="completeGrid" class="board complete-board"></div></div><button type="button" id="copyComplete">Copy complete grid</button>';
-  document.body.append(dialog);
-  const completeGrid = dialog.querySelector("#completeGrid"); let finalValues = null;
-  const boundary = target => [["horizontal","h-0"],["horizontal","h-3"],["horizontal","h-6"],["horizontal","h-9"],["horizontal","h-12"],["vertical","v-0"],["vertical","v-3"],["vertical","v-6"],["vertical","v-9"],["vertical","v-12"]].forEach(item => { const line=document.createElement("span"); line.className="board-boundary "+item[0]+" "+item[1]; target.append(line); });
-  const drawComplete = values => {
-    completeGrid.replaceChildren(); const rect = board.getBoundingClientRect(); completeGrid.style.width = rect.width + "px"; completeGrid.style.height = rect.height + "px";
-    for (let row=0;row<12;row+=1) for (let column=0;column<12;column+=1) if (hasCell(row,column)) { const index=row*12+column, cell=document.createElement("div"); cell.className="cell "+(original[index]?"given":"filled-complete"); cell.style.gridColumnStart=column+1; cell.style.gridRowStart=row+1; cell.textContent=values[index]; completeGrid.append(cell); }
-    boundary(completeGrid);
-  };
-  reveal.addEventListener("click", () => { if (isUnlimited() && !unlimitedSolution) { window.alert("Generate an unlimited puzzle first."); return; } finalValues = isUnlimited() ? [...unlimitedSolution] : completeGattai(original); if (!finalValues) { window.alert("No completed grid is available."); return; } drawComplete(finalValues); dialog.showModal(); });
-  dialog.querySelector(".dialog-close").addEventListener("click",()=>dialog.close()); dialog.addEventListener("click",event=>{if(event.target===dialog)dialog.close();});
-  dialog.querySelector("#copyComplete").addEventListener("click",async()=>{
-    if(!finalValues)return; const scale=60, size=scale*12, margin=size/18, canvas=document.createElement("canvas"), context=canvas.getContext("2d"); canvas.width=canvas.height=size+margin*2; context.fillStyle="#fff";context.fillRect(0,0,canvas.width,canvas.height);context.translate(margin,margin);
-    for(let row=0;row<12;row+=1)for(let column=0;column<12;column+=1)if(hasCell(row,column)){const index=row*12+column;context.fillStyle=row>=3&&column>=3&&row<9&&column<9?"#fff1c7":"#fff";context.fillRect(column*scale,row*scale,scale,scale);context.strokeStyle="#9aa6a8";context.lineWidth=1;context.strokeRect(column*scale,row*scale,scale,scale);context.fillStyle=original[index]?"#111":"#1c6fa1";context.font="700 28px Nunito, sans-serif";context.textAlign="center";context.textBaseline="middle";context.fillText(finalValues[index],(column+.5)*scale,(row+.53)*scale);}
-    context.strokeStyle="#173a4c";context.lineWidth=3;[[0,0,9,0],[0,3,12,3],[0,6,12,6],[0,9,12,9],[3,12,12,12],[0,0,0,9],[3,0,3,12],[6,0,6,12],[9,0,9,12],[12,3,12,12]].forEach(line=>{context.beginPath();context.moveTo(line[0]*scale,line[1]*scale);context.lineTo(line[2]*scale,line[3]*scale);context.stroke();});
-    const button=dialog.querySelector("#copyComplete");try{const blob=await new Promise(resolve=>canvas.toBlob(resolve,"image/png"));await navigator.clipboard.write([new ClipboardItem({"image/png":blob})]);button.textContent="Complete grid copied";}catch{button.textContent="Grid copy unavailable";}setTimeout(()=>button.textContent="Copy complete grid",1800);
-  });
-  const priorUnlimited = document.querySelector("#unlimitedMode"), logicalUnlimited = priorUnlimited.cloneNode(true); priorUnlimited.replaceWith(logicalUnlimited);
-  logicalUnlimited.addEventListener("click",async()=>{
-    const title=logicalUnlimited.querySelector("strong"), detail=logicalUnlimited.querySelector("small"), started=performance.now(); let timer=null, fallbacks=0;
-    document.querySelector("#archiveDialog")?.close();logicalUnlimited.disabled=true;document.querySelector(".evaluation-button").disabled=true;title.textContent="Generating…";detail.textContent="Trying named techniques first";generationClock.textContent="Generation time: 0.00 seconds";diggingMeter.max=active.length;diggingMeter.value=active.length;diggingStatus.textContent="Building a compatible Gattai grid…";diggingDialog.showModal();timer=setInterval(()=>generationClock.textContent="Generation time: "+((performance.now()-started)/1000).toFixed(2)+" seconds",100);await nextPaint();
-    try { const full=makeFullGattai(), puzzle=[...full];let changed=true,tested=0;while(changed){changed=false;for(const cell of shuffle(active.filter(index=>puzzle[index]))){const clue=puzzle[cell];puzzle[cell]=0;let keep=namedSolve(puzzle);if(!keep){fallbacks+=1;diggingStatus.textContent="Techniques stalled — checking uniqueness…";keep=countGattaiSolutions(puzzle,2)===1;}if(keep)changed=true;else puzzle[cell]=clue;tested+=1;if(tested%2===0){showDiggingProgress(active.filter(index=>puzzle[index]).length);await nextPaint();}}}unlimitedGenerationMilliseconds=performance.now()-started;puzzles.unlimited={date:"unlimited",rows:rowsFromBoard(puzzle)};unlimitedSolution=full;userInputs.unlimited.fill(0);userNotes.unlimited.forEach(note=>note.clear());userColors.unlimited.fill("");histories.unlimited.length=0;redoHistories.unlimited.length=0;mode="human";loadPuzzle("unlimited");detail.textContent=fallbacks?"Generated with logical solving and fallback checks":"Generated with named techniques";diggingDialog.close();}catch(error){diggingStatus.textContent="Generation could not complete. Please close this message and try again.";detail.textContent="Try again";diggingDialog.addEventListener("click",()=>diggingDialog.close(),{once:true});}finally{clearInterval(timer);logicalUnlimited.disabled=false;title.textContent="unlimited";}
-  });
-  const style=document.createElement("style");style.textContent=".complete-grid-dialog{width:max-content;max-width:calc(100vw - 32px);max-height:calc(100vh - 32px);padding:22px;border:1px solid var(--line);border-radius:16px;background:var(--surface);color:var(--ink)}.complete-grid-dialog::backdrop{background:rgba(19,58,76,.35)}.complete-title{display:flex;align-items:center;justify-content:space-between;gap:32px}.complete-title h2{margin:0}.complete-scroll{overflow:auto;max-width:calc(100vw - 76px);padding:3px}.complete-board{margin:0 auto}.complete-board .filled-complete{color:#1c6fa1}.complete-board .given{color:#111}.complete-grid-dialog>#copyComplete,.reveal-complete-grid{width:100%;min-height:34px;margin-top:14px;border:1px solid var(--line);border-radius:8px;background:var(--muted);color:var(--ink);font:inherit;font-weight:700;cursor:pointer}";document.head.append(style);
-})();
-
-
-// Header ordering, corrected puzzle tally, and walkthrough grid focus
-(() => {
-  const priorRefreshForHeader = refresh;
-  const priorRenderForFocus = renderBoard;
-  const tally = document.querySelector('#puzzleTally');
-  function numberForDate(dateText) {
-    const match = String(dateText).match(/([A-Za-z]+)\s+(\d+),\s+(\d+)/);
-    const months = { January:0, February:1, March:2, April:3, May:4, June:5, July:6, August:7, September:8, October:9, November:10, December:11 };
-    if (!match || months[match[1]] === undefined) return null;
-    return Math.floor((Date.UTC(Number(match[3]), months[match[1]], Number(match[2])) - Date.UTC(2026, 7, 31)) / 86400000) + 1;
-  }
-  refresh = function () {
-    priorRefreshForHeader();
-    if (isUnlimited()) return;
-    const [weekday, ...dateParts] = puzzleDate.split(', ');
-    const dateNode = document.querySelector('#puzzleDate');
-    dateNode.innerHTML = '<span class="calendar-date">' + dateParts.join(', ') + '</span><span class="weekday">' + weekday + '</span>';
-    const number = numberForDate(puzzleDate);
-    if (tally) { tally.textContent = number ? 'Puzzle #' + number : ''; tally.hidden = false; dateNode.before(tally); }
-  };
-  renderBoard = function () {
-    priorRenderForFocus();
-    if (mode !== 'solver' || isUnlimited()) return;
-    const step = steps[stepIndex] || {};
-    const stepText = [step.house, step.text, step.explanation].filter(Boolean).join(' ');
-    const highlightGridTwo = /(?:\bG2\b|Grid\s*2)/i.test(stepText);
-    board.querySelectorAll('.cell').forEach(cell => {
-      const index = Number(cell.dataset.index), row = Math.floor(index / 12), column = index % 12;
-      cell.classList.toggle('walkthrough-grid-highlight', highlightGridTwo ? row >= 3 && column >= 3 : row < 9 && column < 9);
-    });
-  };
-  const focusStyle = document.createElement('style');
-  focusStyle.textContent = '#puzzleTally{display:block;margin:0;font-size:.95rem;font-weight:800}#puzzleDate{display:flex;flex-direction:column}#puzzleDate .calendar-date{order:0}#puzzleDate .weekday{order:1;margin-top:2px}.board .cell.walkthrough-grid-highlight{background-color:rgba(60,130,246,.13)!important}';
-  document.head.append(focusStyle);
-  refresh();
-})();
-
-
-// Build-a-puzzle studio, constrained Unlimited generator, and header refinements.
-(() => {
-  const allDays = ['Sunday','Monday','Tuesday','Wednesday','Thursday','Friday','Saturday'];
-  const allKeys = ['sunday','monday','tuesday','wednesday','thursday','friday','saturday'];
-  const buildSelected = new Set();
-  let buildDraft = null;
-  const toRows = values => Array.from({length:12}, (_,r) => Array.from({length:12}, (_,c) => values[r*12+c] || '.').join(''));
-  const toDate = value => { const parts = value.split('-').map(Number); return new Date(Date.UTC(parts[0],parts[1]-1,parts[2])); };
-  const dateLabel = date => date.toLocaleDateString('en-US',{month:'long',day:'numeric',year:'numeric',timeZone:'UTC'});
-  const logicResult = values => {
-    const saved = [...original], savedDay = activeDay;
-    original.splice(0,original.length,...values); activeDay = 'logic-check';
-    let path=[]; try { path=deriveSteps(); } finally { original.splice(0,original.length,...saved); activeDay=savedDay; }
-    const solved=[...values]; path.forEach(step=>{if(step.index!==null)solved[step.index]=step.digit;});
-    return {complete:active.every(index=>solved[index]),path};
-  };
-  const picker = (target,state,onPress) => {
-    target.replaceChildren();
-    for(let row=0;row<12;row+=1)for(let column=0;column<12;column+=1){
-      if(!hasCell(row,column))continue;
-      const index=row*12+column,cell=document.createElement('button');
-      cell.type='button';cell.className='picker-cell';cell.style.gridColumnStart=column+1;cell.style.gridRowStart=row+1;
-      const paint=()=>cell.dataset.state=state.get(index)||''; paint();
-      cell.addEventListener('click',()=>{onPress(index);paint();});target.append(cell);
-    }
-  };
-  const buildDialog=document.createElement('dialog');
-  buildDialog.className='build-dialog';
-  buildDialog.innerHTML='<button class="dialog-close" type="button" aria-label="Close">×</button><p class="eyebrow">BUILD A PUZZLE</p><h2>Choose starting clues</h2><p>Tap any cells to retain. A full Gattai is generated, all unselected cells are removed, then clues are restored in random pairs until the result is unique.</p><div class="picker-board" id="buildPicker"></div><p id="buildCount" class="builder-count">0 selected cells</p><button id="buildCreate" class="primary-build" type="button">Create puzzle</button><section id="buildResult" hidden><p id="buildSummary"></p><label>Publish date <input id="buildDate" type="date" /></label><button id="buildPublish" class="primary-build" type="button">Publish to selected date</button><p class="cloud-note">Public publishing uses the configured Supabase endpoint.</p></section>';
-  document.body.append(buildDialog);
-  const buildState=new Map(), buildCount=buildDialog.querySelector('#buildCount');
-  picker(buildDialog.querySelector('#buildPicker'),buildState,index=>{if(buildSelected.has(index)){buildSelected.delete(index);buildState.delete(index);}else{buildSelected.add(index);buildState.set(index,'keep');}buildCount.textContent=buildSelected.size+' selected cell'+(buildSelected.size===1?'':'s');});
-  buildDialog.querySelector('.dialog-close').addEventListener('click',()=>buildDialog.close());
-  const buildStatus=document.createElement('p');buildStatus.id='buildGenerationStatus';buildStatus.className='builder-status';buildCount.before(buildStatus);
-  buildDialog.querySelector('#buildCreate').addEventListener('click',async()=>{
-    const create=buildDialog.querySelector('#buildCreate'),report=buildDialog.querySelector('#buildResult'),summary=buildDialog.querySelector('#buildSummary');
-    if(buildSelected.size>45){report.hidden=false;summary.textContent='Choose 45 or fewer starting clues so the builder can enforce the 45-given limit.';return;}
-    const started=performance.now();let attempts=0,timer=null,values=null;
-    const showStatus=detail=>{const seconds=Math.floor((performance.now()-started)/1000);buildStatus.textContent='Build time: '+seconds+' s · '+detail;};
-    create.disabled=true;report.hidden=true;showStatus('Generating a complete 126-cell Gattai…');timer=setInterval(()=>showStatus(attempts?'Restart '+attempts+' in progress…':'Generating a complete 126-cell Gattai…'),250);
-    await nextPaint();
-    try{
-      while(!values&&attempts<40){
-        attempts+=1;showStatus('Attempt '+attempts+': generating a complete 126-cell Gattai…');
-        const full=makeFullGattai(),candidate=Array(144).fill(0),rest=shuffle(active.filter(index=>!buildSelected.has(index)));
-        buildSelected.forEach(index=>candidate[index]=full[index]);
-        let offset=0,discard=false;
-        while(countGattaiSolutions(candidate,2)!==1&&offset<rest.length){
-          if(active.filter(index=>candidate[index]).length>=45){discard=true;break;}
-          rest.slice(offset,offset+2).forEach(index=>candidate[index]=full[index]);offset+=2;
-          if(active.filter(index=>candidate[index]).length>45){discard=true;break;}
-          if(offset%10===0){showStatus('Attempt '+attempts+': restoring clues…');await nextPaint();}
-        }
-        const givens=active.filter(index=>candidate[index]).length;
-        if(!discard&&givens<=45&&countGattaiSolutions(candidate,2)===1)values=candidate;
-        else {showStatus('Attempt '+attempts+' exceeded the limit; restarting from a new 126-cell grid…');await nextPaint();}
-      }
-      report.hidden=false;
-      if(!values){summary.textContent='No unique puzzle with 45 or fewer givens was found after 40 fresh 126-cell grids. Adjust the selected cells and try again.';return;}
-      const logic=logicResult(values),rating=logic.complete?rateSteps(logic.path):{rating:'Over 9000',score:null};buildDraft={values,rows:toRows(values),rating};
-      const givens=active.filter(index=>values[index]).length;showStatus('Complete in '+Math.floor((performance.now()-started)/1000)+' s.');summary.textContent='Unique puzzle created with '+givens+' givens. Difficulty: '+rating.rating+(rating.score===null?'':' ('+rating.score+')')+'.';buildDialog.querySelector('#buildDate').value=new Date().toISOString().slice(0,10);
-    }finally{clearInterval(timer);create.disabled=false;}
-  });
-    buildDialog.querySelector('#buildPublish').addEventListener('click',async()=>{
-    if(!buildDraft)return;const input=buildDialog.querySelector('#buildDate').value;if(!input)return;
-    const day=toDate(input),key=allKeys[day.getUTCDay()],date=allDays[day.getUTCDay()]+', '+dateLabel(day),endpoint='https://zoqztntaoogbkmcqfmhx.supabase.co/rest/v1/gattai_puzzles';
-    const payload={puzzle_date:input,day:key,date,rows:buildDraft.rows,difficulty:buildDraft.rating};
-    if(!endpoint){buildDialog.querySelector('#buildSummary').textContent='The public Supabase publish endpoint has not been configured yet, so this draft cannot be shared from other browsers.';return;}
-    try{const response=await fetch(endpoint,{method:'POST',headers:{'Content-Type':'application/json','apikey':'sb_publishable_iJ7sxYm4oGnkZqXevbj-Qw_2l7bs7rr','Authorization':'Bearer sb_publishable_iJ7sxYm4oGnkZqXevbj-Qw_2l7bs7rr','Prefer':'return=minimal'},body:JSON.stringify({puzzle_date:input,puzzle:payload,difficulty:buildDraft.rating,given_count:buildDraft.rows.reduce((total,row)=>total+[...row].filter(value=>value!=='.').length,0)})});if(!response.ok)throw new Error('Publish service returned an error');const publishedKey='published-'+input;dailyPuzzles[publishedKey]={date,rows:buildDraft.rows};archiveByDate.set(archiveKey(day.getFullYear(),day.getMonth()+1,day.getDate()),{week:'published',day:publishedKey});activeWeek='published';mode='human';loadPuzzle(publishedKey);buildDialog.close();}catch(error){buildDialog.querySelector('#buildSummary').textContent='Publishing failed: '+error.message;}
-  });
-  const archive=document.querySelector('#archiveDialog'),openBuild=document.createElement('button');openBuild.type='button';openBuild.className='build-category-button';openBuild.textContent='Build a puzzle';openBuild.addEventListener('click',()=>{archive.close();buildDialog.showModal();});archive.append(openBuild);
-
-  const setup=document.createElement('dialog');setup.className='build-dialog';setup.innerHTML='<button class="dialog-close" type="button" aria-label="Close">×</button><p class="eyebrow">UNLIMITED</p><h2>Set digging constraints</h2><p>Select <b>Keep clues</b> for cells that cannot be removed, or <b>Remove clues</b> for cells that must be empty in the final puzzle.</p><div class="constraint-actions"><button data-mark="keep" type="button">Keep clues</button><button data-mark="remove" type="button">Remove clues</button><button data-mark="" type="button">Clear mark</button></div><div class="picker-board" id="constraintPicker"></div><button id="constraintStart" class="primary-build" type="button">Generate unlimited puzzle</button>';
-  document.body.append(setup);let mark='keep',haltRequested=false;const constraints=new Map();const haltButton=document.createElement('button');haltButton.type='button';haltButton.className='halt-digging';haltButton.textContent='Stop digging';haltButton.hidden=true;haltButton.addEventListener('click',()=>{haltRequested=true;haltButton.disabled=true;diggingStatus.textContent='Stopping after the current uniqueness check…';});diggingDialog.append(haltButton);
-  picker(setup.querySelector('#constraintPicker'),constraints,index=>{if(mark)constraints.set(index,mark);else constraints.delete(index);});
-  setup.querySelectorAll('[data-mark]').forEach(button=>button.addEventListener('click',()=>{mark=button.dataset.mark;setup.querySelectorAll('[data-mark]').forEach(item=>item.classList.toggle('active',item===button));}));setup.querySelector('[data-mark=keep]').classList.add('active');setup.querySelector('.dialog-close').addEventListener('click',()=>setup.close());
-  const oldUnlimited=document.querySelector('#unlimitedMode'),unlimited=oldUnlimited.cloneNode(true);oldUnlimited.replaceWith(unlimited);unlimited.addEventListener('click',()=>setup.showModal());
-  setup.querySelector('#constraintStart').addEventListener('click',async()=>{
-    setup.close();haltRequested=false;haltButton.disabled=false;haltButton.hidden=false;unlimited.disabled=true;const locked=new Set([...constraints].filter(([,value])=>value==='keep').map(([index])=>index)),empty=new Set([...constraints].filter(([,value])=>value==='remove').map(([index])=>index));
-    const started=performance.now(),clock=document.querySelector('.generation-clock');let working=null,full=null,timer=null;diggingDialog.showModal();
-    const paint=()=>{const remain=working?active.filter(index=>working[index]).length:active.length;diggingMeter.max=active.length;diggingMeter.value=remain;diggingStatus.textContent='Digging the puzzle now. '+remain+' cells remaining.';if(clock)clock.textContent='∞ '+((performance.now()-started)/1000).toFixed(2)+' s';};
-    try{full=makeFullGattai();working=[...full];empty.forEach(index=>working[index]=0);paint();timer=setInterval(paint,100);await nextPaint();if(haltRequested)throw new DOMException('Digging stopped','AbortError');let changed=true;while(changed){changed=false;for(const index of shuffle(active.filter(index=>working[index]&&!locked.has(index)))){const value=working[index];working[index]=0;const logical=logicResult(working).complete;const unique=countGattaiSolutions(working,2)===1;if(unique)changed=true;else working[index]=value;diggingStatus.textContent=logical?'Digging with named techniques. '+active.filter(cell=>working[cell]).length+' cells remaining.':'Digging the puzzle now. '+active.filter(cell=>working[cell]).length+' cells remaining.';await nextPaint();if(haltRequested)throw new DOMException('Digging stopped','AbortError');}}if(countGattaiSolutions(working,2)!==1)throw new Error('Those forced removals prevent a unique puzzle');unlimitedGenerationMilliseconds=performance.now()-started;puzzles.unlimited={date:'unlimited',rows:toRows(working)};unlimitedSolution=full;userInputs.unlimited.fill(0);userNotes.unlimited.forEach(note=>note.clear());userColors.unlimited.fill('');histories.unlimited.length=0;redoHistories.unlimited.length=0;mode='human';loadPuzzle('unlimited');diggingDialog.close();}catch(error){if(error?.name==='AbortError'&&working&&full&&countGattaiSolutions(working,2)===1){unlimitedGenerationMilliseconds=performance.now()-started;puzzles.unlimited={date:'unlimited',rows:toRows(working)};unlimitedSolution=full;userInputs.unlimited.fill(0);userNotes.unlimited.forEach(note=>note.clear());userColors.unlimited.fill('');histories.unlimited.length=0;redoHistories.unlimited.length=0;mode='human';loadPuzzle('unlimited');diggingDialog.close();}else{diggingStatus.textContent=error.message+'. Close this message and adjust the marked cells.';}}finally{clearInterval(timer);haltButton.hidden=true;unlimited.disabled=false;unlimited.querySelector('strong').textContent='unlimited';}
-  });
-  const baseLoad=loadPuzzle;loadPuzzle=function(day){resetTimer();return baseLoad(day);};
-  document.querySelector('header .header-end').prepend(document.querySelector('.timer-controls'));document.querySelector('.gattai-logo')?.remove();document.querySelectorAll('.settings-colours .color-clear').forEach(button=>button.remove());
-  const style=document.createElement('style');style.textContent='.header-end{display:flex;align-items:center;gap:9px}.header-end .timer-controls{margin-right:2px}.build-category-button{width:100%;margin-top:18px;border:1px solid var(--line);background:var(--muted);color:var(--ink);padding:10px;font:inherit;font-weight:700;cursor:pointer}.build-dialog{width:min(94vw,650px);max-width:none}.picker-board{display:grid;grid-template-columns:repeat(12,1fr);grid-template-rows:repeat(12,1fr);width:min(100%,470px);aspect-ratio:1;margin:16px auto}.picker-cell{padding:0;border:1px solid var(--thin);background:var(--paper);cursor:pointer}.picker-cell[data-state=keep]{background:#2f9e63}.picker-cell[data-state=remove]{background:#d39d1e}.constraint-actions{display:flex;gap:8px;flex-wrap:wrap}.constraint-actions button,.primary-build{border:1px solid var(--line);background:var(--muted);color:var(--ink);padding:8px 10px;font:inherit;cursor:pointer}.constraint-actions button.active,.primary-build{background:var(--ink);color:var(--surface)}.builder-count{text-align:center;font-weight:700}.build-dialog label{display:grid;gap:5px;margin:14px 0}.cloud-note{font-size:12px;color:var(--thin)}.settings-colours .color-button{box-shadow:none!important;background-clip:border-box!important}';document.head.append(style);
-})();
-
-
-(()=>{
-  const PUBLISHED_URL='https://zoqztntaoogbkmcqfmhx.supabase.co/rest/v1/gattai_puzzles';
-  const PUBLISHED_KEY='sb_publishable_iJ7sxYm4oGnkZqXevbj-Qw_2l7bs7rr';
-  async function loadPublishedPuzzles(){
-    try {
-      const response=await fetch(PUBLISHED_URL+'?select=puzzle_date,puzzle',{headers:{apikey:PUBLISHED_KEY,Authorization:'Bearer '+PUBLISHED_KEY}});
-      if(!response.ok) throw new Error('Unable to load published puzzles');
-      const entries=await response.json();
-      entries.forEach(entry=>{
-        const puzzle=entry.puzzle; if(!puzzle||!Array.isArray(puzzle.rows)) return;
-        const date=toDate(entry.puzzle_date), id='published-'+entry.puzzle_date;
-        const label=puzzle.date||allDays[date.getUTCDay()]+', '+dateLabel(date);
-        dailyPuzzles[id]={date:label,rows:puzzle.rows};
-        archiveByDate.set(archiveKey(date.getUTCFullYear(),date.getUTCMonth()+1,date.getUTCDate()),{week:'published',day:id});
-      });
-      renderArchiveCalendar();
-    } catch(error) { console.warn('Published puzzles could not be loaded.',error); }
-  }
-  loadPublishedPuzzles();
-})();
-
-
-(()=>{
-  const boundaries=[['h',0,0,9],['h',3,0,12],['h',6,0,12],['h',9,0,12],['h',12,3,12],['v',0,0,9],['v',3,0,12],['v',6,0,12],['v',9,0,12],['v',12,3,12]];
-  document.querySelectorAll('.picker-board').forEach(board=>{
-    board.querySelectorAll('.picker-boundary').forEach(line=>line.remove());
-    boundaries.forEach(([axis,line,start,end])=>{const border=document.createElement('span');border.className='picker-boundary picker-'+axis;if(axis==='h'){border.style.gridRowStart=line+1;border.style.gridColumn=(start+1)+' / '+(end+1);}else{border.style.gridColumnStart=line+1;border.style.gridRow=(start+1)+' / '+(end+1);}board.append(border);});
-  });
-  const style=document.createElement('style');style.textContent='.picker-board{position:relative}.picker-boundary{z-index:4;pointer-events:none;background:var(--line)}.picker-h{align-self:start;height:3px;transform:translateY(-1.5px)}.picker-v{justify-self:start;width:3px;transform:translateX(-1.5px)}.halt-digging{margin-top:12px;width:100%;min-height:38px;border:1px solid var(--line);border-radius:8px;background:#a83d3d;color:#fff;font:inherit;font-weight:800;cursor:pointer}.halt-digging:disabled{opacity:.55;cursor:wait}';document.head.append(style);
-  const clock=document.querySelector('.generation-clock');if(clock){const secondsOnly=()=>{const match=clock.textContent.match(/(\d+(?:\.\d+)?)/);if(!match)return;const text='∞ '+Math.floor(Number(match[1]))+' s';if(clock.textContent!==text)clock.textContent=text;};new MutationObserver(secondsOnly).observe(clock,{childList:true,characterData:true,subtree:true});secondsOnly();}
-})();
-
-// Builder tallies and mobile notation safeguards
-(() => {
-  const style = document.createElement('style');
-  style.textContent = '.build-dialog .picker-board{width:min(100%,376px)!important}' + '.colour-tally{display:flex;justify-content:center;gap:12px;flex-wrap:wrap;margin:8px 0 14px;font-size:13px;font-weight:800}' + '.colour-tally span{display:inline-flex;align-items:center;gap:5px}' + '.colour-tally i{width:11px;height:11px;border-radius:50%;border:1px solid var(--line);display:inline-block}' + '.colour-tally .tally-keep i{background:#2f9e63}.colour-tally .tally-remove i{background:#d39d1e}' + '.board .snyder{min-width:0!important;min-height:0!important;overflow:hidden!important}' + '@media(max-width:520px){.board .snyder{padding:1px!important;font-size:clamp(6px,2.5vw,11px)!important}.board .snyder i{line-height:1!important;white-space:nowrap!important}}' + '@media(max-width:360px){.board{width:100%!important}.board .snyder{padding:0!important;font-size:clamp(6px,2.35vw,9px)!important}}';
-  document.head.append(style);
-  function addColourTally(selector, labels) {
-    const picker = document.querySelector(selector);
-    if (!picker || picker.nextElementSibling?.classList.contains('colour-tally')) return;
-    const tally = document.createElement('p');
-    tally.className = 'colour-tally';
-    picker.after(tally);
-    const update = () => tally.replaceChildren(...labels.map(([state, label]) => {
-      const item = document.createElement('span'); item.className = 'tally-' + state;
-      const swatch = document.createElement('i');
-      const count = picker.querySelectorAll('.picker-cell[data-state="' + state + '"]').length;
-      item.append(swatch, document.createTextNode(label + ': ' + count));
-      return item;
-    }));
-    picker.addEventListener('click', () => requestAnimationFrame(update));
-    new MutationObserver(update).observe(picker, {subtree:true, attributes:true, attributeFilter:['data-state']});
-    update();
-  }
-  addColourTally('#buildPicker', [['keep', 'Green kept clues']]);
-  addColourTally('#constraintPicker', [['keep', 'Green kept clues'], ['remove', 'Gold removed clues']]);
-  const evaluate = document.querySelector('.evaluation-button');
-  const loadWithEvaluation = loadPuzzle;
-  loadPuzzle = function(day) {
-    const result = loadWithEvaluation(day);
-    if (day === 'unlimited' && typeof unlimitedSolution !== 'undefined' && unlimitedSolution && evaluate) evaluate.disabled = false;
-    return result;
-  };
-})();
-
-// Clear sidebar visibility control and compact mobile control layout
-(() => {
-  const sidebar=document.querySelector('.control-sidebar'); const previous=sidebar?.querySelector('.sidebar-toggle');
-  if(previous){const toggle=previous.cloneNode(false);toggle.type='button';toggle.className='sidebar-toggle';previous.replaceWith(toggle);const render=()=>{const hidden=sidebar.classList.contains('sidebar-collapsed');toggle.textContent=hidden?'Show sidebar':'Hide sidebar';toggle.setAttribute('aria-expanded',String(!hidden));toggle.setAttribute('aria-label',hidden?'Show puzzle controls sidebar':'Hide puzzle controls sidebar');};toggle.addEventListener('click',()=>{sidebar.classList.toggle('sidebar-collapsed');render();});render();}
-  const style=document.createElement('style');style.textContent='.builder-status{min-height:1.5em;margin:6px 0;text-align:center;font-weight:800;color:var(--ink)}.primary-build:disabled{opacity:.55;cursor:wait}@media(min-width:821px){.control-sidebar{grid-column:2;grid-row:1;align-self:start}.sidebar-toggle{font-size:13px;letter-spacing:0}}@media(max-width:820px){.control-sidebar{display:grid!important;grid-template-columns:repeat(2,minmax(0,1fr));gap:9px;width:100%;padding:8px 4px;align-items:start}.control-sidebar .sidebar-toggle,.control-sidebar .entry-panel,.control-sidebar .numpad,.control-sidebar .highlight-panel,.control-sidebar .other-panel{grid-column:1/-1;width:100%;min-width:0;margin:0}.control-sidebar .entry-panel{display:grid;grid-template-columns:1fr;gap:5px}.control-sidebar .entry-tabs{width:100%}.control-sidebar .numpad{grid-template-columns:repeat(3,minmax(0,1fr))}.control-sidebar .highlight-panel{display:grid;grid-template-columns:auto 1fr 1fr;align-items:center;gap:8px}.control-sidebar .other-panel{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:7px}.control-sidebar .other-panel>span{grid-column:1/-1}.control-sidebar .other-panel button,.control-sidebar .other-panel input{width:100%;min-width:0}.control-sidebar.sidebar-collapsed{display:block!important;width:auto;padding:0}.control-sidebar.sidebar-collapsed .sidebar-toggle{width:100%}}@media(max-width:430px){.control-sidebar{grid-template-columns:1fr}.control-sidebar .highlight-panel{grid-template-columns:1fr 1fr}.control-sidebar .highlight-panel>span{grid-column:1/-1}.control-sidebar .other-panel{grid-template-columns:1fr}}';document.head.append(style);
-})();
-
-    
-// Custom builder: fixed and forbidden clue selection with completed preview
-(() => {
-  const css = document.createElement('style');
-  css.textContent = '.build-mode{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin:8px 0}.build-mode button{min-height:34px;border:1px solid var(--line);border-radius:8px;background:var(--muted);color:var(--ink);font:inherit;font-weight:800;cursor:pointer}.build-mode button.active{outline:3px solid var(--gold)}.build-mode .keep-mode{background:#2f9e63;color:#fff}.build-mode .empty-mode{background:#b83b3b;color:#fff}.builder-tally{min-height:1.5em;text-align:center;margin:6px 0;font-weight:800}.builder-preview{margin:14px auto 4px;max-width:360px}.builder-preview h3{text-align:center;margin:0 0 8px;font-size:15px}.builder-preview-grid{display:grid;grid-template-columns:repeat(12,1fr);border:2px solid var(--line);background:var(--surface)}.builder-preview-grid span{aspect-ratio:1;display:grid;place-items:center;border:1px solid var(--thin);font-weight:800;color:#111}.builder-preview-grid .blank{visibility:hidden;border:0}.builder-preview-grid .shared{background:color-mix(in srgb,var(--gold) 18%,var(--surface))}.builder-status{min-height:1.5em;text-align:center;font-weight:800;margin:8px 0}';
-  document.head.append(css);
-  const paint = () => new Promise(resolve => setTimeout(resolve, 0));
-  function decorateBuilder() {
-    const picker = document.querySelector('#buildPicker');
-    const create = document.querySelector('#buildCreate');
-    if (!picker || !create || picker.dataset.customBuilder === 'ready') return;
-    picker.dataset.customBuilder = 'ready';
-    const dialog = picker.closest('dialog') || picker.parentElement;
-    const chosen = new Set(), forbidden = new Set();
-    let mode = 'keep';
-    const modeBar = document.createElement('div');
-    modeBar.className = 'build-mode';
-    modeBar.innerHTML = '<button type="button" class="keep-mode active">Green: must keep</button><button type="button" class="empty-mode">Red: must be empty</button>';
-    picker.before(modeBar);
-    const tally = document.createElement('p'); tally.className = 'builder-tally'; picker.after(tally);
-    const status = document.createElement('p'); status.className = 'builder-status'; tally.after(status);
-    const preview = document.createElement('section'); preview.className = 'builder-preview'; preview.hidden = true; status.after(preview);
-    const cells = [...picker.querySelectorAll('button')];
-    cells.forEach((cell, n) => cell.dataset.builderIndex = String(active[n]));
-    const render = () => {
-      cells.forEach(cell => { const index = Number(cell.dataset.builderIndex); cell.dataset.state = chosen.has(index) ? 'keep' : forbidden.has(index) ? 'remove' : ''; });
-      tally.textContent = 'Green kept clues: ' + chosen.size + ' · Red empty cells: ' + forbidden.size;
-      modeBar.querySelector('.keep-mode').classList.toggle('active', mode === 'keep');
-      modeBar.querySelector('.empty-mode').classList.toggle('active', mode === 'remove');
-    };
-    modeBar.querySelector('.keep-mode').addEventListener('click', () => { mode = 'keep'; render(); });
-    modeBar.querySelector('.empty-mode').addEventListener('click', () => { mode = 'remove'; render(); });
-    picker.addEventListener('click', event => { const cell = event.target.closest('button[data-builder-index]'); if (!cell) return; event.preventDefault(); event.stopImmediatePropagation(); const index = Number(cell.dataset.builderIndex); const set = mode === 'keep' ? chosen : forbidden; const other = mode === 'keep' ? forbidden : chosen; if (set.has(index)) set.delete(index); else { other.delete(index); set.add(index); } render(); }, true);
-    const replacement = create.cloneNode(true); create.replaceWith(replacement);
-    replacement.addEventListener('click', async () => {
-      if (chosen.size > 45) { status.textContent = 'Choose 45 or fewer green cells.'; return; }
-      replacement.disabled = true; preview.hidden = true;
-      const started = performance.now(); let result = null; let attempt = 0;
-      const show = text => { status.textContent = 'Build time: ' + Math.floor((performance.now() - started) / 1000) + ' s · ' + text; };
-      try {
-        while (!result && attempt < 40) {
-          attempt += 1; show('Attempt ' + attempt + ': creating a full 126-cell Gattai…'); await paint();
-          const full = makeFullGattai(); const candidate = Array(144).fill(0);
-          chosen.forEach(index => candidate[index] = full[index]);
-          const available = shuffle(active.filter(index => !chosen.has(index) && !forbidden.has(index)));
-          let cursor = 0, failed = false;
-          while (countGattaiSolutions(candidate, 2) !== 1 && cursor < available.length) {
-            if (active.filter(index => candidate[index]).length >= 45) { failed = true; break; }
-            available.slice(cursor, cursor + 2).forEach(index => candidate[index] = full[index]); cursor += 2;
-            if (active.filter(index => candidate[index]).length > 45) { failed = true; break; }
-            if (cursor % 10 === 0) { show('Attempt ' + attempt + ': testing uniqueness…'); await paint(); }
-          }
-          if (!failed && countGattaiSolutions(candidate, 2) === 1) result = candidate;
-          else show('Attempt ' + attempt + ' exceeded 45 clues; restarting from a new full grid…');
-        }
-        const elapsed = Math.floor((performance.now() - started) / 1000);
-        if (!result) { status.textContent = 'No eligible unique puzzle was found within 40 fresh full grids (' + elapsed + ' s). Try fewer red constraints.'; return; }
-        status.textContent = 'Finished creating the puzzle in ' + elapsed + ' s.';
-        preview.hidden = false; preview.innerHTML = '<h3>Your generated puzzle</h3><div class="builder-preview-grid"></div>';
-        const grid = preview.querySelector('div');
-        for (let index = 0; index < 144; index += 1) { const cell = document.createElement('span'); if (!active.includes(index)) cell.className = 'blank'; else { cell.textContent = result[index] || ''; const row = Math.floor(index / 12), col = index % 12; if (row >= 3 && row <= 8 && col >= 3 && col <= 8) cell.classList.add('shared'); } grid.append(cell); }
-      } finally { replacement.disabled = false; }
-    });
-    render();
-  }
-  new MutationObserver(decorateBuilder).observe(document.body, { childList:true, subtree:true });
-  decorateBuilder();
-})();
-
-
-// Correct row-major picker mapping and reserve red for forbidden clues.
-(() => {
-  const update = () => document.querySelectorAll('#buildPicker .picker-cell').forEach(cell => {
-    const row = Number(cell.style.gridRowStart) - 1, column = Number(cell.style.gridColumnStart) - 1;
-    cell.dataset.builderIndex = String(row * 12 + column);
-  });
-  update(); new MutationObserver(update).observe(document.body,{childList:true,subtree:true});
-  const style=document.createElement('style');style.textContent='.picker-cell[data-state=remove]{background:#b83b3b!important}';document.head.append(style);
-})();
-
-
-/* Manual Gattai checker and solution-perimeter highlight. */
-(() => {
-  const waitForManualChecker = () => {
-    const settings = document.querySelector("#settings");
-    if (!settings || document.querySelector("#manualCheck")) return false;
-    const plus = document.createElement("button");
-    plus.id = "manualCheck"; plus.type = "button"; plus.className = "header-round-button manual-check-button";
-    plus.setAttribute("aria-label", "Check a custom Gattai puzzle"); plus.title = "Check a custom puzzle"; plus.textContent = "+"; settings.after(plus);
-    const dialog = document.createElement("dialog"); dialog.id = "manualCheckDialog"; dialog.setAttribute("aria-labelledby", "manualCheckTitle");
-    dialog.innerHTML = '<button type="button" class="dialog-close" aria-label="Close">×</button><p class="eyebrow">CUSTOM PUZZLE CHECKER</p><h2 id="manualCheckTitle">Check a Gattai puzzle</h2><p>Click a cell, then use the keypad or your keyboard to enter a digit. The checker verifies uniqueness and reports a logical difficulty rating.</p><div id="manualBoard" class="manual-board" aria-label="Empty Gattai puzzle"></div><div id="manualPad" class="manual-pad" aria-label="Custom puzzle number pad"></div><p id="manualCheckStatus" class="manual-check-status">0 given cells</p><div class="manual-actions"><button type="button" id="manualClear">Clear grid</button><button type="button" id="manualVerify">Check puzzle</button></div>';
-    document.body.append(dialog);
-    const values = Array(144).fill(0); let selected = null;
-    const manualBoard = dialog.querySelector("#manualBoard"), status = dialog.querySelector("#manualCheckStatus"), pad = dialog.querySelector("#manualPad");
-    const clueCount = () => active.filter(index => values[index]).length;
-    const gridFor = index => { const row = Math.floor(index / 12), column = index % 12; return row >= 3 && column >= 3 && !(row < 9 && column < 9) ? "Grid 2" : "Grid 1"; };
-    const render = () => {
-      manualBoard.replaceChildren();
-      for (let row = 0; row < 12; row += 1) for (let column = 0; column < 12; column += 1) {
-        if (!hasCell(row, column)) continue;
-        const index = row * 12 + column, cell = document.createElement("button");
-        cell.type = "button"; cell.className = "manual-cell"; cell.style.gridRowStart = row + 1; cell.style.gridColumnStart = column + 1; cell.textContent = values[index] || "";
-        cell.title = gridFor(index) + " — " + nameFor(index, gridFor(index) === "Grid 1" ? "G1" : "G2"); cell.setAttribute("aria-label", cell.title + (values[index] ? ": " + values[index] : ", empty"));
-        if (selected === index) cell.classList.add("selected");
-        cell.addEventListener("click", () => { selected = index; status.textContent = clueCount() + " given cells"; render(); }); manualBoard.append(cell);
-      }
-      ["h-0", "h-3", "h-6", "h-9", "h-12"].forEach(name => { const line = document.createElement("i"); line.className = "manual-boundary horizontal " + name; manualBoard.append(line); });
-      ["v-0", "v-3", "v-6", "v-9", "v-12"].forEach(name => { const line = document.createElement("i"); line.className = "manual-boundary vertical " + name; manualBoard.append(line); });
-    };
-    const enter = digit => { if (selected === null) { status.textContent = "Choose a cell first."; return; } values[selected] = digit; status.textContent = clueCount() + " given cells"; render(); };
-    for (let digit = 1; digit <= 9; digit += 1) { const button = document.createElement("button"); button.type = "button"; button.textContent = digit; button.addEventListener("click", () => enter(digit)); pad.append(button); }
-    const clearCell = document.createElement("button"); clearCell.type = "button"; clearCell.textContent = "Clear"; clearCell.addEventListener("click", () => enter(0)); pad.append(clearCell);
-    dialog.querySelector("#manualClear").addEventListener("click", () => { values.fill(0); selected = null; status.textContent = "0 given cells"; render(); });
-    dialog.querySelector(".dialog-close").addEventListener("click", () => dialog.close()); dialog.addEventListener("click", event => { if (event.target === dialog) dialog.close(); });
-    document.addEventListener("keydown", event => { if (!dialog.open) return; if (/^[1-9]$/.test(event.key)) { event.preventDefault(); enter(Number(event.key)); } if (event.key === "Backspace" || event.key === "Delete" || event.key === "0") { event.preventDefault(); enter(0); } });
-    dialog.querySelector("#manualVerify").addEventListener("click", () => {
-      const invalid = units.some(([, house]) => { const seen = values.filter((value, index) => house.includes(index) && value); return seen.length !== new Set(seen).size; });
-      if (invalid) { status.textContent = "This grid has conflicting givens. Correct the duplicate first."; return; }
-      if (!clueCount()) { status.textContent = "Enter at least one clue before checking."; return; }
-      status.textContent = "Checking uniqueness…";
-      setTimeout(() => { const solutions = countGattaiSolutions(values, 2); if (solutions !== 1) { status.textContent = solutions ? "This puzzle has multiple solutions." : "This puzzle has no solution."; return; } const saved = [...original]; original.splice(0, original.length, ...values); const customSteps = deriveSteps(); original.splice(0, original.length, ...saved); const rating = rateSteps(customSteps); status.textContent = "Unique solution confirmed • Difficulty: " + rating.rating + " (" + rating.score + ") • " + clueCount() + " given cells"; }, 30);
-    });
-    plus.addEventListener("click", () => { render(); dialog.showModal(); }); return true;
-  };
-  if (!waitForManualChecker()) window.addEventListener("load", waitForManualChecker, { once: true });
-  const previousRenderBoard = renderBoard;
-  renderBoard = function renderBoardWithSolverOutline() {
-    previousRenderBoard(); if (mode !== "solver" || isUnlimited() || !steps.length) return;
-    const step = steps[stepIndex] || {}, gridTwo = step.house?.startsWith("G2") || (!step.house && /\bG2\b/.test(step.text || ""));
-    const outline = document.createElement("i"); outline.className = "solver-grid-outline " + (gridTwo ? "solver-grid-two" : "solver-grid-one"); outline.setAttribute("aria-hidden", "true"); board.append(outline);
-  };
-})();
-
-
-/* One-cell, unlimited-retry builder revision. */
-(() => {
-  const nextPaint=()=>new Promise(r=>setTimeout(r,0));
-  function installOneCellBuilder(){
-    const picker=document.querySelector('#buildPicker'), old=document.querySelector('#buildCreate');
-    if(!picker||!old||picker.dataset.oneCell)return false; picker.dataset.oneCell='1';
-    const dialog=picker.closest('dialog')||picker.parentElement;
-    const status=dialog.querySelector('.builder-status')||document.createElement('p'); status.className='builder-status'; if(!status.parentElement)old.before(status);
-    const halt=document.createElement('button'); halt.type='button'; halt.className='build-halt'; halt.textContent='Halt building'; halt.hidden=true; old.after(halt);
-    const final=document.createElement('section'); final.className='builder-final'; final.hidden=true; halt.after(final);
-    const cells=[...picker.querySelectorAll('button')]; cells.forEach(cell=>{const r=Number(cell.style.gridRowStart)-1,c=Number(cell.style.gridColumnStart)-1;cell.dataset.builderIndex=String(r*12+c)});
-    let stopped=false; halt.onclick=()=>{stopped=true;status.textContent='Building halted. Your selections are unchanged.'};
-    function draw(puzzle){final.hidden=false;final.replaceChildren();const note=document.createElement('p');note.textContent='Final grid: '+active.filter(i=>puzzle[i]).length+' given cells';note.className='builder-final-count';const grid=document.createElement('div');grid.className='builder-final-grid';for(let r=0;r<12;r++)for(let c=0;c<12;c++){if(!hasCell(r,c))continue;const i=r*12+c,x=document.createElement('span');x.style.gridRowStart=r+1;x.style.gridColumnStart=c+1;x.textContent=puzzle[i]||'';grid.append(x)};['h-0','h-3','h-6','h-9','h-12'].forEach(n=>{const x=document.createElement('i');x.className='builder-boundary horizontal '+n;grid.append(x)});['v-0','v-3','v-6','v-9','v-12'].forEach(n=>{const x=document.createElement('i');x.className='builder-boundary vertical '+n;grid.append(x)});final.append(note,grid)}
-    const create=old.cloneNode(true); old.replaceWith(create);
-    create.onclick=async()=>{const keep=new Set(cells.filter(x=>x.dataset.state==='keep').map(x=>+x.dataset.builderIndex)),empty=new Set(cells.filter(x=>x.dataset.state==='remove').map(x=>+x.dataset.builderIndex));if(keep.size>45){status.textContent='Choose 45 or fewer required clues.';return}stopped=false;halt.hidden=false;create.disabled=true;final.hidden=true;const start=performance.now();let attempt=0,result=null;while(!stopped&&!result){attempt++;const full=makeFullGattai(),puzzle=Array(144).fill(0);keep.forEach(i=>puzzle[i]=full[i]);const pool=shuffle(active.filter(i=>!keep.has(i)&&!empty.has(i)));let count=keep.size;while(!stopped&&countGattaiSolutions(puzzle,2)!==1){if(count>=45||!pool.length)break;const cell=pool.pop();puzzle[cell]=full[cell];count++;status.textContent='Adding one clue · '+count+' cells · '+Math.floor((performance.now()-start)/1000)+' s';await nextPaint()}if(!stopped&&countGattaiSolutions(puzzle,2)===1)result={puzzle,full};else if(!stopped){status.textContent='Restarting with a fresh 126-cell Gattai · attempt '+attempt;await nextPaint()}}halt.hidden=true;create.disabled=false;if(!result)return;draw(result.puzzle);window.lastBuiltGattai={puzzle:result.puzzle,solution:result.full};status.textContent='Finished in '+Math.floor((performance.now()-start)/1000)+' s · Final grid: '+active.filter(i=>result.puzzle[i]).length+' cells'};
-    return true;
-  }
-  if(!installOneCellBuilder())window.addEventListener('load',installOneCellBuilder,{once:true});
-})();
-
-
-/* Local owner gate, 144-character importer, and readable archive blanks. */
-(()=>{const style=document.createElement('style');style.textContent='.owner-button{border:1px solid var(--ink);background:var(--muted);color:var(--ink);border-radius:50%;width:34px;height:34px;font-weight:700;cursor:pointer}.import-box{width:100%;min-height:90px;font:12px/1.4 monospace}.archive-calendar .no-puzzle{font-weight:700;color:var(--thin)}.owner-actions{display:flex;gap:8px;justify-content:center;margin-top:10px}.owner-actions button{border:1px solid var(--ink);padding:7px;background:var(--muted);color:var(--ink);cursor:pointer}';document.head.append(style);const settings=document.querySelector('#settings');if(!settings||document.querySelector('#ownerGate'))return;let owner=sessionStorage.getItem('gattai-owner')==='1';const ownerButton=document.createElement('button');ownerButton.id='ownerGate';ownerButton.type='button';ownerButton.className='owner-button';ownerButton.title='Owner access';ownerButton.textContent=owner?'✓':'⌁';settings.after(ownerButton);const dialog=document.createElement('dialog');dialog.innerHTML='<button class="dialog-close" aria-label="Close">×</button><p class="eyebrow">IMPORT PUZZLE</p><h2>Import a 12×12 grid</h2><p>Paste exactly 144 characters using only 1–9 and .</p><textarea class="import-box" id="importString"></textarea><p id="importStatus"></p><div class="owner-actions"><button id="verifyImport">Verify unique solution</button><button id="publishImport" hidden>Add to calendar</button></div>';document.body.append(dialog);let imported=null;function state(t){dialog.querySelector('#importStatus').textContent=t}ownerButton.onclick=()=>{if(owner){owner=false;sessionStorage.removeItem('gattai-owner');ownerButton.textContent='⌁';return}if(prompt('Owner password')==='GATTAIGATTAI'){owner=true;sessionStorage.setItem('gattai-owner','1');ownerButton.textContent='✓'}else alert('Incorrect password')};dialog.querySelector('.dialog-close').onclick=()=>dialog.close();document.querySelector('#manualCheck').after(Object.assign(document.createElement('button'),{type:'button',className:'owner-button',textContent:'⇩',title:'Import puzzle',onclick:()=>dialog.showModal()}));dialog.querySelector('#verifyImport').onclick=()=>{const text=dialog.querySelector('#importString').value.replace(/\s/g,'');if(!/^[1-9.]{144}$/.test(text)){state('Use exactly 144 characters: 1–9 or .');return}const board=[...text].map(x=>x==='.'?0:+x);const n=countGattaiSolutions(board,2);if(n!==1){state(n?'This puzzle has multiple solutions.':'This puzzle has no solution.');return}imported=board;state('Unique solution confirmed.');dialog.querySelector('#publishImport').hidden=!owner};dialog.querySelector('#publishImport').onclick=()=>{if(!owner||!imported)return;const input=prompt('Calendar date (YYYY-MM-DD)','2026-09-14');if(!/^2026-09-\d\d$/.test(input)){state('Choose a September 2026 date.');return}const [,m,d]=input.split('-').map(Number),day='imported'+d;dailyPuzzles[day]={date:new Date(2026,m-1,d).toLocaleDateString('en-US',{weekday:'long',month:'long',day:'numeric',year:'numeric'}),rows:rowsFromBoard(imported)};archiveByDate.set(archiveKey(2026,m,d),{week:'current',day,year:2026,month:m,date:d});state('Added to calendar for '+input+'.');renderArchiveCalendar()};const old=renderArchiveCalendar;renderArchiveCalendar=function(){old();document.querySelectorAll('#archiveCalendar span.outside,#archiveCalendar span:not(.outside)').forEach(x=>{if(!x.classList.contains('no-puzzle')){x.textContent='X';x.classList.add('no-puzzle')}})};})();
-
-
-/* Export the manual 12×12 checker as a 144-character string. */
-(()=>{const add=()=>{const dialog=document.querySelector('#manualCheckDialog');if(!dialog||dialog.querySelector('#exportManual'))return false;const button=document.createElement('button');button.id='exportManual';button.type='button';button.textContent='Copy 144-character string';button.addEventListener('click',async()=>{let out='';for(let r=1;r<=12;r++)for(let c=1;c<=12;c++){const cell=[...dialog.querySelectorAll('.manual-cell')].find(x=>Number(x.style.gridRowStart)===r&&Number(x.style.gridColumnStart)===c);out+=cell?.textContent.trim()||'.'}try{await navigator.clipboard.writeText(out);dialog.querySelector('#manualCheckStatus').textContent='Copied 144-character string.'}catch{dialog.querySelector('#manualCheckStatus').textContent=out}});dialog.querySelector('.manual-actions')?.append(button);return true};if(!add())window.addEventListener('load',add,{once:true});})();
-
-
-/* Solver: outline only, and green wing pivots. */
-(()=>{const css=document.createElement('style');css.textContent='.board-card.solver-active .grid-a,.board-card.solver-active .grid-b{background:var(--paper)!important}.wing-pivot .snyder i{color:var(--select)!important;font-weight:800}';document.head.append(css);const before=renderBoard;renderBoard=function(){before();if(mode!=="solver"||isUnlimited())return;const step=steps[stepIndex]||{};if(!/wing/i.test(step.technique||''))return;const m=/pivot\s+(\d+)/i.exec(step.text||'');const pivot=step.pivot??step.pivotIndex??(m?+m[1]:null);if(pivot!==null)board.querySelector('[data-index="'+pivot+'"]')?.classList.add('wing-pivot')};})();
-
-
-/* September 14 puzzle and precise walkthrough highlighting. */
-(() => {
-  const september14Rows = [
-    "1.....89....", "86.....14...", ".72.....6...", "..64.....16.",
-    "...93.....87", "....6......5", "2...........", "64....12....",
-    ".31....48...", "...3....67..", "...81....35.", "....52....49"
-  ];
-  if (!dailyPuzzles.september14) {
-    dailyPuzzles.september14 = { date: "Monday, September 14, 2026", rows: september14Rows };
-    puzzles.september14 = dailyPuzzles.september14;
-    if (typeof archiveEntries !== "undefined" && typeof archiveByDate !== "undefined") {
-      const entry = { week: "current", day: "september14", year: 2026, month: 9, date: 14 };
-      if (!archiveEntries.some(item => item.year === 2026 && item.month === 9 && item.date === 14)) archiveEntries.push(entry);
-      archiveByDate.set(archiveKey(2026, 9, 14), entry);
-    }
-  }
-
+  const page = document.createElement("dialog");
+  page.id = "generatePuzzleDialog";
+  page.className = "generate-puzzle-page";
+  page.innerHTML = `
+    <section class="generate-puzzle-content" aria-labelledby="generatePuzzleTitle">
+      <div class="dialog-heading"><div><p class="eyebrow">Puzzle maker</p><h2 id="generatePuzzleTitle">Generate a puzzle</h2></div><button type="button" class="dialog-close" aria-label="Close generator">×</button></div>
+      <p class="generator-intro">Choose how you want to make a fresh Gattai Sudoku.</p>
+      <div class="generator-methods"><button type="button" data-generator-method="digging"><strong>Digging</strong><small>Start filled, then remove clues while the puzzle stays uniquely solvable.</small></button><button type="button" data-generator-method="build"><strong>Build a puzzle</strong><small>Start from your selected cells and add clues only when required.</small></button></div>
+      <form id="diggingControls" class="digging-controls" hidden>
+        <label>Cap generation time <span>(seconds; leave blank for no cap)</span><input id="diggingTimeCap" type="number" inputmode="numeric" min="1" step="1" placeholder="No cap" /></label>
+        <label>Digging process<select id="diggingCellMode"><option value="single">Single cell digging</option><option value="dual">Dual cell digging</option></select></label>
+        <label>Stop at a given-cell count <span>(optional)</span><input id="diggingStopAt" type="number" inputmode="numeric" min="0" max="126" step="1" placeholder="Keep digging" /></label>
+        <div class="generator-actions"><button type="button" id="startDigging">Start digging</button><button type="button" id="haltDigging" disabled>Halt digging</button></div>
+        <p id="diggingPageStatus" class="generator-status" aria-live="polite">Ready to generate.</p>
+      </form>
+    </section>`;
+  document.body.append(page);
   const style = document.createElement("style");
-  style.textContent = "#board .cell.walkthrough-grid-highlight { background: transparent !important; box-shadow: none !important; } #board .cell.wing-pivot .snyder i.wing-candidate { color: #16803c !important; font-weight: 800; text-shadow: 0 0 0.01px currentColor; }";
+  style.textContent = `
+    .generate-puzzle-launcher { margin: 1rem auto 0; display: block; }
+    .generate-puzzle-page { width: min(680px, calc(100vw - 2rem)); border: 0; border-radius: 18px; padding: 0; color: var(--ink, #173a4c); background: var(--surface, #fff); }
+    .generate-puzzle-page::backdrop { background: rgba(11, 24, 34, .48); }
+    .generate-puzzle-content { padding: clamp(1.25rem, 4vw, 2.25rem); }
+    .dialog-heading { display:flex; justify-content:space-between; gap:1rem; align-items:start; }
+    .dialog-heading h2 { margin:.1rem 0; } .dialog-heading .eyebrow { margin:0; font-size:.78rem; letter-spacing:.08em; text-transform:uppercase; }
+    .dialog-close { width:2.25rem; min-width:2.25rem; padding:0; font-size:1.7rem; line-height:1; }
+    .generator-intro { margin: .5rem 0 1rem; }
+    .generator-methods { display:grid; grid-template-columns:repeat(2, minmax(0,1fr)); gap:.85rem; }
+    .generator-methods button { min-height:8rem; text-align:left; padding:1rem; } .generator-methods strong,.generator-methods small { display:block; } .generator-methods small { margin-top:.4rem; line-height:1.35; }
+    .digging-controls { display:grid; gap:.85rem; margin-top:1.25rem; }
+    .digging-controls label { display:grid; gap:.35rem; font-weight:700; } .digging-controls label span { font-size:.84rem; font-weight:400; opacity:.78; }
+    .digging-controls input,.digging-controls select { width:100%; box-sizing:border-box; min-height:2.5rem; }
+    .generator-actions { display:flex; gap:.75rem; flex-wrap:wrap; } .generator-status { min-height:1.5rem; margin:0; }
+    @media (max-width:560px) { .generator-methods { grid-template-columns:1fr; } }
+  `;
   document.head.append(style);
 
-  const priorRenderBoard = renderBoard;
-  renderBoard = function renderBoardWithPreciseWingPivot() {
-    priorRenderBoard();
-    if (mode !== "solver" || isUnlimited()) return;
-    board.querySelectorAll(".walkthrough-grid-highlight").forEach(cell => cell.classList.remove("walkthrough-grid-highlight"));
-
-    const step = steps[stepIndex] || {};
-    if (!/wing/i.test(String(step.technique || ""))) return;
-    const beforeNotes = step.beforeNotes || {};
-    const pivotIndexes = new Set();
-    const addIndex = value => {
-      const index = Number(value);
-      if (Number.isInteger(index) && beforeNotes[index]) pivotIndexes.add(index);
-    };
-    addIndex(step.pivot); addIndex(step.pivotIndex);
-
-    const pivotMatch = /pivot[^R]*(?:G([12])\s*)?R(\d+)C(\d+)/i.exec(String(step.text || ""));
-    if (pivotMatch) {
-      const grid = Number(pivotMatch[1] || (/\bG2\b|Grid 2/i.test(String(step.house || step.text || "")) ? 2 : 1));
-      const row = Number(pivotMatch[2]), column = Number(pivotMatch[3]);
-      addIndex(grid === 2 ? (row + 2) * 12 + column + 2 : (row - 1) * 12 + column - 1);
+  const controls = page.querySelector("#diggingControls"), status = page.querySelector("#diggingPageStatus"), start = page.querySelector("#startDigging"), halt = page.querySelector("#haltDigging");
+  let haltRequested = false;
+  const pause = () => new Promise(resolve => window.setTimeout(resolve, 0));
+  const elapsed = started => Math.floor((performance.now() - started) / 1000);
+  function solvedByNamedTechniques(puzzle) {
+    const saved = [...original];
+    try {
+      original.splice(0, original.length, ...puzzle);
+      const namedSteps = deriveSteps(true), values = [...puzzle];
+      namedSteps.forEach(step => { if (step.index !== null) values[step.index] = step.digit; });
+      return active.every(cell => values[cell]);
+    } finally {
+      original.splice(0, original.length, ...saved);
     }
-    if (!pivotIndexes.size) {
-      const referenced = [
-        ...(Array.isArray(step.highlight) ? step.highlight : []),
-        ...(Array.isArray(step.emphasis) ? step.emphasis.map(item => item.index) : [])
-      ];
-      const pair = referenced.find(index => (beforeNotes[index] || []).length === 2);
-      if (pair !== undefined) addIndex(pair);
+  }
+  function uniqueHumanFirst(puzzle) {
+    return solvedByNamedTechniques(puzzle) || countGattaiSolutions(puzzle, 2) === 1;
+  }
+  function showGenerator() {
+    archive.close();
+    controls.hidden = true;
+    status.textContent = "Choose a method to begin.";
+    page.showModal();
+  }
+  launcher.addEventListener("click", showGenerator);
+  page.querySelector(".dialog-close").addEventListener("click", () => { haltRequested = true; page.close(); });
+  page.addEventListener("click", event => { if (event.target === page) { haltRequested = true; page.close(); } });
+  page.querySelector("[data-generator-method=digging]").addEventListener("click", () => { controls.hidden = false; status.textContent = "Set optional limits, then start digging."; });
+  page.querySelector("[data-generator-method=build]").addEventListener("click", () => { page.close(); location.hash = "build"; });
+  halt.addEventListener("click", () => { haltRequested = true; halt.disabled = true; status.textContent = "Stopping after this uniqueness check…"; });
+  start.addEventListener("click", async () => {
+    const timeCap = Number(page.querySelector("#diggingTimeCap").value) || 0;
+    const stopAtValue = page.querySelector("#diggingStopAt").value;
+    const stopAt = stopAtValue === "" ? null : Math.max(0, Math.min(126, Number(stopAtValue)));
+    const dual = page.querySelector("#diggingCellMode").value === "dual";
+    haltRequested = false; start.disabled = true; halt.disabled = false;
+    const started = performance.now();
+    try {
+      const solution = makeFullGattai(), puzzle = [...solution];
+      let tested = 0, changed = true;
+      while (changed && !haltRequested && (!timeCap || elapsed(started) < timeCap)) {
+        changed = false;
+        const choices = shuffle(active.filter(cell => puzzle[cell]));
+        while (choices.length && !haltRequested && (!timeCap || elapsed(started) < timeCap)) {
+          const group = choices.splice(0, dual ? 2 : 1).filter(cell => puzzle[cell]);
+          if (!group.length) continue;
+          if (stopAt !== null && active.filter(cell => puzzle[cell]).length - group.length < stopAt) { choices.length = 0; break; }
+          const values = group.map(cell => puzzle[cell]); group.forEach(cell => { puzzle[cell] = 0; }); tested += group.length;
+          if (uniqueHumanFirst(puzzle)) changed = true; else group.forEach((cell, index) => { puzzle[cell] = values[index]; });
+          status.textContent = `Digging the puzzle now. ${active.filter(cell => puzzle[cell]).length} cells remaining · ${elapsed(started)}s · ${tested} checks`;
+          await pause();
+        }
+      }
+      if (haltRequested) { status.textContent = `Digging halted at ${active.filter(cell => puzzle[cell]).length} given cells after ${elapsed(started)}s.`; return; }
+      puzzles.unlimited = { date: "Digging", rows: rowsFromBoard(puzzle) };
+      unlimitedSolution = solution; unlimitedGenerationMilliseconds = performance.now() - started;
+      userInputs.unlimited.fill(0); userNotes.unlimited.forEach(note => note.clear()); userColors.unlimited.fill(""); histories.unlimited.length = 0; redoHistories.unlimited.length = 0;
+      mode = "human"; loadPuzzle("unlimited");
+      status.textContent = `Completed with ${active.filter(cell => puzzle[cell]).length} given cells in ${elapsed(started)}s.`;
+    } catch (error) {
+      console.error(error); status.textContent = "Generation failed. Please try again.";
+    } finally {
+      start.disabled = false; halt.disabled = true;
     }
-
-    pivotIndexes.forEach(index => {
-      const cell = board.querySelector('[data-index="' + index + '"]');
-      if (!cell) return;
-      cell.classList.add("wing-pivot");
-      const candidates = new Set(beforeNotes[index] || []);
-      cell.querySelectorAll(".snyder i").forEach(mark => {
-        if (candidates.has(Number(mark.textContent))) mark.classList.add("wing-candidate");
-      });
-    });
-  };
-})();
-
-
-/* Build result: export the finished grid as a 144-character string. */
-(() => {
-  function addBuildExport() {
-    const final = document.querySelector('.builder-final');
-    if (!final || final.dataset.exportReady) return Boolean(final);
-    final.dataset.exportReady = '1';
-    const observer = new MutationObserver(() => {
-      if (final.hidden || final.querySelector('.builder-string-export')) return;
-      const source = window.lastBuiltGattai?.puzzle;
-      if (!Array.isArray(source)) return;
-      const button = document.createElement('button');
-      button.type = 'button';
-      button.className = 'builder-string-export';
-      button.textContent = 'Copy 144-character string';
-      button.addEventListener('click', async () => {
-        const text = rowsFromBoard(window.lastBuiltGattai.puzzle).join('');
-        try {
-          await navigator.clipboard.writeText(text);
-          button.textContent = 'Copied 144-character string';
-          setTimeout(() => { button.textContent = 'Copy 144-character string'; }, 1600);
-        } catch {
-          button.textContent = text;
-        }
-      });
-      final.append(button);
-    });
-    observer.observe(final, { childList: true, subtree: true, attributes: true, attributeFilter: ['hidden'] });
-    return true;
-  }
-  if (!addBuildExport()) window.addEventListener('load', addBuildExport, { once: true });
-})();
-
-
-/* Custom Puzzle checker: import a 144-character grid string. */
-(() => {
-  function addCheckerImport() {
-    const dialog = document.querySelector('#manualCheckDialog');
-    if (!dialog || dialog.querySelector('#manualStringImport')) return Boolean(dialog);
-    const panel = document.createElement('section');
-    panel.className = 'manual-string-import';
-    panel.innerHTML = '<label for="manualStringImport">Import 144-character grid</label><textarea id="manualStringImport" rows="3" spellcheck="false" placeholder="Use only 1–9 and ."></textarea><button type="button" id="importManualString">Import string</button>';
-    const actions = dialog.querySelector('.manual-actions');
-    (actions || dialog).before(panel);
-    const input = panel.querySelector('#manualStringImport');
-    const status = dialog.querySelector('#manualCheckStatus');
-    panel.querySelector('#importManualString').addEventListener('click', () => {
-      const text = input.value.replace(/\s/g, '');
-      if (!/^[1-9.]{144}$/.test(text)) {
-        status.textContent = 'Use exactly 144 characters: digits 1–9 and periods.';
-        return;
-      }
-      dialog.querySelector('#manualClear')?.click();
-      for (let index = 0; index < 144; index += 1) {
-        const digit = text[index];
-        if (digit === '.') continue;
-        const row = Math.floor(index / 12) + 1, column = (index % 12) + 1;
-        const cell = [...dialog.querySelectorAll('.manual-cell')].find(item => Number(item.style.gridRowStart) === row && Number(item.style.gridColumnStart) === column);
-        if (!cell) continue;
-        cell.click();
-        cell.dispatchEvent(new KeyboardEvent('keydown', { key: digit, bubbles: true }));
-      }
-      const count = [...text].filter(character => character !== '.').length;
-      status.textContent = 'Imported ' + count + ' given cells. You can now verify this puzzle.';
-    });
-    return true;
-  }
-  if (!addCheckerImport()) window.addEventListener('load', addCheckerImport, { once: true });
-})();
-
-
-/* Fix Custom Puzzle import after the checker redraws its selected cell. */
-(() => {
-  function repairCheckerImport() {
-    const dialog = document.querySelector('#manualCheckDialog');
-    const oldButton = dialog?.querySelector('#importManualString');
-    if (!oldButton || oldButton.dataset.fixedImport) return Boolean(oldButton);
-    const button = oldButton.cloneNode(true);
-    button.dataset.fixedImport = '1';
-    oldButton.replaceWith(button);
-    button.addEventListener('click', () => {
-      const text = dialog.querySelector('#manualStringImport').value.replace(/\s/g, '');
-      const status = dialog.querySelector('#manualCheckStatus');
-      if (!/^[1-9.]{144}$/.test(text)) {
-        status.textContent = 'Use exactly 144 characters: digits 1–9 and periods.';
-        return;
-      }
-      dialog.querySelector('#manualClear')?.click();
-      for (let index = 0; index < 144; index += 1) {
-        const digit = text[index];
-        if (digit === '.') continue;
-        const row = Math.floor(index / 12) + 1, column = (index % 12) + 1;
-        const cell = [...dialog.querySelectorAll('.manual-cell')].find(item => Number(item.style.gridRowStart) === row && Number(item.style.gridColumnStart) === column);
-        if (!cell) continue;
-        cell.click();
-        // Selecting a cell redraws the checker, so deliver the digit to the
-        // document-level keyboard handler rather than the old cell node.
-        document.dispatchEvent(new KeyboardEvent('keydown', { key: digit, bubbles: true }));
-      }
-      const count = [...text].filter(character => character !== '.').length;
-      status.textContent = 'Imported ' + count + ' given cells. You can now verify this puzzle.';
-    });
-    return true;
-  }
-  if (!repairCheckerImport()) window.addEventListener('load', repairCheckerImport, { once: true });
-})();
-
-
-/* Build a puzzle: cap the number of automatically added clues. */
-(() => {
-  function installAdditionCap() {
-    const picker = document.querySelector('#buildPicker');
-    const oldButton = document.querySelector('#buildCreate');
-    if (!picker || !oldButton || picker.dataset.additionCap) return Boolean(picker && oldButton);
-    picker.dataset.additionCap = '1';
-    const dialog = picker.closest('dialog') || picker.parentElement;
-    const status = dialog.querySelector('.builder-status') || document.createElement('p');
-    status.className = 'builder-status'; if (!status.parentElement) oldButton.before(status);
-    const label = document.createElement('label'); label.className = 'builder-addition-cap'; label.textContent = 'Maximum extra clues: ';
-    const select = document.createElement('select'); select.id = 'buildAdditionCap';
-    for (let n = 0; n <= 30; n += 1) { const option = document.createElement('option'); option.value = String(n); option.textContent = String(n); if (n === 30) option.selected = true; select.append(option); }
-    label.append(select); oldButton.before(label);
-    const halt = dialog.querySelector('.build-halt') || Object.assign(document.createElement('button'), { type: 'button', className: 'build-halt', textContent: 'Halt building', hidden: true });
-    if (!halt.parentElement) oldButton.after(halt);
-    const final = dialog.querySelector('.builder-final') || Object.assign(document.createElement('section'), { className: 'builder-final', hidden: true });
-    if (!final.parentElement) halt.after(final);
-    const cells = [...picker.querySelectorAll('button')];
-    cells.forEach(cell => { const r = Number(cell.style.gridRowStart) - 1, c = Number(cell.style.gridColumnStart) - 1; cell.dataset.builderIndex = String(r * 12 + c); });
-    let stopped = false; halt.onclick = () => { stopped = true; status.textContent = 'Building halted. Your selections are unchanged.'; };
-    const nextPaint = () => new Promise(resolve => setTimeout(resolve, 0));
-    const draw = puzzle => { final.hidden = false; final.replaceChildren(); const note = document.createElement('p'); note.className = 'builder-final-count'; note.textContent = 'Final grid: ' + active.filter(index => puzzle[index]).length + ' given cells'; final.append(note); };
-    const button = oldButton.cloneNode(true); oldButton.replaceWith(button);
-    button.onclick = async () => {
-      const keep = new Set(cells.filter(cell => cell.dataset.state === 'keep').map(cell => +cell.dataset.builderIndex));
-      const empty = new Set(cells.filter(cell => cell.dataset.state === 'remove').map(cell => +cell.dataset.builderIndex));
-      const extraLimit = Number(select.value), totalLimit = Math.min(45, keep.size + extraLimit);
-      stopped = false; halt.hidden = false; button.disabled = true; final.hidden = true;
-      const started = performance.now(); let attempt = 0, result = null;
-      while (!stopped && !result) {
-        attempt += 1; const full = makeFullGattai(), puzzle = Array(144).fill(0); keep.forEach(index => puzzle[index] = full[index]);
-        const pool = shuffle(active.filter(index => !keep.has(index) && !empty.has(index))); let added = 0;
-        while (!stopped && countGattaiSolutions(puzzle, 2) !== 1 && added < extraLimit && active.filter(index => puzzle[index]).length < totalLimit && pool.length) {
-          const cell = pool.pop(); puzzle[cell] = full[cell]; added += 1;
-          status.textContent = 'Adding clues: ' + added + ' of ' + extraLimit + ' · ' + Math.floor((performance.now() - started) / 1000) + ' s'; await nextPaint();
-        }
-        if (!stopped && countGattaiSolutions(puzzle, 2) === 1) result = { puzzle, full }; else if (!stopped) { status.textContent = 'Restarting · attempt ' + attempt + ' (limit: ' + extraLimit + ' extra clues)'; await nextPaint(); }
-      }
-      halt.hidden = true; button.disabled = false; if (!result) return;
-      draw(result.puzzle); window.lastBuiltGattai = { puzzle: result.puzzle, solution: result.full };
-      status.textContent = 'Finished in ' + Math.floor((performance.now() - started) / 1000) + ' s · Added ' + (active.filter(index => result.puzzle[index]).length - keep.size) + ' clue(s).';
-    };
-    return true;
-  }
-  if (!installAdditionCap()) window.addEventListener('load', installAdditionCap, { once: true });
-})();
-
-
-/* Keep the finished grid visible after the capped Build flow. */
-(() => {
-  function restoreCappedBuildPreview() {
-    const final = document.querySelector('.builder-final'); if (!final || final.dataset.cappedPreview) return Boolean(final);
-    final.dataset.cappedPreview = '1';
-    new MutationObserver(() => queueMicrotask(() => {
-      const puzzle = window.lastBuiltGattai?.puzzle;
-      if (final.hidden || !Array.isArray(puzzle) || final.querySelector('.builder-final-grid')) return;
-      const grid = document.createElement('div'); grid.className = 'builder-final-grid';
-      for (let row = 0; row < 12; row += 1) for (let column = 0; column < 12; column += 1) {
-        if (!hasCell(row, column)) continue; const index = row * 12 + column, cell = document.createElement('span');
-        cell.style.gridRowStart = row + 1; cell.style.gridColumnStart = column + 1; cell.textContent = puzzle[index] || ''; grid.append(cell);
-      }
-      ['h-0','h-3','h-6','h-9','h-12'].forEach(name => { const line = document.createElement('i'); line.className = 'builder-boundary horizontal ' + name; grid.append(line); });
-      ['v-0','v-3','v-6','v-9','v-12'].forEach(name => { const line = document.createElement('i'); line.className = 'builder-boundary vertical ' + name; grid.append(line); });
-      final.append(grid);
-    })).observe(final, { childList: true, subtree: true });
-    return true;
-  }
-  if (!restoreCappedBuildPreview()) window.addEventListener('load', restoreCappedBuildPreview, { once: true });
-})();
-
-/* Build a puzzle as a dedicated workspace and show its completed result. */
-(() => {
-  function installBuildWorkspace() {
-    const picker = document.querySelector('#buildPicker');
-    const dialog = picker && picker.closest('dialog');
-    const archiveButton = document.querySelector('.build-category-button');
-    if (!picker || !dialog || dialog.dataset.buildWorkspace) return Boolean(picker && dialog);
-    dialog.dataset.buildWorkspace = '1';
-    const style = document.createElement('style');
-    style.textContent = `
-      dialog.build-workspace-page[open] { position: fixed; inset: 0; width: 100vw; max-width: none; height: 100vh; max-height: none; margin: 0; padding: clamp(18px, 4vw, 52px); border: 0; border-radius: 0; background: var(--paper, #fff); color: var(--ink, #1b2230); overflow: auto; z-index: 1000; }
-      .build-workspace-page .builder-final { display: flex; flex-wrap: wrap; gap: 24px; align-items: flex-start; margin-top: 24px; }
-      .build-workspace-page .builder-final-count, .build-workspace-page .builder-string-export { flex-basis: 100%; }
-      .build-workspace-page .builder-final-grid, .build-workspace-page .builder-solution-preview { flex: 1 1 310px; max-width: 480px; }
-      .build-workspace-page .builder-solution-preview h2 { margin: 0 0 8px; font-size: 1.05rem; }
-      .build-workspace-page .builder-solution-rating { margin: 0 0 12px; font-weight: 700; }
-      .build-workspace-page .builder-solution-grid { position: relative; display: grid; grid-template: repeat(12, minmax(0, 1fr)) / repeat(12, minmax(0, 1fr)); width: min(100%, 430px); aspect-ratio: 1; }
-      .build-workspace-page .builder-solution-grid span { display: grid; place-items: center; min-width: 0; border: 1px solid var(--line, #8390a5); font-size: clamp(18px, 3.5vw, 29px); font-weight: 700; }
-      .build-workspace-page .builder-solution-grid .given { color: #15171b; }
-      .build-workspace-page .builder-solution-grid .filled { color: #2667be; }
-      .build-workspace-page .builder-exit { float: right; }
-      @media (max-width: 720px) { .build-workspace-page .builder-final-grid, .build-workspace-page .builder-solution-preview { flex-basis: 100%; max-width: none; } }
-    `;
-    document.head.append(style);
-    const exit = Object.assign(document.createElement('button'), { type: 'button', className: 'builder-exit', textContent: 'Exit build page' });
-    exit.addEventListener('click', () => dialog.close());
-    dialog.prepend(exit);
-    if (archiveButton) {
-      const opener = archiveButton.cloneNode(true);
-      archiveButton.replaceWith(opener);
-      opener.addEventListener('click', () => {
-        const archive = document.querySelector('#archiveDialog');
-        if (archive && archive.open) archive.close();
-        location.hash = 'build';
-      });
-    }
-    const applyRoute = () => {
-      const open = location.hash === '#build';
-      dialog.classList.toggle('build-workspace-page', open);
-      if (open && !dialog.open) dialog.showModal();
-      if (!open && dialog.open) dialog.close();
-    };
-    window.addEventListener('hashchange', applyRoute);
-    dialog.addEventListener('close', () => {
-      dialog.classList.remove('build-workspace-page');
-      if (location.hash === '#build') history.replaceState(null, '', location.pathname + location.search);
-    });
-    applyRoute();
-    const final = dialog.querySelector('.builder-final');
-    if (final) new MutationObserver(() => queueMicrotask(() => {
-      const built = window.lastBuiltGattai;
-      if (final.hidden || !built || !Array.isArray(built.solution) || final.querySelector('.builder-solution-preview')) return;
-      let rating = { rating: 'Over 9000', score: 9001 };
-      try {
-        const saved = original.slice();
-        original.splice(0, original.length, ...built.puzzle);
-        rating = rateSteps(deriveSteps());
-        original.splice(0, original.length, ...saved);
-      } catch (error) { console.warn('Difficulty evaluation failed', error); }
-      const panel = document.createElement('section'); panel.className = 'builder-solution-preview';
-      const title = document.createElement('h2'); title.textContent = 'Complete solution';
-      const difficulty = document.createElement('p'); difficulty.className = 'builder-solution-rating'; difficulty.textContent = 'Difficulty: ' + rating.rating + ' (' + rating.score + ')';
-      const grid = document.createElement('div'); grid.className = 'builder-solution-grid';
-      for (let row = 0; row < 12; row += 1) for (let column = 0; column < 12; column += 1) {
-        if (!hasCell(row, column)) continue;
-        const index = row * 12 + column, cell = document.createElement('span');
-        cell.style.gridRowStart = row + 1; cell.style.gridColumnStart = column + 1;
-        cell.className = built.puzzle[index] ? 'given' : 'filled'; cell.textContent = built.solution[index] || '';
-        grid.append(cell);
-      }
-      ['h-0','h-3','h-6','h-9','h-12'].forEach(name => { const line = document.createElement('i'); line.className = 'builder-boundary horizontal ' + name; grid.append(line); });
-      ['v-0','v-3','v-6','v-9','v-12'].forEach(name => { const line = document.createElement('i'); line.className = 'builder-boundary vertical ' + name; grid.append(line); });
-      panel.append(title, difficulty, grid); final.append(panel);
-    })).observe(final, { childList: true, subtree: true });
-    return true;
-  }
-  if (!installBuildWorkspace()) window.addEventListener('load', installBuildWorkspace, { once: true });
-})();
-
-/* Build: the extra-clue dropdown is the only clue-addition limit. */
-(() => {
-  function removeLegacyBuildCap() {
-    const picker = document.querySelector('#buildPicker');
-    const previous = document.querySelector('#buildCreate');
-    const select = document.querySelector('#buildAdditionCap');
-    if (!picker || !previous || !select || picker.dataset.noLegacyCap) return Boolean(picker && previous && select);
-    picker.dataset.noLegacyCap = '1';
-    const dialog = picker.closest('dialog') || picker.parentElement;
-    const status = dialog.querySelector('.builder-status');
-    const halt = dialog.querySelector('.build-halt');
-    const final = dialog.querySelector('.builder-final');
-    const cells = [...picker.querySelectorAll('button')];
-    const draw = puzzle => {
-      final.hidden = false; final.replaceChildren();
-      const note = document.createElement('p'); note.className = 'builder-final-count';
-      note.textContent = 'Final grid: ' + active.filter(index => puzzle[index]).length + ' given cells';
-      final.append(note);
-    };
-    const button = previous.cloneNode(true); previous.replaceWith(button);
-    let stopped = false;
-    halt.onclick = () => { stopped = true; status.textContent = 'Building halted. Your selections are unchanged.'; };
-    const paint = () => new Promise(resolve => setTimeout(resolve, 0));
-    button.onclick = async () => {
-      const keep = new Set(cells.filter(cell => cell.dataset.state === 'keep').map(cell => +cell.dataset.builderIndex));
-      const empty = new Set(cells.filter(cell => cell.dataset.state === 'remove').map(cell => +cell.dataset.builderIndex));
-      const extraLimit = Number(select.value);
-      stopped = false; halt.hidden = false; button.disabled = true; final.hidden = true;
-      const started = performance.now(); let attempt = 0; let result = null;
-      while (!stopped && !result) {
-        attempt += 1;
-        const full = makeFullGattai(), puzzle = Array(144).fill(0);
-        keep.forEach(index => { puzzle[index] = full[index]; });
-        const pool = shuffle(active.filter(index => !keep.has(index) && !empty.has(index)));
-        let added = 0;
-        while (!stopped && countGattaiSolutions(puzzle, 2) !== 1 && added < extraLimit && pool.length) {
-          const index = pool.pop(); puzzle[index] = full[index]; added += 1;
-          status.textContent = 'Adding clues: ' + added + ' of ' + extraLimit + ' · ' + Math.floor((performance.now() - started) / 1000) + ' s';
-          await paint();
-        }
-        if (!stopped && countGattaiSolutions(puzzle, 2) === 1) result = { puzzle, full };
-        else if (!stopped) { status.textContent = 'Restarting · attempt ' + attempt + ' (limit: ' + extraLimit + ' extra clues)'; await paint(); }
-      }
-      halt.hidden = true; button.disabled = false;
-      if (!result) return;
-      window.lastBuiltGattai = { puzzle: result.puzzle, solution: result.full };
-      draw(result.puzzle);
-      status.textContent = 'Finished in ' + Math.floor((performance.now() - started) / 1000) + ' s · Added ' + (active.filter(index => result.puzzle[index]).length - keep.size) + ' clue(s).';
-    };
-    return true;
-  }
-  if (!removeLegacyBuildCap()) window.addEventListener('load', removeLegacyBuildCap, { once: true });
-})();
-
-/* Compact desktop controls without affecting the mobile layout. */
-(() => {
-  const style = document.createElement('style');
-  style.textContent = '@media (min-width: 821px) { .control-sidebar { width: 210px !important; max-width: 210px; } .control-sidebar > *, .control-sidebar .entry-tabs, .control-sidebar .other-panel, .control-sidebar .highlight-panel { max-width: 210px; box-sizing: border-box; } .control-sidebar button { width: 100%; max-width: 210px; box-sizing: border-box; } .control-sidebar .numpad { width: 210px; max-width: 210px; grid-template-columns: repeat(3, minmax(0, 1fr)); } .control-sidebar .numpad button { width: 100%; min-width: 0; } dialog.build-workspace-page button:not(.picker-cell) { max-width: 240px; } }';
-  document.head.append(style);
-})();
-
-
-// Published September 15–17 daily puzzles.
-(() => {
-  const additions = {
-    september15: { date: "Tuesday, September 15, 2026", rows: [".9.4.6......", "7.2.........", "8......1....", ".2........4.", "....3.2....8", "..5.....19..", "......6....2", ".........5..", "..1.27.3....", "...3........", "....8.......", ".......4.19."] },
-    september16: { date: "Wednesday, September 16, 2026", rows: ["2...3...5...", ".9.....4....", "..8.9.7.....", "...4.1.....2", "1.3.6.4...8.", "...7.3.8.9..", "..9.1.8.4...", ".5...6.7.5.8", "3.....9.1...", ".....5.4.3..", "....3.....2.", "...1...9...4"] },
-    september17: { date: "Thursday, September 17, 2026", rows: [".....8..1...", "..6..2.5....", "5.7.........", ".4326.......", "...........8", "..5..1..6..2", ".3........9.", "......1397..", "....2.......", "...91......3", "....7.6..8..", "....4......."] }
-  };
-  Object.assign(dailyPuzzles, additions);
-  [
-    ["september15", 15],
-    ["september16", 16],
-    ["september17", 17]
-  ].forEach(([day, date]) => {
-    const entry = { week: "current", day, year: 2026, month: 9, date };
-    archiveEntries.push(entry);
-    archiveByDate.set(archiveKey(entry.year, entry.month, entry.date), entry);
   });
 })();
