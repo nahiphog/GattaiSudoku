@@ -1,0 +1,10 @@
+/* Intentional typography hierarchy: the friendly site typeface everywhere,
+   except for values and pencil marks inside the Sudoku grid. */
+.timer,.numpad button,.status,.calendar div,.calendar button{font-family:inherit}
+.timer{font-variant-numeric:tabular-nums}
+
+/* Walkthrough grid selection is a perimeter cue, not an interior tint. */
+.solution-grid-one,.solution-grid-two{position:relative}
+.solution-grid-one::after,.solution-grid-two::after{content:"";position:absolute;z-index:8;box-sizing:border-box;border:4px solid var(--green);pointer-events:none}
+.solution-grid-one::after{left:0;top:0;width:75%;height:75%}
+.solution-grid-two::after{left:25%;top:25%;width:75%;height:75%}
