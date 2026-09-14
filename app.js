@@ -632,9 +632,15 @@ loadPuzzle(activeDay);
     logo.alt = "Gattai Sudoku grid";
     existingLogo.replaceWith(logo);
   }
+  const logo = document.querySelector(".brand-logo-image");
+  const syncLogoTheme = () => {
+    if (logo) logo.src = document.body.classList.contains("dark") ? "gattai-logo-minimal-dark.png" : "gattai-logo-minimal.png";
+  };
   const style = document.createElement("style");
-  style.textContent = ".brand-logo-image{object-fit:contain;mix-blend-mode:multiply}.dark .brand-logo-image{filter:invert(1) grayscale(1);mix-blend-mode:screen}";
+  style.textContent = ".brand-logo-image{width:46.5px!important;height:46.5px!important;flex-basis:46.5px!important;object-fit:contain}@media(max-width:620px){.brand-logo-image{width:37.5px!important;height:37.5px!important;flex-basis:37.5px!important}}";
   document.head.append(style);
+  new MutationObserver(syncLogoTheme).observe(document.body, { attributes: true, attributeFilter: ["class"] });
+  syncLogoTheme();
   const label = document.querySelector("#puzzleDate");
   const writeHeading = () => {
     if (!label || activeDay === "unlimited") return;
