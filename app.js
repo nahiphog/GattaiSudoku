@@ -480,7 +480,7 @@ loadPuzzle(activeDay);
   page.querySelector(".dialog-close").addEventListener("click", () => { haltRequested = true; page.close(); });
   page.addEventListener("click", event => { if (event.target === page) { haltRequested = true; page.close(); } });
   page.querySelector("[data-generator-method=digging]").addEventListener("click", () => { controls.hidden = false; status.textContent = "Set optional limits, then start digging."; });
-  page.querySelector("[data-generator-method=build]").addEventListener("click", () => { page.close(); location.hash = "build"; });
+  page.querySelector("[data-generator-method=build]").addEventListener("click", () => { page.close(); window.dispatchEvent(new Event("open-build-workspace")); });
   halt.addEventListener("click", () => { haltRequested = true; halt.disabled = true; status.textContent = "Stopping after this uniqueness check…"; });
   start.addEventListener("click", async () => {
     const timeCap = Number(page.querySelector("#diggingTimeCap").value) || 0;
@@ -517,4 +517,106 @@ loadPuzzle(activeDay);
       start.disabled = false; halt.disabled = true;
     }
   });
+})();
+
+/* The build workspace is intentionally a separate page-like dialog: selections
+   are made on an empty Gattai, then the builder adds individual clues only when
+   a unique solution cannot yet be certified. */
+(() => {
+  if (document.querySelector("#buildPuzzleDialog")) return;
+  const page = document.createElement("dialog");
+  page.id = "buildPuzzleDialog";
+  page.className = "build-puzzle-page";
+  page.innerHTML = `
+    <section class="build-puzzle-content" aria-labelledby="buildPuzzleTitle">
+      <div class="dialog-heading"><div><p class="eyebrow">Puzzle maker</p><h2 id="buildPuzzleTitle">Build a puzzle</h2></div><button type="button" class="dialog-close" aria-label="Close build workspace">×</button></div>
+      <p class="build-intro">Select cells on the empty Gattai grid. Green cells must remain clues; red cells must stay empty. The builder will add one clue at a time only until the puzzle is unique.</p>
+      <div class="build-layout">
+        <section class="build-editor"><div class="build-grid" id="buildSelectionGrid" aria-label="Choose build constraints"></div><p id="buildCounts" class="build-counts"></p></section>
+        <section class="build-controls"><div class="constraint-switch" role="group" aria-label="Cell constraint"><button type="button" data-build-mode="keep" aria-pressed="true">Green: must keep</button><button type="button" data-build-mode="empty" aria-pressed="false">Red: must be empty</button></div><label>Maximum extra clues<select id="buildExtraClues"></select></label><div class="generator-actions"><button type="button" id="startBuildPuzzle">Build puzzle</button><button type="button" id="haltBuildPuzzle" disabled>Halt</button></div><p id="buildPuzzleStatus" class="generator-status" aria-live="polite">Choose constraints, then build.</p></section>
+      </div>
+      <section id="buildResult" class="build-result" hidden><div><h3>Generated puzzle</h3><div id="builtPuzzleGrid" class="build-grid result-grid" aria-label="Generated puzzle"></div></div><div><h3>Complete solution</h3><div id="builtSolutionGrid" class="build-grid result-grid" aria-label="Complete solution"></div></div><div class="build-result-meta"><p id="builtGivenCount"></p><p id="builtDifficulty"></p><button type="button" id="copyBuiltString">Copy 144-character string</button></div></section>
+    </section>`;
+  document.body.append(page);
+  const style = document.createElement("style");
+  style.textContent = `
+    .build-puzzle-page { width:min(1100px, calc(100vw - 2rem)); max-height:calc(100vh - 2rem); border:0; border-radius:18px; padding:0; color:var(--ink,#173a4c); background:var(--surface,#fff); }
+    .build-puzzle-page::backdrop { background:rgba(11,24,34,.48); } .build-puzzle-content { padding:clamp(1rem,3vw,2rem); overflow:auto; max-height:calc(100vh - 2rem); box-sizing:border-box; }
+    .build-intro { max-width:65rem; } .build-layout { display:grid; grid-template-columns:minmax(300px,1fr) minmax(220px,.48fr); align-items:start; gap:1.5rem; }
+    .build-grid { display:grid; grid-template-columns:repeat(12, 1fr); width:min(100%, 530px); aspect-ratio:1; border:3px solid var(--ink,#173a4c); background:var(--page,#f8fbfb); }
+    .build-grid .build-cell { min-width:0; min-height:0; border:1px solid color-mix(in srgb,var(--ink,#173a4c) 45%,transparent); display:grid; place-items:center; font-size:clamp(.7rem,2.2vw,1.45rem); font-weight:700; cursor:pointer; background:var(--page,#f8fbfb); }
+    .build-grid .build-cell.keep { background:#a9e8bd; } .build-grid .build-cell.empty { background:#f6b6b6; } .build-grid .build-cell.inactive { visibility:hidden; pointer-events:none; }
+    .build-controls { display:grid; gap:1rem; } .build-controls label { display:grid; gap:.4rem; font-weight:700; } .build-controls select { min-height:2.5rem; } .constraint-switch { display:grid; grid-template-columns:1fr 1fr; gap:.5rem; } .constraint-switch button { font-size:.85rem; }
+    .constraint-switch button[aria-pressed=true] { outline:3px solid currentColor; } .build-counts { margin:.65rem 0 0; font-weight:700; }
+    .build-result { margin-top:1.5rem; padding-top:1.25rem; border-top:1px solid color-mix(in srgb,var(--ink,#173a4c) 25%,transparent); display:grid; grid-template-columns:repeat(2,minmax(220px,1fr)) minmax(160px,.55fr); gap:1rem; align-items:start; } .build-result h3 { margin:0 0 .5rem; }
+    .result-grid { width:100%; max-width:380px; } .result-grid .build-cell { cursor:default; } .result-grid .build-cell.given { color:#111; } .result-grid .build-cell.solved { color:#1c6fa1; }
+    .build-result-meta { display:grid; gap:.7rem; font-weight:700; } .build-result-meta p { margin:0; }
+    .build-puzzle-page [hidden] { display:none!important; } @media(max-width:720px){ .build-layout,.build-result{grid-template-columns:1fr;} .build-grid{width:min(100%,420px);} }
+  `;
+  document.head.append(style);
+  const selectionGrid = page.querySelector("#buildSelectionGrid"), counts = page.querySelector("#buildCounts"), extraSelect = page.querySelector("#buildExtraClues"), status = page.querySelector("#buildPuzzleStatus"), result = page.querySelector("#buildResult"), start = page.querySelector("#startBuildPuzzle"), halt = page.querySelector("#haltBuildPuzzle");
+  for (let extra = 0; extra <= 30; extra += 1) { const option = document.createElement("option"); option.value = String(extra); option.textContent = String(extra); if (extra === 30) option.selected = true; extraSelect.append(option); }
+  const keep = new Set(), empty = new Set(); let selectedMode = "keep", haltRequested = false, latestString = "";
+  const activeCount = values => active.reduce((total, cell) => total + Boolean(values[cell]), 0);
+  function renderSelection() {
+    selectionGrid.replaceChildren();
+    for (let row = 0; row < 12; row += 1) for (let column = 0; column < 12; column += 1) {
+      const cell = row * 12 + column, node = document.createElement("button"); node.type = "button"; node.className = "build-cell"; node.style.gridColumnStart = column + 1; node.style.gridRowStart = row + 1;
+      if (!hasCell(row, column)) node.classList.add("inactive"); else { if (keep.has(cell)) node.classList.add("keep"); if (empty.has(cell)) node.classList.add("empty"); node.setAttribute("aria-label", `Cell ${row + 1}, ${column + 1}`); node.addEventListener("click", () => { if (selectedMode === "keep") { if (keep.has(cell)) keep.delete(cell); else { empty.delete(cell); keep.add(cell); } } else if (empty.has(cell)) empty.delete(cell); else { keep.delete(cell); empty.add(cell); } renderSelection(); }); }
+      selectionGrid.append(node);
+    }
+    counts.textContent = `${keep.size} must keep · ${empty.size} must be empty`;
+  }
+  function renderResult(target, values, clues, solutionView = false) {
+    target.replaceChildren();
+    for (let row = 0; row < 12; row += 1) for (let column = 0; column < 12; column += 1) {
+      const index = row * 12 + column, node = document.createElement("div"); node.className = "build-cell"; node.style.gridColumnStart = column + 1; node.style.gridRowStart = row + 1;
+      if (!hasCell(row, column)) node.classList.add("inactive"); else if (values[index]) { node.textContent = values[index]; node.classList.add(!solutionView || clues[index] ? "given" : "solved"); }
+      target.append(node);
+    }
+  }
+  function namedTechniqueResult(puzzle) {
+    const saved = [...original];
+    try { original.splice(0, original.length, ...puzzle); const solveSteps = deriveSteps(true), values = [...puzzle]; solveSteps.forEach(step => { if (step.index !== null) values[step.index] = step.digit; }); return { complete: active.every(cell => values[cell]), solveSteps }; }
+    finally { original.splice(0, original.length, ...saved); }
+  }
+  const uniqueHumanFirst = puzzle => namedTechniqueResult(puzzle).complete || countGattaiSolutions(puzzle, 2) === 1;
+  function openBuild() { haltRequested = false; status.textContent = "Choose constraints, then build."; result.hidden = true; page.showModal(); renderSelection(); }
+  window.addEventListener("open-build-workspace", openBuild);
+  page.querySelector(".dialog-close").addEventListener("click", () => { haltRequested = true; page.close(); });
+  page.addEventListener("click", event => { if (event.target === page) { haltRequested = true; page.close(); } });
+  page.querySelectorAll("[data-build-mode]").forEach(button => button.addEventListener("click", () => { selectedMode = button.dataset.buildMode; page.querySelectorAll("[data-build-mode]").forEach(item => item.setAttribute("aria-pressed", String(item === button))); }));
+  halt.addEventListener("click", () => { haltRequested = true; halt.disabled = true; status.textContent = "Stopping after this check…"; });
+  page.querySelector("#copyBuiltString").addEventListener("click", async () => { if (!latestString) return; try { await navigator.clipboard.writeText(latestString); status.textContent = "144-character puzzle string copied."; } catch { status.textContent = "Unable to copy the puzzle string."; } });
+  start.addEventListener("click", async () => {
+    const maximumExtra = Number(extraSelect.value), began = performance.now(); let attempt = 0;
+    haltRequested = false; start.disabled = true; halt.disabled = false; result.hidden = true;
+    try {
+      while (!haltRequested) {
+        attempt += 1; const solution = makeFullGattai(), puzzle = Array(144).fill(0); keep.forEach(cell => { puzzle[cell] = solution[cell]; });
+        const candidates = shuffle(active.filter(cell => !keep.has(cell) && !empty.has(cell))); let added = 0;
+        while (!haltRequested && !uniqueHumanFirst(puzzle) && candidates.length && added < maximumExtra) {
+          const cell = candidates.pop(); puzzle[cell] = solution[cell]; added += 1;
+          status.textContent = `Building puzzle · attempt ${attempt} · ${activeCount(puzzle)} given cells · ${Math.floor((performance.now() - began) / 1000)}s`;
+          await new Promise(resolve => window.setTimeout(resolve, 0));
+        }
+        if (haltRequested) break;
+        if (uniqueHumanFirst(puzzle)) {
+          const logic = namedTechniqueResult(puzzle), rating = logic.complete ? rateSteps(logic.solveSteps) : { rating: "Over 9000", score: null };
+          renderResult(page.querySelector("#builtPuzzleGrid"), puzzle, puzzle);
+          renderResult(page.querySelector("#builtSolutionGrid"), solution, puzzle, true);
+          page.querySelector("#builtGivenCount").textContent = `${activeCount(puzzle)} given cells`;
+          page.querySelector("#builtDifficulty").textContent = rating.score === null ? "Difficulty: Over 9000" : `Difficulty: ${rating.rating} (${rating.score})`;
+          latestString = rowsFromBoard(puzzle).join(""); result.hidden = false;
+          status.textContent = `Finished in ${Math.floor((performance.now() - began) / 1000)}s after ${attempt} attempt${attempt === 1 ? "" : "s"}.`;
+          break;
+        }
+        status.textContent = `Restarting with a fresh complete Gattai · attempt ${attempt + 1} · ${Math.floor((performance.now() - began) / 1000)}s`;
+        await new Promise(resolve => window.setTimeout(resolve, 0));
+      }
+      if (haltRequested) status.textContent = `Build halted after ${Math.floor((performance.now() - began) / 1000)}s.`;
+    } catch (error) { console.error(error); status.textContent = "The builder could not make a compatible Gattai. Try again."; }
+    finally { start.disabled = false; halt.disabled = true; }
+  });
+  renderSelection();
 })();
