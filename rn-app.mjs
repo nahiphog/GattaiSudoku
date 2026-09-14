@@ -1,8 +1,11 @@
 import React, { useEffect, useMemo, useRef, useState } from "https://esm.sh/react@18.3.1";
 import { createRoot } from "https://esm.sh/react-dom@18.3.1/client";
-import { View, Text, Pressable, ScrollView } from "https://esm.sh/react-native-web@0.21.2?deps=react@18.3.1,react-dom@18.3.1";
-
+// React DOM keeps the component tree predictable on Vercel while retaining the
+// React Native-style View/Text/Pressable component boundary used by the app.
 const h = React.createElement;
+const View = ({ children, ...props }) => h("div", props, children);
+const Text = ({ children, ...props }) => h("span", props, children);
+const Pressable = ({ children, onPress, ...props }) => h("button", { type: "button", onClick: onPress, ...props }, children);
 const DIGITS = [1,2,3,4,5,6,7,8,9];
 const isActive = (r,c) => (r < 9 && c < 9) || (r >= 3 && c >= 3);
 const isShared = (r,c) => r >= 3 && r < 9 && c >= 3 && c < 9;
