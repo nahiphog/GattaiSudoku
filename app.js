@@ -526,7 +526,9 @@ loadPuzzle(activeDay);
   document.querySelector("#settingsSharedToggle").checked = false;
   const style = document.createElement("style");
   style.textContent = `
-    body, button, input, select, textarea, .cell, .snyder { font-family:'Fredoka',sans-serif!important; }
+    body, button, input, select, textarea { font-family:'Fredoka',sans-serif!important; }
+    /* Keep puzzle digits and the keypad in their original, high-legibility numeral face. */
+    .cell, .snyder, .control-sidebar .numpad button { font-family:Arial,Helvetica,sans-serif!important; }
     .control-sidebar, .control-sidebar * { color:var(--ink)!important; }
     .control-sidebar button, .control-sidebar .entry-panel, .control-sidebar .highlight-panel { background:var(--muted)!important; }
     .control-sidebar .numpad button { border-color:var(--ink)!important; box-shadow:none!important; }
