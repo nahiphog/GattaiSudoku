@@ -519,6 +519,69 @@ loadPuzzle(activeDay);
   });
 })();
 
+/* Local profile and completed-grid checker.  They deliberately stay separate
+   from puzzle play: the checker validates both 9×9 grids and the displayed
+   puzzle's givens without changing the active board. */
+(() => {
+  const signUp = document.querySelector("#signUp"), signUpDialog = document.querySelector("#signUpDialog"), signUpName = document.querySelector("#signUpName"), signUpStatus = document.querySelector("#signUpStatus");
+  const verifyButton = document.querySelector("#verifySolution"), verifyDialog = document.querySelector("#verifySolutionDialog"), verifyString = document.querySelector("#verifySolutionString"), verifyStatus = document.querySelector("#verifySolutionStatus");
+  const closeOnBackdrop = dialog => dialog?.addEventListener("click", event => { if (event.target === dialog) dialog.close(); });
+  const setStatus = (node, message, kind = "") => { node.textContent = message; node.className = `dialog-status ${kind}`; };
+
+  function updateProfileButton() {
+    const name = localStorage.getItem("gattai-profile-name");
+    signUp.textContent = name ? name : "Sign up";
+    signUp.title = name ? "Edit local profile" : "Sign up";
+  }
+  signUp?.addEventListener("click", () => {
+    signUpName.value = localStorage.getItem("gattai-profile-name") || "";
+    setStatus(signUpStatus, "");
+    signUpDialog.showModal();
+    signUpName.focus();
+  });
+  document.querySelector("#closeSignUp")?.addEventListener("click", () => signUpDialog.close());
+  document.querySelector("#confirmSignUp")?.addEventListener("click", () => {
+    const name = signUpName.value.trim();
+    if (!name) { setStatus(signUpStatus, "Enter a display name to continue.", "error"); return; }
+    localStorage.setItem("gattai-profile-name", name);
+    updateProfileButton();
+    setStatus(signUpStatus, "Profile saved for this browser.", "success");
+  });
+  closeOnBackdrop(signUpDialog);
+  updateProfileButton();
+
+  function parseCompletedGattai(text) {
+    const characters = text.replace(/\s/g, "");
+    if (characters.length !== 144) return { error: "A Gattai string must contain exactly 144 characters." };
+    if (!/^[1-9.]+$/.test(characters)) return { error: "Use only digits 1–9 and periods." };
+    const values = [...characters].map(character => character === "." ? 0 : Number(character));
+    for (let index = 0; index < 144; index += 1) {
+      const row = Math.floor(index / 12), column = index % 12;
+      if (!hasCell(row, column) && values[index]) return { error: "The 18 cells outside the Gattai shape must be periods." };
+      if (hasCell(row, column) && !values[index]) return { error: "A complete solution needs a digit in every active Gattai cell." };
+    }
+    return { values };
+  }
+  function validCompletedGrid(values) {
+    for (const [label, house] of units) {
+      const seen = new Set(house.map(index => values[index]));
+      if (seen.size !== 9 || [...seen].some(value => !digits.includes(value))) return `${label} does not contain 1–9 exactly once.`;
+    }
+    for (const index of active) if (original[index] && original[index] !== values[index]) return `The value at ${nameFor(index)} does not match this puzzle's given clue.`;
+    return "";
+  }
+  verifyButton?.addEventListener("click", () => { verifyString.value = ""; setStatus(verifyStatus, ""); verifyDialog.showModal(); verifyString.focus(); });
+  document.querySelector("#closeVerifySolution")?.addEventListener("click", () => verifyDialog.close());
+  document.querySelector("#runSolutionVerification")?.addEventListener("click", () => {
+    const parsed = parseCompletedGattai(verifyString.value);
+    if (parsed.error) { setStatus(verifyStatus, parsed.error, "error"); return; }
+    const issue = validCompletedGrid(parsed.values);
+    if (issue) { setStatus(verifyStatus, `Not a valid solution: ${issue}`, "error"); return; }
+    setStatus(verifyStatus, "Verified: this is a valid completed solution for the current puzzle.", "success");
+  });
+  closeOnBackdrop(verifyDialog);
+})();
+
 /* Keep the controls visually coherent and start every puzzle with the shared
    overlap unshaded; players can opt into the highlight in Settings. */
 (() => {
@@ -675,3 +738,4 @@ loadPuzzle(activeDay);
   new MutationObserver(writeHeading).observe(label, { childList: true, characterData: true, subtree: true });
   writeHeading();
 })();
+
