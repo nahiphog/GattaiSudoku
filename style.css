@@ -17,6 +17,8 @@ header{display:grid;grid-template-columns:1fr auto 1fr;align-items:center;paddin
 .icon-button{width:34px;height:34px;border:1px solid var(--ink);border-radius:50%;background:transparent;color:var(--ink);display:grid;place-items:center;padding:0;cursor:pointer;font:600 18px/1 'Nunito',sans-serif}
 .info-button{justify-self:start;font:600 21px/1 Georgia,serif;font-style:italic}
 .header-end{justify-self:end;display:flex;align-items:center;gap:9px}
+.sign-up-button,.verify-solution-button,.dialog-primary{border:1px solid var(--ink);background:var(--muted);color:var(--ink);padding:7px 10px;cursor:pointer;font:600 12px/1 'Nunito',Arial,sans-serif;text-align:center}.sign-up-button{border-radius:999px;white-space:nowrap}.verify-solution-button{width:100%}.sign-up-button:hover,.verify-solution-button:hover,.dialog-primary:hover{background:var(--ink);color:var(--surface)}
+.dialog-field{display:grid;gap:6px;margin:16px 0;font-size:13px;font-weight:700}.dialog-field input,.dialog-field textarea{width:100%;border:1px solid var(--ink);background:var(--paper);color:var(--ink);padding:8px;font:14px/1.4 Arial,Helvetica,sans-serif;resize:vertical}.dialog-status{min-height:1.5em;margin:12px 0 0;font-weight:700}.dialog-status.success{color:var(--select)}.dialog-status.error{color:var(--red)}
 .theme-button{justify-self:end}
 .about-button{width:34px;height:34px;border:1px solid var(--ink);border-radius:50%;background:transparent;color:var(--ink);padding:0;display:grid;place-items:center;cursor:pointer;font:600 13px/1 'Nunito',sans-serif}
 .archive-header svg{width:18px;height:18px;fill:none;stroke:currentColor;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round}
