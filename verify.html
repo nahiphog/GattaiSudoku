@@ -1,0 +1,35 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Verify a solution · Daily Gattai Sudoku</title>
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body class="verify-page">
+  <header>
+    <div class="header-start"><a class="verify-back" href="index.html">← Puzzle</a></div>
+    <div class="brand-stack"><div class="brand"><span>Daily</span><span>Gattai</span><span>Sudoku</span></div></div>
+    <div class="header-end"><span class="verify-title">Verify a solution</span></div>
+  </header>
+  <main class="verify-main">
+    <section class="verify-intro">
+      <h1>Verify a solution</h1>
+      <p>Enter digits directly in the Gattai grid. Every row, column, and 3×3 house in both grids must contain 1–9 exactly once.</p>
+    </section>
+    <section class="verify-workspace">
+      <div id="verifyBoard" class="board verify-board" aria-label="Editable Gattai Sudoku verification grid"></div>
+      <aside class="verify-actions">
+        <button id="verifyGrid" class="dialog-primary" type="button">Verify solution</button>
+        <button id="clearGrid" class="verify-secondary" type="button">Clear grid</button>
+        <label class="verify-string-label" for="solutionString">144-character string</label>
+        <textarea id="solutionString" rows="7" spellcheck="false" autocapitalize="off" autocomplete="off" placeholder="Paste a 144-character Gattai string"></textarea>
+        <button id="importString" class="verify-secondary" type="button">Import string</button>
+        <button id="exportString" class="verify-secondary" type="button">Copy string</button>
+        <p id="verifyStatus" class="dialog-status" aria-live="polite"></p>
+      </aside>
+    </section>
+  </main>
+  <script src="verify.js"></script>
+</body>
+</html>

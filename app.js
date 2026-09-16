@@ -356,7 +356,6 @@ document.querySelector("#copyPng").addEventListener("click", async () => {
   context.strokeStyle = "#173a4c"; context.lineWidth = 3;
   [[0, 0, 9, 0], [0, 3, 12, 3], [0, 6, 12, 6], [0, 9, 12, 9], [3, 12, 12, 12]].forEach(([x1, y1, x2, y2]) => { context.beginPath(); context.moveTo(x1 * scale, y1 * scale); context.lineTo(x2 * scale, y2 * scale); context.stroke(); });
   [[0, 0, 0, 9], [3, 0, 3, 12], [6, 0, 6, 12], [9, 0, 9, 12], [12, 3, 12, 12]].forEach(([x1, y1, x2, y2]) => { context.beginPath(); context.moveTo(x1 * scale, y1 * scale); context.lineTo(x2 * scale, y2 * scale); context.stroke(); });
-  context.fillStyle = "#52656b"; context.font = "12px sans-serif"; context.textAlign = "right"; context.textBaseline = "middle"; context.fillText("gattai-sudoku.vercel.app", gridSize, gridSize + margin * .55);
   const button = document.querySelector("#copyPng"); try { const blob = await new Promise(resolve => canvas.toBlob(resolve, "image/png")); await navigator.clipboard.write([new ClipboardItem({ "image/png": blob })]); button.textContent = "Grid copied"; } catch { button.textContent = "Grid copy unavailable"; } setTimeout(() => { button.textContent = "Copy grid"; }, 2000);
 });
 const howToPlayDialog = document.querySelector("#howToPlayDialog"); document.querySelector("#howToPlay").addEventListener("click", () => howToPlayDialog.showModal()); document.querySelector("#closeHowToPlay").addEventListener("click", () => howToPlayDialog.close()); howToPlayDialog.addEventListener("click", event => { if (event.target === howToPlayDialog) howToPlayDialog.close(); });
@@ -570,7 +569,7 @@ loadPuzzle(activeDay);
     for (const index of active) if (original[index] && original[index] !== values[index]) return `The value at ${nameFor(index)} does not match this puzzle's given clue.`;
     return "";
   }
-  verifyButton?.addEventListener("click", () => { verifyString.value = ""; setStatus(verifyStatus, ""); verifyDialog.showModal(); verifyString.focus(); });
+  verifyButton?.addEventListener("click", () => { window.location.href = "verify.html"; });
   document.querySelector("#closeVerifySolution")?.addEventListener("click", () => verifyDialog.close());
   document.querySelector("#runSolutionVerification")?.addEventListener("click", () => {
     const parsed = parseCompletedGattai(verifyString.value);
@@ -738,4 +737,3 @@ loadPuzzle(activeDay);
   new MutationObserver(writeHeading).observe(label, { childList: true, characterData: true, subtree: true });
   writeHeading();
 })();
-
