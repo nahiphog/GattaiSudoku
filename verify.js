@@ -12,6 +12,7 @@
   }
   const active = [...new Set(units.flatMap(([, unit]) => unit))];
   const activeSet = new Set(active);
+  const housesFor = Object.fromEntries(active.map(index => [index, units.filter(([, unit]) => unit.includes(index)).map(([, unit]) => unit)]));
   const values = Array(144).fill(0);
   const board = document.querySelector("#verifyBoard");
   const status = document.querySelector("#verifyStatus");
@@ -56,15 +57,40 @@
     }
     return "";
   }
-  function validate() {
-    if (active.some(index => !values[index])) return "Enter a digit in every active cell before verifying.";
-    for (const [label, unit] of units) {
-      const seen = new Set(unit.map(index => values[index]));
-      if (seen.size !== 9 || [...seen].some(value => !digits.includes(value))) return `${label} must contain 1–9 exactly once.`;
+  function countSolutions(limit = 2) {
+    if (conflicts().size) return { count: 0, issue: "Resolve the red conflicting entries before checking uniqueness." };
+    const working = [...values];
+    const candidatesFor = index => {
+      const used = new Set();
+      housesFor[index].forEach(house => house.forEach(other => { if (working[other]) used.add(working[other]); }));
+      return digits.filter(digit => !used.has(digit));
+    };
+    function search() {
+      let choice = -1, options = null;
+      for (const index of active) if (!working[index]) {
+        const possible = candidatesFor(index);
+        if (!possible.length) return 0;
+        if (!options || possible.length < options.length) { choice = index; options = possible; }
+      }
+      if (choice === -1) return 1;
+      let total = 0;
+      for (const digit of options) {
+        working[choice] = digit;
+        total += search();
+        working[choice] = 0;
+        if (total >= limit) return total;
+      }
+      return total;
     }
-    return "";
+    return { count: search() };
   }
-  document.querySelector("#verifyGrid").addEventListener("click", () => { const issue = validate(); setStatus(issue || "Verified: this is a valid completed Gattai solution.", issue ? "error" : "success"); });
+  document.querySelector("#verifyGrid").addEventListener("click", () => {
+    const result = countSolutions();
+    if (result.issue) setStatus(result.issue, "error");
+    else if (result.count === 1) setStatus("Verified: this puzzle has exactly one solution.", "success");
+    else if (result.count === 0) setStatus("This puzzle has no valid solution.", "error");
+    else setStatus("This puzzle has multiple solutions.", "error");
+  });
   document.querySelector("#clearGrid").addEventListener("click", () => { values.fill(0); setStatus(""); render(); });
   document.querySelector("#importString").addEventListener("click", () => { const issue = parseString(stringBox.value); setStatus(issue || "String imported. Fill or edit any cell, then verify.", issue ? "error" : "success"); render(); });
   document.querySelector("#exportString").addEventListener("click", async () => { const output = values.map((value, index) => activeSet.has(index) ? (value || ".") : ".").join(""); try { await navigator.clipboard.writeText(output); setStatus("144-character string copied.", "success"); } catch { setStatus("Unable to access the clipboard.", "error"); } });

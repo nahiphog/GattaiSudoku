@@ -15,12 +15,12 @@
   <main class="verify-main">
     <section class="verify-intro">
       <h1>Verify a solution</h1>
-      <p>Enter digits directly in the Gattai grid. Every row, column, and 3×3 house in both grids must contain 1–9 exactly once.</p>
+      <p>Enter or import a partial Gattai puzzle. The checker determines whether its clues lead to zero, one, or multiple valid solutions.</p>
     </section>
     <section class="verify-workspace">
       <div id="verifyBoard" class="board verify-board" aria-label="Editable Gattai Sudoku verification grid"></div>
       <aside class="verify-actions">
-        <button id="verifyGrid" class="dialog-primary" type="button">Verify solution</button>
+        <button id="verifyGrid" class="dialog-primary" type="button">Check uniqueness</button>
         <button id="clearGrid" class="verify-secondary" type="button">Clear grid</button>
         <label class="verify-string-label" for="solutionString">144-character string</label>
         <textarea id="solutionString" rows="7" spellcheck="false" autocapitalize="off" autocomplete="off" placeholder="Paste a 144-character Gattai string"></textarea>
