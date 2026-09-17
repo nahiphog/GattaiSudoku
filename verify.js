@@ -17,6 +17,7 @@
   const board = document.querySelector("#verifyBoard");
   const status = document.querySelector("#verifyStatus");
   const stringBox = document.querySelector("#solutionString");
+  const solutionResults = document.querySelector("#solutionResults");
   const setStatus = (message, kind = "") => { status.textContent = message; status.className = `dialog-status ${kind}`; };
   const conflicts = () => {
     const found = new Set();
@@ -26,11 +27,22 @@
     }
     return found;
   };
-  function drawBoundaries() {
+  function drawBoundaries(target = board) {
     [["horizontal", "h-0"], ["horizontal", "h-3"], ["horizontal", "h-6"], ["horizontal", "h-9"], ["horizontal", "h-12"], ["vertical", "v-0"], ["vertical", "v-3"], ["vertical", "v-6"], ["vertical", "v-9"], ["vertical", "v-12"]].forEach(([direction, position]) => {
-      const line = document.createElement("span"); line.className = `board-boundary ${direction} ${position}`; board.append(line);
+      const line = document.createElement("span"); line.className = `board-boundary ${direction} ${position}`; target.append(line);
     });
   }
+  function showSolution(solution, differences = new Set(), label = "Solution") {
+    const figure = document.createElement("section"), title = document.createElement("strong"), grid = document.createElement("div");
+    figure.className = "verify-solution"; title.textContent = label; grid.className = "board verify-result-grid";
+    for (let row = 0; row < 12; row += 1) for (let column = 0; column < 12; column += 1) {
+      const index = row * 12 + column; if (!activeSet.has(index)) continue;
+      const cell = document.createElement("span"); cell.className = `verify-result-cell${differences.has(index) ? " solution-difference" : ""}`;
+      cell.textContent = solution[index]; cell.style.gridRowStart = row + 1; cell.style.gridColumnStart = column + 1; grid.append(cell);
+    }
+    drawBoundaries(grid); figure.append(title, grid); solutionResults.append(figure);
+  }
+  function clearResults() { solutionResults.replaceChildren(); }
   function render() {
     const bad = conflicts(); board.innerHTML = "";
     for (let row = 0; row < 12; row += 1) for (let column = 0; column < 12; column += 1) {
@@ -65,6 +77,7 @@
       housesFor[index].forEach(house => house.forEach(other => { if (working[other]) used.add(working[other]); }));
       return digits.filter(digit => !used.has(digit));
     };
+    const solutions = [];
     function search() {
       let choice = -1, options = null;
       for (const index of active) if (!working[index]) {
@@ -72,7 +85,7 @@
         if (!possible.length) return 0;
         if (!options || possible.length < options.length) { choice = index; options = possible; }
       }
-      if (choice === -1) return 1;
+      if (choice === -1) { solutions.push([...working]); return 1; }
       let total = 0;
       for (const digit of options) {
         working[choice] = digit;
@@ -82,17 +95,22 @@
       }
       return total;
     }
-    return { count: search() };
+    return { count: search(), solutions };
   }
   document.querySelector("#verifyGrid").addEventListener("click", () => {
     const result = countSolutions();
+    clearResults();
     if (result.issue) setStatus(result.issue, "error");
-    else if (result.count === 1) setStatus("Verified: this puzzle has exactly one solution.", "success");
+    else if (result.count === 1) { setStatus("Verified: this puzzle has exactly one solution.", "success"); showSolution(result.solutions[0], new Set(), "Completed grid"); }
     else if (result.count === 0) setStatus("This puzzle has no valid solution.", "error");
-    else setStatus("This puzzle has multiple solutions.", "error");
+    else {
+      setStatus("This puzzle has multiple solutions. The orange cells differ.", "error");
+      const differences = new Set(active.filter(index => result.solutions[0][index] !== result.solutions[1][index]));
+      showSolution(result.solutions[0], differences, "Solution 1"); showSolution(result.solutions[1], differences, "Solution 2");
+    }
   });
-  document.querySelector("#clearGrid").addEventListener("click", () => { values.fill(0); setStatus(""); render(); });
-  document.querySelector("#importString").addEventListener("click", () => { const issue = parseString(stringBox.value); setStatus(issue || "String imported. Fill or edit any cell, then verify.", issue ? "error" : "success"); render(); });
+  document.querySelector("#clearGrid").addEventListener("click", () => { values.fill(0); clearResults(); setStatus(""); render(); });
+  document.querySelector("#importString").addEventListener("click", () => { const issue = parseString(stringBox.value); clearResults(); setStatus(issue || "String imported. Fill or edit any cell, then check uniqueness.", issue ? "error" : "success"); render(); });
   document.querySelector("#exportString").addEventListener("click", async () => { const output = values.map((value, index) => activeSet.has(index) ? (value || ".") : ".").join(""); try { await navigator.clipboard.writeText(output); setStatus("144-character string copied.", "success"); } catch { setStatus("Unable to access the clipboard.", "error"); } });
   render();
 })();
