@@ -4,11 +4,11 @@
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title>Verify a solution · Daily Gattai Sudoku</title>
-  <link rel="stylesheet" href="style.css" />
+  <link rel="stylesheet" href="/style.css" />
 </head>
 <body class="verify-page">
   <header>
-    <div class="header-start"><a class="verify-back" href="index.html">← Puzzle</a></div>
+    <div class="header-start"><a class="verify-back" href="/">← Puzzle</a></div>
     <div class="brand-stack"><div class="brand"><span>Daily</span><span>Gattai</span><span>Sudoku</span></div></div>
     <div class="header-end"><span class="verify-title">Verify a solution</span></div>
   </header>
@@ -18,7 +18,11 @@
       <p>Enter or import a partial Gattai puzzle. The checker determines whether its clues lead to zero, one, or multiple valid solutions.</p>
     </section>
     <section class="verify-workspace">
-      <div id="verifyBoard" class="board verify-board" aria-label="Editable Gattai Sudoku verification grid"></div>
+      <div class="verify-board-column">
+        <div id="verifyBoard" class="board verify-board" aria-label="Editable Gattai Sudoku verification grid"></div>
+        <p id="inputGivenCount" class="verify-given-count">0 given cells</p>
+        <section id="inputTechniqueTally" class="verify-input-tally" hidden aria-live="polite"><h2>Technique tally</h2><div id="tallyResults"></div></section>
+      </div>
       <aside class="verify-actions">
         <button id="verifyGrid" class="dialog-primary" type="button">Check uniqueness</button>
         <button id="clearGrid" class="verify-secondary" type="button">Clear grid</button>
@@ -34,8 +38,8 @@
         <div id="solutionResults" class="verify-results" aria-live="polite"></div>
       </aside>
     </section>
-    <section id="walkthrough" class="verify-walkthrough" hidden aria-live="polite"><h2>Solution walkthrough</h2><p id="walkthroughRating"></p><p id="evaluationTime" class="verify-timing"></p><button id="walkthroughTally" class="verify-secondary" type="button">Technique tally</button><ol id="walkthroughSteps"></ol><div id="tallyResults" hidden></div></section>
+    <section id="walkthrough" class="verify-walkthrough" hidden aria-live="polite"><h2>Solution walkthrough</h2><p id="walkthroughRating"></p><p id="evaluationTime" class="verify-timing"></p><ol id="walkthroughSteps"></ol></section>
   </main>
-  <script src="verify.js"></script>
+  <script src="/verify.js"></script>
 </body>
 </html>

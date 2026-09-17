@@ -8,7 +8,8 @@ const dailyPuzzles = {
   sunday: { date: "Sunday, September 13, 2026", rows: ["......1.8...", "....26..4...", "7..15...2...", ".8..9.....8.", ".3....28.1..", "..4......9..", "..357.......", "....49.....1", ".2..........", "...7.....29.", "....3......7", ".....83....."] },
   september15: { date: "Tuesday, September 15, 2026", rows: [".9.4.6......", "7.2.........", "8......1....", ".2........4.", "....3.2....8", "..5.....19..", "......6....2", ".........5..", "..1.27.3....", "...3........", "....8.......", ".......4.19."] },
   september16: { date: "Wednesday, September 16, 2026", rows: ["2...3...5...", ".9.....4....", "..8.9.7.....", "...4.1.....2", "1.3.6.4...8.", "...7.3.8.9..", "..9.1.8.4...", ".5...6.7.5.8", "3.....9.1...", ".....5.4.3..", "....3.....2.", "...1...9...4"] },
-  september17: { date: "Thursday, September 17, 2026", rows: [".....8..1...", "..6..2.5....", "5.7.........", ".4326.......", "...........8", "..5..1..6..2", ".3........9.", "......1397..", "....2.......", "...91......3", "....7.6..8..", "....4......."] }
+  september17: { date: "Thursday, September 17, 2026", rows: [".....8..1...", "..6..2.5....", "5.7.........", ".4326.......", "...........8", "..5..1..6..2", ".3........9.", "......1397..", "....2.......", "...91......3", "....7.6..8..", "....4......."] },
+  september30: { date: "Wednesday, September 30, 2026", rows: ["..37........", "..79814.....", "......2.....", ".......4.3..", ".6....1.5.4.", "291....6....", "....2.......", "...3..8.....", ".........7..", "...........8", "....6...3.2.", ".....4......"] }
 };
 const previousWeekPuzzles = {
   monday: { date: "Monday, August 31, 2026", rows: ["..6.59......", "81.4........", "...8.2......", "......8.....", "...19....75.", "..8.......19", "..........9.", ".....5.792.3", "....7.......", "...73.....4.", "....526...38", ".......34..2"] },
@@ -458,7 +459,7 @@ function loadPuzzle(day, syncRoute = true) { activeDay = day; const selectedWeek
 const archiveEntries = [
   ["previous", "monday", 2026, 8, 31], ["previous", "tuesday", 2026, 9, 1], ["previous", "wednesday", 2026, 9, 2], ["previous", "thursday", 2026, 9, 3], ["previous", "friday", 2026, 9, 4], ["previous", "saturday", 2026, 9, 5], ["previous", "sunday", 2026, 9, 6],
   ["current", "monday", 2026, 9, 7], ["current", "tuesday", 2026, 9, 8], ["current", "wednesday", 2026, 9, 9], ["current", "thursday", 2026, 9, 10], ["current", "friday", 2026, 9, 11], ["current", "saturday", 2026, 9, 12], ["current", "sunday", 2026, 9, 13],
-  ["current", "september15", 2026, 9, 15], ["current", "september16", 2026, 9, 16], ["current", "september17", 2026, 9, 17]
+  ["current", "september15", 2026, 9, 15], ["current", "september16", 2026, 9, 16], ["current", "september17", 2026, 9, 17], ["current", "september30", 2026, 9, 30]
 ].map(([week, day, year, month, date]) => ({ week, day, year, month, date }));
 const archiveKey = (year, month, date) => `${year}-${month}-${date}`;
 const archiveByDate = new Map(archiveEntries.map(entry => [archiveKey(entry.year, entry.month, entry.date), entry]));
@@ -669,7 +670,10 @@ loadPuzzle(activeDay, false);
     // there is only one solution. Always run the bounded uniqueness check.
     return countGattaiSolutions(puzzle, 2) === 1;
   }
-  function showGenerator() { window.location.href = "generate.html"; }
+  // Daily puzzles are served from /daily/YYYY_MM_DD/. A relative URL would
+  // incorrectly request /daily/YYYY_MM_DD/generate.html, which Vercel rewrites
+  // back to the daily page. Always navigate from the site root instead.
+  function showGenerator() { window.location.assign(new URL("/generate.html", window.location.origin)); }
   launcher.addEventListener("click", showGenerator);
   page.querySelector(".dialog-close").addEventListener("click", () => { haltRequested = true; page.close(); });
   page.addEventListener("click", event => { if (event.target === page) { haltRequested = true; page.close(); } });
@@ -764,7 +768,9 @@ loadPuzzle(activeDay, false);
     for (const index of active) if (original[index] && original[index] !== values[index]) return `The value at ${nameFor(index)} does not match this puzzle's given clue.`;
     return "";
   }
-  verifyButton?.addEventListener("click", () => { window.location.href = "verify.html"; });
+  // Daily puzzles are served from /daily/YYYY_MM_DD/. Keep standalone page
+  // links rooted at the site so navigation cannot inherit that route.
+  verifyButton?.addEventListener("click", () => { window.location.assign(new URL("/verify.html", window.location.origin)); });
   document.querySelector("#closeVerifySolution")?.addEventListener("click", () => verifyDialog.close());
   document.querySelector("#runSolutionVerification")?.addEventListener("click", () => {
     const parsed = parseCompletedGattai(verifyString.value);
