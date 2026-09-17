@@ -18,6 +18,13 @@
   const status = document.querySelector("#verifyStatus");
   const stringBox = document.querySelector("#solutionString");
   const solutionResults = document.querySelector("#solutionResults");
+  const evaluateButton = document.querySelector("#evaluateDifficulty");
+  const walkthrough = document.querySelector("#walkthrough");
+  const walkthroughRating = document.querySelector("#walkthroughRating");
+  const walkthroughSteps = document.querySelector("#walkthroughSteps");
+  const tallyButton = document.querySelector("#walkthroughTally");
+  const tallyResults = document.querySelector("#tallyResults");
+  let verifiedSolution = null, verifiedGivens = new Set();
   const setStatus = (message, kind = "") => { status.textContent = message; status.className = `dialog-status ${kind}`; };
   const conflicts = () => {
     const found = new Set();
@@ -32,17 +39,45 @@
       const line = document.createElement("span"); line.className = `board-boundary ${direction} ${position}`; target.append(line);
     });
   }
-  function showSolution(solution, differences = new Set(), label = "Solution") {
+  function showSolution(solution, differences = new Set(), label = "Solution", givens = new Set()) {
     const figure = document.createElement("section"), title = document.createElement("strong"), grid = document.createElement("div");
     figure.className = "verify-solution"; title.textContent = label; grid.className = "board verify-result-grid";
     for (let row = 0; row < 12; row += 1) for (let column = 0; column < 12; column += 1) {
       const index = row * 12 + column; if (!activeSet.has(index)) continue;
-      const cell = document.createElement("span"); cell.className = `verify-result-cell${differences.has(index) ? " solution-difference" : ""}`;
+      const cell = document.createElement("span"); cell.className = `verify-result-cell${givens.has(index) ? " given-cell" : ""}${differences.has(index) ? " solution-difference" : ""}`;
       cell.textContent = solution[index]; cell.style.gridRowStart = row + 1; cell.style.gridColumnStart = column + 1; grid.append(cell);
     }
     drawBoundaries(grid); figure.append(title, grid); solutionResults.append(figure);
   }
-  function clearResults() { solutionResults.replaceChildren(); }
+  function clearResults() { solutionResults.replaceChildren(); verifiedSolution = null; verifiedGivens = new Set(); evaluateButton.hidden = true; walkthrough.hidden = true; tallyResults.hidden = true; }
+  function cellName(index) { const row = Math.floor(index / 12), column = index % 12; return row < 9 && column < 9 ? `Grid 1: R${row + 1}C${column + 1}` : `Grid 2: R${row - 2}C${column - 2}`; }
+  function buildWalkthrough(solution, givens) {
+    const working = Array(144).fill(0); givens.forEach(index => { working[index] = solution[index]; }); const steps = [];
+    const candidatesFor = index => { const used = new Set(); housesFor[index].forEach(house => house.forEach(other => { if (working[other]) used.add(working[other]); })); return digits.filter(digit => !used.has(digit)); };
+    while (active.some(index => !working[index])) {
+      let placed = false;
+      for (const index of active) if (!working[index]) { const options = candidatesFor(index); if (options.length === 1) { working[index] = options[0]; steps.push({ technique: "Naked Single", index, digit: options[0], text: `${cellName(index)} has only one candidate: ${options[0]}.` }); placed = true; break; } }
+      if (placed) continue;
+      for (const [houseName, house] of units) {
+        const missing = digits.filter(digit => !house.some(index => working[index] === digit));
+        for (const digit of missing) { const locations = house.filter(index => !working[index] && candidatesFor(index).includes(digit)); if (locations.length === 1) { const index = locations[0]; working[index] = digit; steps.push({ technique: "Hidden Single", index, digit, text: `${digit} appears in only one open cell of ${houseName}: ${cellName(index)}.` }); placed = true; break; } }
+        if (placed) break;
+      }
+      if (placed) continue;
+      // The verified unique solution supplies the forced value. This is stated
+      // plainly rather than mislabelling a search-derived value as a technique.
+      const index = active.filter(cell => !working[cell]).sort((left, right) => candidatesFor(left).length - candidatesFor(right).length)[0];
+      working[index] = solution[index]; steps.push({ technique: "Unique-solution deduction", index, digit: solution[index], text: `${cellName(index)} is fixed to ${solution[index]} by the verified unique completion.` });
+    }
+    return steps;
+  }
+  function renderWalkthrough() {
+    const steps = buildWalkthrough(verifiedSolution, verifiedGivens), tally = new Map(); walkthroughSteps.replaceChildren();
+    steps.forEach((step, index) => { tally.set(step.technique, [...(tally.get(step.technique) || []), index + 1]); const item = document.createElement("li"); item.innerHTML = `<strong>Step ${index + 1}: ${step.technique}</strong> — ${step.text}`; walkthroughSteps.append(item); });
+    const usesSearch = tally.has("Unique-solution deduction"); walkthroughRating.textContent = usesSearch ? "Difficulty: Over 9000 (a named-technique-only path did not complete the grid)." : "Difficulty: Singles.";
+    tallyResults.innerHTML = `<table><thead><tr><th>Technique</th><th>Steps</th></tr></thead><tbody>${[...tally.entries()].map(([technique, stepsForTechnique]) => `<tr><td>${technique}</td><td>${stepsForTechnique.join(", ")}</td></tr>`).join("")}</tbody></table>`;
+    walkthrough.hidden = false;
+  }
   function render() {
     const bad = conflicts(); board.innerHTML = "";
     for (let row = 0; row < 12; row += 1) for (let column = 0; column < 12; column += 1) {
@@ -101,14 +136,16 @@
     const result = countSolutions();
     clearResults();
     if (result.issue) setStatus(result.issue, "error");
-    else if (result.count === 1) { setStatus("Verified: this puzzle has exactly one solution.", "success"); showSolution(result.solutions[0], new Set(), "Completed grid"); }
+    else if (result.count === 1) { verifiedSolution = result.solutions[0]; verifiedGivens = new Set(active.filter(index => values[index])); setStatus("Verified: this puzzle has exactly one solution.", "success"); showSolution(verifiedSolution, new Set(), "Completed grid", verifiedGivens); evaluateButton.hidden = false; }
     else if (result.count === 0) setStatus("This puzzle has no valid solution.", "error");
     else {
       setStatus("This puzzle has multiple solutions. The orange cells differ.", "error");
       const differences = new Set(active.filter(index => result.solutions[0][index] !== result.solutions[1][index]));
-      showSolution(result.solutions[0], differences, "Solution 1"); showSolution(result.solutions[1], differences, "Solution 2");
+      const givens = new Set(active.filter(index => values[index])); showSolution(result.solutions[0], differences, "Solution 1", givens); showSolution(result.solutions[1], differences, "Solution 2", givens);
     }
   });
+  evaluateButton.addEventListener("click", renderWalkthrough);
+  tallyButton.addEventListener("click", () => { tallyResults.hidden = !tallyResults.hidden; tallyButton.textContent = tallyResults.hidden ? "Technique tally" : "Hide technique tally"; });
   document.querySelector("#clearGrid").addEventListener("click", () => { values.fill(0); clearResults(); setStatus(""); render(); });
   document.querySelector("#importString").addEventListener("click", () => { const issue = parseString(stringBox.value); clearResults(); setStatus(issue || "String imported. Fill or edit any cell, then check uniqueness.", issue ? "error" : "success"); render(); });
   document.querySelector("#exportString").addEventListener("click", async () => { const output = values.map((value, index) => activeSet.has(index) ? (value || ".") : ".").join(""); try { await navigator.clipboard.writeText(output); setStatus("144-character string copied.", "success"); } catch { setStatus("Unable to access the clipboard.", "error"); } });
