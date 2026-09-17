@@ -677,7 +677,7 @@ loadPuzzle(activeDay, false);
       <div class="generator-methods"><button type="button" data-generator-method="digging"><strong>Digging</strong><small>Start filled, then remove clues while the puzzle stays uniquely solvable.</small></button><button type="button" data-generator-method="build"><strong>Build a puzzle</strong><small>Start from your selected cells and add clues only when required.</small></button></div>
       <form id="diggingControls" class="digging-controls" hidden>
         <label>Cap generation time <span>(seconds; leave blank for no cap)</span><input id="diggingTimeCap" type="number" inputmode="numeric" min="1" step="1" placeholder="No cap" /></label>
-        <label>Digging process<select id="diggingCellMode"><option value="single">Single cell digging</option><option value="dual">Dual cell digging</option></select></label>
+        <label>Digging process<select id="diggingCellMode"><option value="single">Single cell digging</option><option value="dual">Dual cell — rotational pairs</option></select></label>
         <label>Stop at a given-cell count <span>(optional)</span><input id="diggingStopAt" type="number" inputmode="numeric" min="0" max="126" step="1" placeholder="Keep digging" /></label>
         <div class="generator-actions"><button type="button" id="startDigging">Start digging</button><button type="button" id="haltDigging" disabled>Halt digging</button></div>
         <p id="diggingPageStatus" class="generator-status" aria-live="polite">Ready to generate.</p>
@@ -709,6 +709,20 @@ loadPuzzle(activeDay, false);
   let haltRequested = false;
   const pause = () => new Promise(resolve => window.setTimeout(resolve, 0));
   const elapsed = started => Math.floor((performance.now() - started) / 1000);
+  // In the 12×12 presentation, 180° rotation pairs (r, c) with
+  // (13-r, 13-c). The Gattai shape is rotationally symmetric, so every
+  // playable cell has a playable partner.
+  const rotationalPartner = cell => (11 - Math.floor(cell / 12)) * 12 + (11 - cell % 12);
+  function rotationalPairs(puzzle) {
+    const seen = new Set(), pairs = [];
+    active.forEach(cell => {
+      if (!puzzle[cell] || seen.has(cell)) return;
+      const partner = rotationalPartner(cell);
+      seen.add(cell); seen.add(partner);
+      pairs.push([cell, partner].filter(index => puzzle[index]));
+    });
+    return shuffle(pairs);
+  }
   function solvedByNamedTechniques(puzzle) {
     const saved = [...original];
     try {
@@ -747,9 +761,9 @@ loadPuzzle(activeDay, false);
       let tested = 0, changed = true;
       while (changed && !haltRequested && (!timeCap || elapsed(started) < timeCap)) {
         changed = false;
-        const choices = shuffle(active.filter(cell => puzzle[cell]));
+        const choices = dual ? rotationalPairs(puzzle) : shuffle(active.filter(cell => puzzle[cell]).map(cell => [cell]));
         while (choices.length && !haltRequested && (!timeCap || elapsed(started) < timeCap)) {
-          const group = choices.splice(0, dual ? 2 : 1).filter(cell => puzzle[cell]);
+          const group = choices.pop().filter(cell => puzzle[cell]);
           if (!group.length) continue;
           if (stopAt !== null && active.filter(cell => puzzle[cell]).length - group.length < stopAt) { choices.length = 0; break; }
           const values = group.map(cell => puzzle[cell]); group.forEach(cell => { puzzle[cell] = 0; }); tested += group.length;

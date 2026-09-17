@@ -13,6 +13,21 @@
   const shuffle = items => { const result = [...items]; for (let index = result.length - 1; index > 0; index -= 1) { const pick = Math.floor(Math.random() * (index + 1)); [result[index], result[pick]] = [result[pick], result[index]]; } return result; };
   const pause = () => new Promise(resolve => window.setTimeout(resolve, 0));
   const countGivens = values => active.reduce((total, index) => total + Boolean(values[index]), 0);
+  // A 180° rotation of the 12×12 Gattai shape maps every playable cell to
+  // another playable cell: (r, c) becomes (13-r, 13-c) in one-based terms.
+  const rotationalPartner = index => (11 - Math.floor(index / 12)) * 12 + (11 - index % 12);
+  function rotationalPairs(values) {
+    const seen = new Set(), pairs = [];
+    for (const index of active) {
+      if (!values[index] || seen.has(index)) continue;
+      const partner = rotationalPartner(index);
+      seen.add(index); seen.add(partner);
+      // A partner may already be blank; retaining the one remaining cell in
+      // the group still tests this rotational pair exactly once.
+      pairs.push([index, partner].filter(cell => values[cell]));
+    }
+    return shuffle(pairs);
+  }
   function candidates(values, index) { const used = new Set(); housesFor[index].forEach(house => house.forEach(other => { if (values[other]) used.add(values[other]); })); return digits.filter(digit => !used.has(digit)); }
   function countSolutions(givens, limit = 2) {
     const values = [...givens];
@@ -60,7 +75,7 @@
   });
   const digStatus = document.querySelector("#digStatus"), startDig = document.querySelector("#startDigging"), haltDig = document.querySelector("#haltDigging"); let stopDigging = false;
   haltDig.addEventListener("click", () => { stopDigging = true; haltDig.disabled = true; });
-  startDig.addEventListener("click", async () => { const began = performance.now(), cap = Number(document.querySelector("#digTimeCap").value) || 0, stopText = document.querySelector("#digStopAt").value, stopAt = stopText === "" ? null : Math.max(0, Math.min(126, Number(stopText))), dual = document.querySelector("#digCellMode").value === "dual"; stopDigging = false; startDig.disabled = true; haltDig.disabled = false; resultPanel.hidden = true; try { const solution = fullGattai(), puzzle = [...solution]; let changed = true; while (changed && !stopDigging && (!cap || performance.now() - began < cap * 1000)) { changed = false; const cells = shuffle(active.filter(index => puzzle[index])); while (cells.length && !stopDigging && (!cap || performance.now() - began < cap * 1000)) { const group = cells.splice(0, dual ? 2 : 1).filter(index => puzzle[index]); if (!group.length || (stopAt !== null && countGivens(puzzle) - group.length < stopAt)) continue; const saved = group.map(index => puzzle[index]); group.forEach(index => { puzzle[index] = 0; }); if (countSolutions(puzzle, 2) === 1) changed = true; else group.forEach((index, position) => { puzzle[index] = saved[position]; }); digStatus.textContent = `Digging the puzzle now. ${countGivens(puzzle)} cells remaining · ${Math.floor((performance.now() - began) / 1000)}s`; await pause(); } } if (countSolutions(puzzle, 2) === 1) { present(puzzle, solution); digStatus.textContent = `Finished in ${Math.floor((performance.now() - began) / 1000)}s.`; } else digStatus.textContent = "Generation halted before a uniquely solvable puzzle was ready."; } catch { digStatus.textContent = "Generation failed. Please try again."; } finally { startDig.disabled = false; haltDig.disabled = true; } });
+  startDig.addEventListener("click", async () => { const began = performance.now(), cap = Number(document.querySelector("#digTimeCap").value) || 0, stopText = document.querySelector("#digStopAt").value, stopAt = stopText === "" ? null : Math.max(0, Math.min(126, Number(stopText))), dual = document.querySelector("#digCellMode").value === "dual"; stopDigging = false; startDig.disabled = true; haltDig.disabled = false; resultPanel.hidden = true; try { const solution = fullGattai(), puzzle = [...solution]; let changed = true; while (changed && !stopDigging && (!cap || performance.now() - began < cap * 1000)) { changed = false; const groups = dual ? rotationalPairs(puzzle) : shuffle(active.filter(index => puzzle[index]).map(index => [index])); while (groups.length && !stopDigging && (!cap || performance.now() - began < cap * 1000)) { const group = groups.pop().filter(index => puzzle[index]); if (!group.length || (stopAt !== null && countGivens(puzzle) - group.length < stopAt)) continue; const saved = group.map(index => puzzle[index]); group.forEach(index => { puzzle[index] = 0; }); if (countSolutions(puzzle, 2) === 1) changed = true; else group.forEach((index, position) => { puzzle[index] = saved[position]; }); digStatus.textContent = `Digging the puzzle now. ${countGivens(puzzle)} cells remaining · ${Math.floor((performance.now() - began) / 1000)}s`; await pause(); } } if (countSolutions(puzzle, 2) === 1) { present(puzzle, solution); digStatus.textContent = `Finished in ${Math.floor((performance.now() - began) / 1000)}s.`; } else digStatus.textContent = "Generation halted before a uniquely solvable puzzle was ready."; } catch { digStatus.textContent = "Generation failed. Please try again."; } finally { startDig.disabled = false; haltDig.disabled = true; } });
   const buildStatus = document.querySelector("#buildStatus"), startBuild = document.querySelector("#startBuild"), haltBuild = document.querySelector("#haltBuild"); let stopBuild = false;
   for (let extra = 0; extra <= 30; extra += 1) { const option = document.createElement("option"); option.value = extra; option.textContent = extra; if (extra === 30) option.selected = true; document.querySelector("#buildExtra").append(option); }
   document.querySelectorAll("[data-mark]").forEach(button => button.addEventListener("click", () => { mark = button.dataset.mark; document.querySelectorAll("[data-mark]").forEach(item => item.setAttribute("aria-pressed", String(item === button))); }));
