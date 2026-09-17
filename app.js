@@ -6,6 +6,7 @@ const dailyPuzzles = {
   friday: { date: "Friday, September 11, 2026", rows: ["5...2..8....", ".9..5..2....", "..27.6......", "9..5....3.1.", "7.4...9.....", ".....4.....2", ".1....8..6..", "...4..3.1.7.", "....69......", ".....1..7..4", ".....6.89...", "............"] },
   saturday: { date: "Saturday, September 12, 2026", rows: ["1..6.2..7...", "......1.....", ".9..73......", "..1..9..2...", ".....8.1.3..", "2.......9...", "..28....125.", "98..2.....6.", "..7....4....", ".....5..71..", "............", ".....2....95"] },
   sunday: { date: "Sunday, September 13, 2026", rows: ["......1.8...", "....26..4...", "7..15...2...", ".8..9.....8.", ".3....28.1..", "..4......9..", "..357.......", "....49.....1", ".2..........", "...7.....29.", "....3......7", ".....83....."] },
+  september28: { date: "Monday, September 28, 2026", rows: ["9.2...1.8...", ".7.....9....", "8.6...2.4...", "...5.9...4.8", "....8.....6.", "...6.4...2.5", "5.3...4.7...", ".9.....1....", "2.1...3.9...", "...1.5...7.4", "....4.....8.", "...9.8...5.6"] },
   september15: { date: "Tuesday, September 15, 2026", rows: [".9.4.6......", "7.2.........", "8......1....", ".2........4.", "....3.2....8", "..5.....19..", "......6....2", ".........5..", "..1.27.3....", "...3........", "....8.......", ".......4.19."] },
   september16: { date: "Wednesday, September 16, 2026", rows: ["2...3...5...", ".9.....4....", "..8.9.7.....", "...4.1.....2", "1.3.6.4...8.", "...7.3.8.9..", "..9.1.8.4...", ".5...6.7.5.8", "3.....9.1...", ".....5.4.3..", "....3.....2.", "...1...9...4"] },
   september17: { date: "Thursday, September 17, 2026", rows: [".....8..1...", "..6..2.5....", "5.7.........", ".4326.......", "...........8", "..5..1..6..2", ".3........9.", "......1397..", "....2.......", "...91......3", "....7.6..8..", "....4......."] },
@@ -375,7 +376,7 @@ function deriveSteps(preferAdvanced = false) {
     continue;
   }
 }
-let steps = deriveSteps(), mode = "human", stepIndex = 0, selectedCell = null, entryMode = "digit", unlimitedSolution = null, unlimitedGenerationMilliseconds = 0, unlimitedRated = false;
+let steps = deriveSteps(), mode = "human", stepIndex = 0, selectedCell = null, entryMode = "digit", highlightedGrid = null, unlimitedSolution = null, unlimitedGenerationMilliseconds = 0, unlimitedRated = false;
 function isUnlimited() { return activeDay === "unlimited"; }
 function currentValues() { const values = [...original]; if (mode === "human") human.forEach((value, index) => { if (value) values[index] = value; }); else if (isUnlimited() && unlimitedSolution) return [...unlimitedSolution]; else steps.slice(0, stepIndex + 1).forEach(step => { if (step.index !== null) values[step.index] = step.digit; }); return values; }
 function drawBoardBoundaries() {
@@ -384,6 +385,23 @@ function drawBoardBoundaries() {
     ["vertical", "v-0"], ["vertical", "v-3"], ["vertical", "v-6"], ["vertical", "v-9"], ["vertical", "v-12"]
   ];
   lines.forEach(([direction, position]) => { const line = document.createElement("span"); line.className = `board-boundary ${direction} ${position}`; board.append(line); });
+}
+function gridForStep(step) {
+  if (step?.house?.startsWith("G2")) return "two";
+  if (step?.house?.startsWith("G1")) return "one";
+  const index = step?.index ?? step?.highlight?.[0];
+  if (index !== undefined && index !== null) {
+    const row = Math.floor(index / 12), column = index % 12;
+    if (row < 9 && column < 9) return "one";
+    if (row >= 3 && column >= 3) return "two";
+  }
+  return "one";
+}
+function drawGridOutline(grid) {
+  if (!grid) return;
+  const outline = document.createElement("span");
+  outline.className = `solver-grid-outline solver-grid-${grid}`;
+  board.append(outline);
 }
 function makeCandidates(noteDigits, index, eliminations = [], emphasis = []) {
   const notation = document.createElement("span"); notation.className = "snyder";
@@ -434,7 +452,7 @@ function renderStep() {
   const step = steps[stepIndex], grouped = steps.reduce((groups, item, index) => { (groups[item.technique] ||= []).push(index + 1); return groups; }, {}), tallyList = document.querySelector("#techniqueTallyList"), table = document.createElement("table"), header = document.createElement("thead"), body = document.createElement("tbody");
   document.querySelector("#stepCount").textContent = `Step ${stepIndex + 1} of ${steps.length}`;
   document.querySelector("#stepTechnique").textContent = step.technique;
-  const grid = step.house?.startsWith("G2") || (!step.house && /\bG2\b/.test(step.text)) ? 2 : 1;
+  const grid = gridForStep(step) === "two" ? 2 : 1;
   const plainText = step.text.replace(/In G[12],\s*/g, "").replace(/\bG[12]\s+/g, "");
   document.querySelector("#stepReasoning").textContent = `Grid ${grid}: ${plainText}`;
   header.innerHTML = "<tr><th>Technique</th><th>Steps</th></tr>";
@@ -453,6 +471,7 @@ function renderBoard() {
     board.append(cell);
   }
   drawBoardBoundaries();
+  drawGridOutline(activeStep ? gridForStep(activeStep) : highlightedGrid);
 }
 function renderPuzzleHeading() { const label = document.querySelector("#puzzleDate"); if (!label) return; if (activeDay === "unlimited") { label.textContent = puzzleDate; return; } const match = puzzleDate.match(/^([^,]+),\s*([A-Za-z]+)\s+(\d+),\s*(\d+)$/); const position = currentPuzzlePosition(); if (!match) { label.textContent = `Puzzle ${position + 1}: ${puzzleDate}`; return; } const [, weekday, month, day, year] = match, shortMonth = month.slice(0, 3); label.replaceChildren(); const number = document.createElement("span"), details = document.createElement("span"), date = document.createElement("span"), dayLabel = document.createElement("span"); number.className = "puzzle-number"; details.className = "puzzle-date-details"; date.className = "calendar-date"; dayLabel.className = "weekday"; number.textContent = `Puzzle ${position + 1}:`; date.textContent = `${shortMonth} ${day}, ${year}`; dayLabel.textContent = weekday; details.append(date, dayLabel); label.append(number, details); }
 function refresh() { const showingSolution = mode === "solver", unlimited = isUnlimited(); if (showingSolution) boardCard.append(solutionRail); else puzzleSurface.append(solutionRail); renderStep(); renderBoard(); const givens = original.filter((value, index) => active.includes(index) && value).length, rating = rateSteps(steps); givenCount.textContent = unlimited ? `${givens} given cells · generated in ${(unlimitedGenerationMilliseconds / 1000).toFixed(2)} s` : `${givens} given cells`; renderPuzzleHeading(); updatePuzzleNavigation(); document.querySelector("#difficultyLabel").textContent = unlimited && !unlimitedRated ? "Difficulty: Unrated (unique-only)" : `Difficulty: ${rating.rating} (${rating.score})`; document.querySelector("#difficultyLabel").classList.toggle("is-hidden", !difficultyVisible); givenCount.classList.toggle("is-hidden", !givenCountVisible); solutionToggle.setAttribute("aria-pressed", String(showingSolution)); solutionToggle.textContent = unlimited ? (showingSolution ? "Hide final grid" : "Show final grid") : (showingSolution ? "Hide solution" : "Read solution"); guide.classList.toggle("hidden", mode === "human" || unlimited); solutionRail.classList.toggle("hidden", mode === "human" || unlimited); boardCard.classList.toggle("solver-active", showingSolution); updateEntryControls(); setTimerRunning(mode === "human"); }
@@ -460,7 +479,7 @@ function loadPuzzle(day, syncRoute = true) { activeDay = day; const selectedWeek
 const archiveEntries = [
   ["previous", "monday", 2026, 8, 31], ["previous", "tuesday", 2026, 9, 1], ["previous", "wednesday", 2026, 9, 2], ["previous", "thursday", 2026, 9, 3], ["previous", "friday", 2026, 9, 4], ["previous", "saturday", 2026, 9, 5], ["previous", "sunday", 2026, 9, 6],
   ["current", "monday", 2026, 9, 7], ["current", "tuesday", 2026, 9, 8], ["current", "wednesday", 2026, 9, 9], ["current", "thursday", 2026, 9, 10], ["current", "friday", 2026, 9, 11], ["current", "saturday", 2026, 9, 12], ["current", "sunday", 2026, 9, 13],
-  ["current", "september15", 2026, 9, 15], ["current", "september16", 2026, 9, 16], ["current", "september17", 2026, 9, 17], ["current", "september29", 2026, 9, 29], ["current", "september30", 2026, 9, 30]
+  ["current", "september15", 2026, 9, 15], ["current", "september16", 2026, 9, 16], ["current", "september17", 2026, 9, 17], ["current", "september28", 2026, 9, 28], ["current", "september29", 2026, 9, 29], ["current", "september30", 2026, 9, 30]
 ].map(([week, day, year, month, date]) => ({ week, day, year, month, date }));
 const archiveKey = (year, month, date) => `${year}-${month}-${date}`;
 const archiveByDate = new Map(archiveEntries.map(entry => [archiveKey(entry.year, entry.month, entry.date), entry]));
@@ -526,17 +545,29 @@ document.querySelectorAll(".numpad [data-key]").forEach(button => button.addEven
 document.querySelectorAll("[data-action=erase]").forEach(button => button.addEventListener("click", eraseSelected));
 document.querySelector("#undoMove").addEventListener("click", undoMove);
 document.querySelector("#redoMove").addEventListener("click", redoMove);
-document.querySelector("#resetGrid").addEventListener("click", () => { if (!window.confirm("Reset this grid? Your entered digits, Snyder notes, and cell colours will be cleared.")) return; snapshot(); human.fill(0); playNotes.forEach(note => note.clear()); playColors.fill(""); selectedCell = null; refresh(); });
+document.querySelector("#resetGrid").addEventListener("click", () => {
+  if (!window.confirm("Reset this grid? Your entered digits, Snyder notes, and cell colours will be cleared.")) return;
+  const resetTheTimer = window.confirm("Also reset the timer to 00:00?");
+  snapshot(); human.fill(0); playNotes.forEach(note => note.clear()); playColors.fill(""); selectedCell = null;
+  if (resetTheTimer) resetTimer();
+  refresh();
+});
 document.addEventListener("keydown", event => { if (event.defaultPrevented || mode !== "human" || selectedCell === null || original[selectedCell]) return; if (/^[1-9]$/.test(event.key)) { event.preventDefault(); applyEntry(Number(event.key)); return; } if ((event.key === "Backspace" || event.key === "Delete") && !event.target.closest(".editable")) { event.preventDefault(); eraseSelected(); } });
 const timerControls = document.querySelector(".timer-controls"), resetTimerButton = document.querySelector("#resetTimer");
 if (timerControls) { document.querySelector(".board-footer")?.append(timerControls); }
-if (resetTimerButton) { resetTimerButton.textContent = "Reset timer"; controlSidebar.append(resetTimerButton); resetTimerButton.addEventListener("click", () => { if (window.confirm("Reset the timer to 00:00?")) resetTimer(); }); }
+if (resetTimerButton) resetTimerButton.remove();
 const resetGridButton = document.querySelector("#resetGrid");
 if (resetGridButton) { resetGridButton.classList.add("footer-reset-grid"); document.querySelector(".board-footer")?.append(resetGridButton); }
 const setSharedHighlight = checked => { sharedHighlight = checked; document.querySelector("#sharedToggle").checked = checked; document.querySelector("#settingsSharedToggle").checked = checked; refresh(); };
 document.querySelector("#sharedToggle").addEventListener("change", event => setSharedHighlight(event.target.checked));
 document.querySelectorAll(".color-button").forEach(button => button.addEventListener("click", () => applyCellColor(button.dataset.color)));
-document.querySelectorAll(".grid-button").forEach(button => button.addEventListener("click", () => { const grid = button.dataset.grid, selected = button.getAttribute("aria-pressed") !== "true"; document.querySelectorAll(".grid-button").forEach(item => item.setAttribute("aria-pressed", "false")); board.querySelectorAll(".cell").forEach(cell => cell.classList.remove("grid-a", "grid-b")); if (selected) { board.querySelectorAll(".cell").forEach(cell => { const index = Number(cell.dataset.index), row = Math.floor(index / 12), column = index % 12; if ((grid === "a" && row < 9 && column < 9) || (grid === "b" && row >= 3 && column >= 3)) cell.classList.add(`grid-${grid}`); }); button.setAttribute("aria-pressed", "true"); } }));
+document.querySelectorAll(".grid-button").forEach(button => button.addEventListener("click", () => {
+  const grid = button.dataset.grid, selected = button.getAttribute("aria-pressed") !== "true";
+  document.querySelectorAll(".grid-button").forEach(item => item.setAttribute("aria-pressed", "false"));
+  highlightedGrid = selected ? (grid === "a" ? "one" : "two") : null;
+  if (selected) button.setAttribute("aria-pressed", "true");
+  renderBoard();
+}));
 document.querySelector("#copyPng").addEventListener("click", async () => {
   const scale = 60, gridSize = scale * 12, margin = gridSize / 18, canvas = document.createElement("canvas"), context = canvas.getContext("2d"), values = currentValues(); canvas.width = canvas.height = gridSize + margin * 2; context.fillStyle = "#fff"; context.fillRect(0, 0, canvas.width, canvas.height); context.translate(margin, margin);
   for (let row = 0; row < 12; row += 1) for (let column = 0; column < 12; column += 1) if (hasCell(row, column)) { context.fillStyle = row >= 3 && column >= 3 && row < 9 && column < 9 ? "#fff1c7" : "#fff"; context.fillRect(column * scale, row * scale, scale, scale); context.strokeStyle = "#9aa6a8"; context.lineWidth = 1; context.strokeRect(column * scale, row * scale, scale, scale); const value = values[row * 12 + column]; if (value) { context.fillStyle = original[row * 12 + column] ? "#111" : "#1c6fa1"; context.font = "28px sans-serif"; context.textAlign = "center"; context.textBaseline = "middle"; context.fillText(value, (column + .5) * scale, (row + .53) * scale); } }
