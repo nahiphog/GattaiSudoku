@@ -467,14 +467,11 @@ loadPuzzle(activeDay);
     }
   }
   function uniqueHumanFirst(puzzle) {
-    return solvedByNamedTechniques(puzzle) || countGattaiSolutions(puzzle, 2) === 1;
+    // A completed logical path is useful for grading, but is not a proof that
+    // there is only one solution. Always run the bounded uniqueness check.
+    return countGattaiSolutions(puzzle, 2) === 1;
   }
-  function showGenerator() {
-    archive.close();
-    controls.hidden = true;
-    status.textContent = "Choose a method to begin.";
-    page.showModal();
-  }
+  function showGenerator() { window.location.href = "generate.html"; }
   launcher.addEventListener("click", showGenerator);
   page.querySelector(".dialog-close").addEventListener("click", () => { haltRequested = true; page.close(); });
   page.addEventListener("click", event => { if (event.target === page) { haltRequested = true; page.close(); } });
@@ -666,7 +663,8 @@ loadPuzzle(activeDay);
     try { original.splice(0, original.length, ...puzzle); const solveSteps = deriveSteps(true), values = [...puzzle]; solveSteps.forEach(step => { if (step.index !== null) values[step.index] = step.digit; }); return { complete: active.every(cell => values[cell]), solveSteps }; }
     finally { original.splice(0, original.length, ...saved); }
   }
-  const uniqueHumanFirst = puzzle => namedTechniqueResult(puzzle).complete || countGattaiSolutions(puzzle, 2) === 1;
+  // Technique completion informs the rating only; this is the actual proof.
+  const uniqueHumanFirst = puzzle => countGattaiSolutions(puzzle, 2) === 1;
   function openBuild() { haltRequested = false; status.textContent = "Choose constraints, then build."; result.hidden = true; page.showModal(); renderSelection(); }
   window.addEventListener("open-build-workspace", openBuild);
   page.querySelector(".dialog-close").addEventListener("click", () => { haltRequested = true; page.close(); });
