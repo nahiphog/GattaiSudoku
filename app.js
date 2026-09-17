@@ -22,8 +22,12 @@ const previousWeekPuzzles = {
 const puzzles = { ...dailyPuzzles, unlimited: { date: "Unlimited", rows: Array(12).fill("............") } };
 let activeWeek = "current", activeDay = "tuesday", rows = dailyPuzzles.tuesday.rows, puzzleDate = dailyPuzzles.tuesday.date;
 const digits = [1, 2, 3, 4, 5, 6, 7, 8, 9];
-const techniqueScores = { "Full House": 4, "Naked Single": 4, "Hidden Single": 14, "Locked Pair": 40, "Locked Triple": 60, "Pointing": 50, "Claiming": 50, "Naked Pair": 60, "Naked Triple": 80, "Hidden Pair": 70, "Hidden Triple": 100, "Naked Quad": 120, "Hidden Quad": 150, "X-Wing": 140, "XY-Wing": 160 };
-const techniqueLevels = { "Full House": "Beginner", "Naked Single": "Beginner", "Hidden Single": "Beginner", "Locked Pair": "Medium", "Locked Triple": "Medium", "Pointing": "Medium", "Claiming": "Medium", "Naked Pair": "Medium", "Naked Triple": "Medium", "Hidden Pair": "Medium", "Hidden Triple": "Medium", "Naked Quad": "Hard", "Hidden Quad": "Hard", "X-Wing": "Hard", "XY-Wing": "Tricky" };
+// The order is deliberately explicit.  New technique implementations are
+// inserted here only after their eliminations have been independently checked
+// against a completed Gattai grid.  A search step must never be represented as
+// one of these named deductions.
+const techniqueScores = { "Full House": 100, "Naked Single": 200, "Hidden Single": 300, "Locked Pair": 1000, "Locked Triple": 1100, "Pointing": 1200, "Claiming": 1210, "Naked Pair": 1300, "Naked Triple": 1400, "Hidden Pair": 1500, "Hidden Triple": 1600, "Naked Quad": 2000, "Hidden Quad": 2100, "X-Wing": 2200, "Swordfish": 2300, "Jellyfish": 2400, "Skyscraper": 3000, "2-String Kite": 3100, "W-Wing": 3200, "XY-Wing": 3300, "XYZ-Wing": 3400 };
+const techniqueLevels = { "Full House": "Beginner", "Naked Single": "Beginner", "Hidden Single": "Beginner", "Locked Pair": "Medium", "Locked Triple": "Medium", "Pointing": "Medium", "Claiming": "Medium", "Naked Pair": "Medium", "Naked Triple": "Medium", "Hidden Pair": "Medium", "Hidden Triple": "Medium", "Naked Quad": "Hard", "Hidden Quad": "Hard", "X-Wing": "Hard", "Swordfish": "Hard", "Jellyfish": "Hard", "Skyscraper": "Tricky", "2-String Kite": "Tricky", "W-Wing": "Tricky", "XY-Wing": "Tricky", "XYZ-Wing": "Tricky" };
 const levelOrder = ["Beginner", "Easy", "Medium", "Tricky", "Hard", "Unfair", "Extreme", "Nightmare"];
 function rateSteps(solveSteps) { if (solveSteps.some(step => step.technique === "Trial and error")) return { score: 9001, rating: "Over 9000" }; const score = solveSteps.reduce((total, step) => total + (techniqueScores[step.technique] || 0), 0); let rating = score <= 400 ? "Beginner" : score <= 800 ? "Easy" : score <= 1000 ? "Medium" : score <= 1150 ? "Tricky" : score <= 1600 ? "Hard" : score <= 1800 ? "Unfair" : score <= 3000 ? "Extreme" : "Nightmare"; solveSteps.forEach(step => { const techniqueLevel = techniqueLevels[step.technique] || "Nightmare"; if (levelOrder.indexOf(techniqueLevel) > levelOrder.indexOf(rating)) rating = techniqueLevel; }); return { score, rating }; }
 const units = [];
@@ -172,27 +176,145 @@ function deriveSteps(preferAdvanced = false) {
     }
     return false;
   }
+  // A basic fish has N base rows (or columns) whose candidate positions are
+  // covered by exactly N opposite-axis units.  This generic implementation
+  // covers the three enabled basic-fish sizes: X-Wing, Swordfish, and
+  // Jellyfish.  It intentionally operates inside one 9x9 grid at a time;
+  // shared cells still participate because they are members of both grids.
   function basicFish() {
-    for (const [grid, rowOffset, columnOffset] of [["G1", 0, 0], ["G2", 3, 3]]) for (const digit of digits) {
-      const rowPatterns = [];
-      for (let localRow = 0; localRow < 9; localRow += 1) { const columns = digits.map(value => value - 1).filter(localColumn => { const index = (rowOffset + localRow) * 12 + columnOffset + localColumn; return notes[index]?.has(digit); }); if (columns.length === 2) rowPatterns.push([localRow, columns]); }
-      for (const [rowA, columnsA] of rowPatterns) for (const [rowB, columnsB] of rowPatterns) {
-        if (rowA >= rowB || columnsA.join(",") !== columnsB.join(",")) continue;
-        const victims = digits.map(value => value - 1).filter(localRow => ![rowA, rowB].includes(localRow)).flatMap(localRow => columnsA.map(localColumn => (rowOffset + localRow) * 12 + columnOffset + localColumn).filter(index => notes[index]?.has(digit)));
-        if (!victims.length) continue;
-        const beforeNotes = snapshotNotes(), eliminations = victims.map(index => ({ index, digit }));
-        victims.forEach(index => notes[index].delete(digit)); const corners = [rowA, rowB].flatMap(localRow => columnsA.map(localColumn => (rowOffset + localRow) * 12 + columnOffset + localColumn));
-        addStep({ technique: "X-Wing", index: null, digit: null, house: "", highlight: [...corners, ...victims], text: `In ${grid}, candidate ${digit} occupies the same two columns in rows ${rowA + 1} and ${rowB + 1}. Those four corners form an X-Wing, so remove ${digit} from ${victims.map(index => nameFor(index, grid)).join(", ")}.` }, beforeNotes, eliminations); return true;
+    const fishNames = { 2: "X-Wing", 3: "Swordfish", 4: "Jellyfish" };
+    for (const [grid, rowOffset, columnOffset] of [["G1", 0, 0], ["G2", 3, 3]]) for (const digit of digits) for (const size of [2, 3, 4]) for (const byRows of [true, false]) {
+      const patterns = [];
+      for (let base = 0; base < 9; base += 1) {
+        const covers = Array.from({ length: 9 }, (_, cover) => cover).filter(cover => {
+          const localRow = byRows ? base : cover, localColumn = byRows ? cover : base;
+          return notes[(rowOffset + localRow) * 12 + columnOffset + localColumn]?.has(digit);
+        });
+        if (covers.length >= 2 && covers.length <= size) patterns.push({ base, covers });
       }
-      const columnPatterns = [];
-      for (let localColumn = 0; localColumn < 9; localColumn += 1) { const rowsForDigit = digits.map(value => value - 1).filter(localRow => { const index = (rowOffset + localRow) * 12 + columnOffset + localColumn; return notes[index]?.has(digit); }); if (rowsForDigit.length === 2) columnPatterns.push([localColumn, rowsForDigit]); }
-      for (const [columnA, rowsA] of columnPatterns) for (const [columnB, rowsB] of columnPatterns) {
-        if (columnA >= columnB || rowsA.join(",") !== rowsB.join(",")) continue;
-        const victims = rowsA.flatMap(localRow => digits.map(value => value - 1).filter(localColumn => ![columnA, columnB].includes(localColumn)).map(localColumn => (rowOffset + localRow) * 12 + columnOffset + localColumn).filter(index => notes[index]?.has(digit)));
+      for (const group of choose(patterns, size)) {
+        const coverSet = new Set(group.flatMap(pattern => pattern.covers));
+        if (coverSet.size !== size) continue;
+        const baseSet = new Set(group.map(pattern => pattern.base));
+        const corners = group.flatMap(pattern => pattern.covers.map(cover => {
+          const localRow = byRows ? pattern.base : cover, localColumn = byRows ? cover : pattern.base;
+          return (rowOffset + localRow) * 12 + columnOffset + localColumn;
+        }));
+        const victims = [];
+        for (const cover of coverSet) for (let base = 0; base < 9; base += 1) {
+          if (baseSet.has(base)) continue;
+          const localRow = byRows ? base : cover, localColumn = byRows ? cover : base;
+          const index = (rowOffset + localRow) * 12 + columnOffset + localColumn;
+          if (notes[index]?.has(digit)) victims.push(index);
+        }
         if (!victims.length) continue;
         const beforeNotes = snapshotNotes(), eliminations = victims.map(index => ({ index, digit }));
-        victims.forEach(index => notes[index].delete(digit)); const corners = rowsA.flatMap(localRow => [columnA, columnB].map(localColumn => (rowOffset + localRow) * 12 + columnOffset + localColumn));
-        addStep({ technique: "X-Wing", index: null, digit: null, house: "", highlight: [...corners, ...victims], text: `In ${grid}, candidate ${digit} occupies the same two rows in columns ${columnA + 1} and ${columnB + 1}. Those four corners form an X-Wing, so remove ${digit} from ${victims.map(index => nameFor(index, grid)).join(", ")}.` }, beforeNotes, eliminations); return true;
+        victims.forEach(index => notes[index].delete(digit));
+        const axis = byRows ? "rows" : "columns", coverAxis = byRows ? "columns" : "rows";
+        addStep({ technique: fishNames[size], index: null, digit: null, house: "", highlight: [...corners, ...victims], emphasis: corners.map(index => ({ index, digit })), text: `In ${grid}, candidate ${digit} in ${axis} ${group.map(pattern => pattern.base + 1).join(", ")} is restricted to ${coverAxis} ${[...coverSet].map(cover => cover + 1).join(", ")}. This ${fishNames[size]} removes ${digit} from ${victims.map(index => nameFor(index, grid)).join(", ")}.` }, beforeNotes, eliminations);
+        return true;
+      }
+    }
+    return false;
+  }
+  function singleDigitPatterns() {
+    for (const [grid, rowOffset, columnOffset] of [["G1", 0, 0], ["G2", 3, 3]]) for (const digit of digits) {
+      // Skyscraper: two row (or column) conjugate pairs have one end in
+      // common.  If either shared-base candidate is true, its roof is false;
+      // otherwise both roofs are true.  A cell seeing both roofs therefore
+      // cannot hold the digit.
+      for (const byRows of [true, false]) {
+        const pairs = [];
+        for (let unit = 0; unit < 9; unit += 1) {
+          const positions = Array.from({ length: 9 }, (_, position) => position).filter(position => {
+            const row = byRows ? unit : position, column = byRows ? position : unit;
+            return notes[(rowOffset + row) * 12 + columnOffset + column]?.has(digit);
+          });
+          if (positions.length === 2) pairs.push({ unit, positions });
+        }
+        for (const first of pairs) for (const second of pairs) {
+          if (first.unit >= second.unit) continue;
+          const shared = first.positions.filter(position => second.positions.includes(position));
+          if (shared.length !== 1) continue;
+          const roofs = [first.positions.find(position => position !== shared[0]), second.positions.find(position => position !== shared[0])].map((position, n) => {
+            const unit = n ? second.unit : first.unit;
+            const row = byRows ? unit : position, column = byRows ? position : unit;
+            return (rowOffset + row) * 12 + columnOffset + column;
+          });
+          const bases = [first.unit, second.unit].map((unit, n) => {
+            const row = byRows ? unit : shared[0], column = byRows ? shared[0] : unit;
+            return (rowOffset + row) * 12 + columnOffset + column;
+          });
+          const victims = active.filter(index => index !== roofs[0] && index !== roofs[1] && notes[index]?.has(digit) && peers[index].has(roofs[0]) && peers[index].has(roofs[1]));
+          if (!victims.length) continue;
+          const beforeNotes = snapshotNotes(), eliminations = victims.map(index => ({ index, digit }));
+          victims.forEach(index => notes[index].delete(digit));
+          addStep({ technique: "Skyscraper", index: null, digit: null, house: "", highlight: [...bases, ...roofs, ...victims], emphasis: [...bases, ...roofs].map(index => ({ index, digit })), text: `In ${grid}, candidate ${digit} forms a Skyscraper from ${byRows ? "rows" : "columns"} ${first.unit + 1} and ${second.unit + 1}. The two roofs force ${digit} out of ${victims.map(index => nameFor(index, grid)).join(", ")}.` }, beforeNotes, eliminations);
+          return true;
+        }
+      }
+      // 2-String Kite: a row conjugate pair and a column conjugate pair meet
+      // in one box.  The two remaining ends act as roofs just as in a
+      // Skyscraper, giving a sound single-digit elimination.
+      const rowPairs = [], columnPairs = [];
+      for (let row = 0; row < 9; row += 1) { const columns = Array.from({ length: 9 }, (_, column) => column).filter(column => notes[(rowOffset + row) * 12 + columnOffset + column]?.has(digit)); if (columns.length === 2) rowPairs.push({ row, columns }); }
+      for (let column = 0; column < 9; column += 1) { const rows = Array.from({ length: 9 }, (_, row) => row).filter(row => notes[(rowOffset + row) * 12 + columnOffset + column]?.has(digit)); if (rows.length === 2) columnPairs.push({ column, rows }); }
+      for (const rowPair of rowPairs) for (const columnPair of columnPairs) for (const rowColumn of rowPair.columns) for (const columnRow of columnPair.rows) {
+        if (Math.floor(rowPair.row / 3) !== Math.floor(columnRow / 3) || Math.floor(rowColumn / 3) !== Math.floor(columnPair.column / 3)) continue;
+        const baseA = (rowOffset + rowPair.row) * 12 + columnOffset + rowColumn, baseB = (rowOffset + columnRow) * 12 + columnOffset + columnPair.column;
+        if (baseA === baseB) continue;
+        const roofA = (rowOffset + rowPair.row) * 12 + columnOffset + rowPair.columns.find(column => column !== rowColumn), roofB = (rowOffset + columnPair.rows.find(row => row !== columnRow)) * 12 + columnOffset + columnPair.column;
+        const victims = active.filter(index => index !== roofA && index !== roofB && notes[index]?.has(digit) && peers[index].has(roofA) && peers[index].has(roofB));
+        if (!victims.length) continue;
+        const beforeNotes = snapshotNotes(), eliminations = victims.map(index => ({ index, digit }));
+        victims.forEach(index => notes[index].delete(digit));
+        addStep({ technique: "2-String Kite", index: null, digit: null, house: "", highlight: [baseA, baseB, roofA, roofB, ...victims], emphasis: [baseA, baseB, roofA, roofB].map(index => ({ index, digit })), text: `In ${grid}, the row and column strong links for candidate ${digit} meet in one house, forming a 2-String Kite. Remove ${digit} from ${victims.map(index => nameFor(index, grid)).join(", ")}.` }, beforeNotes, eliminations);
+        return true;
+      }
+    }
+    return false;
+  }
+  function xyzWing() {
+    for (const pivot of active) {
+      if (notes[pivot]?.size !== 3) continue;
+      const pivotDigits = [...notes[pivot]];
+      for (const shared of pivotDigits) {
+        const other = pivotDigits.filter(digit => digit !== shared);
+        const [first, second] = other;
+        const firstWings = [...peers[pivot]].filter(index => notes[index]?.size === 2 && notes[index].has(first) && notes[index].has(shared));
+        for (const wingA of firstWings) for (const wingB of peers[pivot]) {
+          if (wingA === wingB || notes[wingB]?.size !== 2 || !notes[wingB].has(second) || !notes[wingB].has(shared)) continue;
+          const victims = active.filter(index => index !== pivot && index !== wingA && index !== wingB && notes[index]?.has(shared) && peers[index].has(pivot) && peers[index].has(wingA) && peers[index].has(wingB));
+          if (!victims.length) continue;
+          const beforeNotes = snapshotNotes(), eliminations = victims.map(index => ({ index, digit: shared }));
+          victims.forEach(index => notes[index].delete(shared));
+          addStep({ technique: "XYZ-Wing", index: null, digit: null, house: "", highlight: [pivot, wingA, wingB, ...victims], emphasis: [{ index: pivot, digit: shared }, { index: wingA, digit: shared }, { index: wingB, digit: shared }], text: `${nameFor(pivot)} is the ${first}/${second}/${shared} pivot. Its ${first}/${shared} and ${second}/${shared} wings make ${shared} impossible in cells that see the pivot and both wings, including ${victims.map(index => nameFor(index)).join(", ")}.` }, beforeNotes, eliminations);
+          return true;
+        }
+      }
+    }
+    return false;
+  }
+  function wWing() {
+    for (let left = 0; left < active.length; left += 1) for (let right = left + 1; right < active.length; right += 1) {
+      const wingA = active[left], wingB = active[right];
+      if (!notes[wingA] || !notes[wingB] || notes[wingA].size !== 2 || notes[wingB].size !== 2 || peers[wingA].has(wingB)) continue;
+      const pairA = [...notes[wingA]].sort((a, b) => a - b), pairB = [...notes[wingB]].sort((a, b) => a - b);
+      if (pairA.join(",") !== pairB.join(",")) continue;
+      for (const bridge of pairA) {
+        const target = pairA.find(digit => digit !== bridge);
+        for (const [houseName, house] of units) {
+          const strong = house.filter(index => notes[index]?.has(bridge));
+          if (strong.length !== 2) continue;
+          const connects = (peers[wingA].has(strong[0]) && peers[wingB].has(strong[1])) || (peers[wingA].has(strong[1]) && peers[wingB].has(strong[0]));
+          if (!connects) continue;
+          const victims = active.filter(index => index !== wingA && index !== wingB && notes[index]?.has(target) && peers[index].has(wingA) && peers[index].has(wingB));
+          if (!victims.length) continue;
+          const beforeNotes = snapshotNotes(), eliminations = victims.map(index => ({ index, digit: target }));
+          victims.forEach(index => notes[index].delete(target));
+          addStep({ technique: "W-Wing", index: null, digit: null, house: houseName, highlight: [wingA, wingB, ...strong, ...victims], emphasis: [{ index: wingA, digit: bridge }, { index: wingB, digit: bridge }, ...strong.map(index => ({ index, digit: bridge }))], text: `${nameFor(wingA)} and ${nameFor(wingB)} are a ${bridge}/${target} pair. Candidate ${bridge} is a strong link in ${houseName}, so ${target} can be removed from ${victims.map(index => nameFor(index)).join(", ")}.` }, beforeNotes, eliminations);
+          return true;
+        }
       }
     }
     return false;
@@ -213,7 +335,10 @@ function deriveSteps(preferAdvanced = false) {
     if (lockedCandidates("claiming")) continue;
     if ([3, 4].some(size => nakedSubset(size) || hiddenSubset(size))) continue;
     if (basicFish()) continue;
+    if (singleDigitPatterns()) continue;
+    if (wWing()) continue;
     if (xyWing()) continue;
+    if (xyzWing()) continue;
     // Every implemented named technique has been exhausted.  Make only one
     // transparent search choice, then restart from the easiest techniques.
     // Filling every remaining cell from a completed search branch would make
