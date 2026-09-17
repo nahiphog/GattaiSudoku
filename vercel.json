@@ -1,5 +1,5 @@
 {
   "rewrites": [
-    { "source": "/daily/:path*", "destination": "/index.html" }
+    { "source": "/daily/(.*)", "destination": "/index.html" }
   ]
 }
