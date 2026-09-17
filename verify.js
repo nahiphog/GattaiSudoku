@@ -19,12 +19,16 @@
   const stringBox = document.querySelector("#solutionString");
   const solutionResults = document.querySelector("#solutionResults");
   const evaluateButton = document.querySelector("#evaluateDifficulty");
+  const copyInputImage = document.querySelector("#copyInputImage");
+  const copyCompletedImage = document.querySelector("#copyCompletedImage");
+  const uniquenessTime = document.querySelector("#uniquenessTime");
   const walkthrough = document.querySelector("#walkthrough");
   const walkthroughRating = document.querySelector("#walkthroughRating");
+  const evaluationTime = document.querySelector("#evaluationTime");
   const walkthroughSteps = document.querySelector("#walkthroughSteps");
   const tallyButton = document.querySelector("#walkthroughTally");
   const tallyResults = document.querySelector("#tallyResults");
-  let verifiedSolution = null, verifiedGivens = new Set();
+  let verifiedSolution = null, verifiedPuzzle = null, verifiedGivens = new Set();
   const setStatus = (message, kind = "") => { status.textContent = message; status.className = `dialog-status ${kind}`; };
   const conflicts = () => {
     const found = new Set();
@@ -49,7 +53,16 @@
     }
     drawBoundaries(grid); figure.append(title, grid); solutionResults.append(figure);
   }
-  function clearResults() { solutionResults.replaceChildren(); verifiedSolution = null; verifiedGivens = new Set(); evaluateButton.hidden = true; walkthrough.hidden = true; tallyResults.hidden = true; }
+  function clearResults() { solutionResults.replaceChildren(); verifiedSolution = null; verifiedPuzzle = null; verifiedGivens = new Set(); evaluateButton.hidden = true; copyInputImage.hidden = true; copyCompletedImage.hidden = true; uniquenessTime.hidden = true; walkthrough.hidden = true; tallyResults.hidden = true; }
+  async function copyGridImage(grid, givens, button, label) {
+    const cell = 48, margin = 26, size = cell * 12, canvas = document.createElement("canvas"), context = canvas.getContext("2d");
+    canvas.width = size + margin * 2; canvas.height = size + margin * 2; context.fillStyle = "#fff"; context.fillRect(0, 0, canvas.width, canvas.height);
+    for (let row = 0; row < 12; row += 1) for (let column = 0; column < 12; column += 1) { const index = row * 12 + column; if (!activeSet.has(index)) continue; const x = margin + column * cell, y = margin + row * cell; context.fillStyle = "#fff"; context.fillRect(x, y, cell, cell); context.strokeStyle = "#73808a"; context.lineWidth = 1; context.strokeRect(x, y, cell, cell); if (grid[index]) { context.fillStyle = givens.has(index) ? "#111" : "#1c6fa1"; context.font = `700 ${Math.round(cell * .57)}px Arial`; context.textAlign = "center"; context.textBaseline = "middle"; context.fillText(grid[index], x + cell / 2, y + cell / 2); } }
+    context.strokeStyle = "#173a4c"; context.lineWidth = 4;
+    [[0,0,9,0],[0,3,12,3],[0,6,12,6],[0,9,12,9],[3,12,12,12]].forEach(([x1,y1,x2,y2]) => { context.beginPath(); context.moveTo(margin+x1*cell,margin+y1*cell); context.lineTo(margin+x2*cell,margin+y2*cell); context.stroke(); });
+    [[0,0,0,9],[3,0,3,12],[6,0,6,12],[9,0,9,12],[12,3,12,12]].forEach(([x1,y1,x2,y2]) => { context.beginPath(); context.moveTo(margin+x1*cell,margin+y1*cell); context.lineTo(margin+x2*cell,margin+y2*cell); context.stroke(); });
+    try { const blob = await new Promise(resolve => canvas.toBlob(resolve, "image/png")); await navigator.clipboard.write([new ClipboardItem({ "image/png": blob })]); button.textContent = "Grid copied"; } catch { button.textContent = "Image copy unavailable"; } setTimeout(() => { button.textContent = label; }, 1600);
+  }
   function cellName(index) { const row = Math.floor(index / 12), column = index % 12; return row < 9 && column < 9 ? `Grid 1: R${row + 1}C${column + 1}` : `Grid 2: R${row - 2}C${column - 2}`; }
   function buildWalkthrough(solution, givens) {
     const working = Array(144).fill(0); givens.forEach(index => { working[index] = solution[index]; }); const steps = [];
@@ -72,9 +85,12 @@
     return steps;
   }
   function renderWalkthrough() {
+    const started = performance.now();
     const steps = buildWalkthrough(verifiedSolution, verifiedGivens), tally = new Map(); walkthroughSteps.replaceChildren();
     steps.forEach((step, index) => { tally.set(step.technique, [...(tally.get(step.technique) || []), index + 1]); const item = document.createElement("li"); item.innerHTML = `<strong>Step ${index + 1}: ${step.technique}</strong> — ${step.text}`; walkthroughSteps.append(item); });
-    const usesSearch = tally.has("Unique-solution deduction"); walkthroughRating.textContent = usesSearch ? "Difficulty: Over 9000 (a named-technique-only path did not complete the grid)." : "Difficulty: Singles.";
+    const usesSearch = tally.has("Unique-solution deduction"), score = usesSearch ? 9001 : steps.reduce((total, step) => total + (step.technique === "Hidden Single" ? 14 : 4), 0);
+    walkthroughRating.textContent = `Difficulty: ${score}`;
+    evaluationTime.textContent = `Difficulty evaluation: ${Math.max(1, Math.round(performance.now() - started))} ms`;
     tallyResults.innerHTML = `<table><thead><tr><th>Technique</th><th>Steps</th></tr></thead><tbody>${[...tally.entries()].map(([technique, stepsForTechnique]) => `<tr><td>${technique}</td><td>${stepsForTechnique.join(", ")}</td></tr>`).join("")}</tbody></table>`;
     walkthrough.hidden = false;
   }
@@ -133,10 +149,13 @@
     return { count: search(), solutions };
   }
   document.querySelector("#verifyGrid").addEventListener("click", () => {
+    const started = performance.now();
     const result = countSolutions();
     clearResults();
+    uniquenessTime.textContent = `Uniqueness check: ${Math.max(1, Math.round(performance.now() - started))} ms`;
+    uniquenessTime.hidden = false;
     if (result.issue) setStatus(result.issue, "error");
-    else if (result.count === 1) { verifiedSolution = result.solutions[0]; verifiedGivens = new Set(active.filter(index => values[index])); setStatus("Verified: this puzzle has exactly one solution.", "success"); showSolution(verifiedSolution, new Set(), "Completed grid", verifiedGivens); evaluateButton.hidden = false; }
+    else if (result.count === 1) { verifiedSolution = result.solutions[0]; verifiedPuzzle = [...values]; verifiedGivens = new Set(active.filter(index => values[index])); setStatus("Verified: this puzzle has exactly one solution.", "success"); showSolution(verifiedSolution, new Set(), "Completed grid", verifiedGivens); evaluateButton.hidden = false; copyInputImage.hidden = false; copyCompletedImage.hidden = false; }
     else if (result.count === 0) setStatus("This puzzle has no valid solution.", "error");
     else {
       setStatus("This puzzle has multiple solutions. The orange cells differ.", "error");
@@ -145,6 +164,8 @@
     }
   });
   evaluateButton.addEventListener("click", renderWalkthrough);
+  copyInputImage.addEventListener("click", () => copyGridImage(verifiedPuzzle, verifiedGivens, copyInputImage, "Copy input grid as image"));
+  copyCompletedImage.addEventListener("click", () => copyGridImage(verifiedSolution, verifiedGivens, copyCompletedImage, "Copy completed grid as image"));
   tallyButton.addEventListener("click", () => { tallyResults.hidden = !tallyResults.hidden; tallyButton.textContent = tallyResults.hidden ? "Technique tally" : "Hide technique tally"; });
   document.querySelector("#clearGrid").addEventListener("click", () => { values.fill(0); clearResults(); setStatus(""); render(); });
   document.querySelector("#importString").addEventListener("click", () => { const issue = parseString(stringBox.value); clearResults(); setStatus(issue || "String imported. Fill or edit any cell, then check uniqueness.", issue ? "error" : "success"); render(); });

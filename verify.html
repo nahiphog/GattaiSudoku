@@ -27,11 +27,14 @@
         <button id="importString" class="verify-secondary" type="button">Import string</button>
         <button id="exportString" class="verify-secondary" type="button">Copy string</button>
         <p id="verifyStatus" class="dialog-status" aria-live="polite"></p>
+        <p id="uniquenessTime" class="verify-timing" hidden></p>
         <button id="evaluateDifficulty" class="dialog-primary" type="button" hidden>Evaluate puzzle difficulty</button>
+        <button id="copyInputImage" class="verify-secondary" type="button" hidden>Copy input grid as image</button>
+        <button id="copyCompletedImage" class="verify-secondary" type="button" hidden>Copy completed grid as image</button>
         <div id="solutionResults" class="verify-results" aria-live="polite"></div>
-        <section id="walkthrough" class="verify-walkthrough" hidden aria-live="polite"><h2>Solution walkthrough</h2><p id="walkthroughRating"></p><button id="walkthroughTally" class="verify-secondary" type="button">Technique tally</button><ol id="walkthroughSteps"></ol><div id="tallyResults" hidden></div></section>
       </aside>
     </section>
+    <section id="walkthrough" class="verify-walkthrough" hidden aria-live="polite"><h2>Solution walkthrough</h2><p id="walkthroughRating"></p><p id="evaluationTime" class="verify-timing"></p><button id="walkthroughTally" class="verify-secondary" type="button">Technique tally</button><ol id="walkthroughSteps"></ol><div id="tallyResults" hidden></div></section>
   </main>
   <script src="verify.js"></script>
 </body>
