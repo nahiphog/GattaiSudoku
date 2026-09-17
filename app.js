@@ -587,7 +587,8 @@ function addSidebarToggle(sidebar, label) {
 addSidebarToggle(document.querySelector(".control-sidebar"), "puzzle controls sidebar");
 const settingsIcon = document.querySelector("#settings svg");
 if (settingsIcon) settingsIcon.innerHTML = '<path d="M19.43 12.98c.04-.32.07-.65.07-.98s-.03-.66-.08-.98l2.11-1.65-2-3.46-2.49 1a7.3 7.3 0 0 0-1.7-.98L15 3.28h-4l-.37 2.65a7.3 7.3 0 0 0-1.7.98l-2.49-1-2 3.46 2.11 1.65c-.05.32-.08.65-.08.98s.03.66.08.98l-2.11 1.65 2 3.46 2.49-1c.53.4 1.1.73 1.7.98l.37 2.65h4l.37-2.65c.6-.25 1.17-.58 1.7-.98l2.49 1 2-3.46-2.06-1.65ZM13 16h-2v-3H8v-2h3V8h2v3h3v2h-3v3Z"/>';
-document.querySelector(".generator-rule").textContent = "Both published weeks are independently rechecked for exactly one solution. The previous week uses paired rotational digging; every listed walkthrough resolves the entire Gattai using named Singles techniques only.";
+const generatorRule = document.querySelector(".generator-rule");
+if (generatorRule) generatorRule.textContent = "Both published weeks are independently rechecked for exactly one solution. The previous week uses paired rotational digging; every listed walkthrough resolves the entire Gattai using named Singles techniques only.";
 const routedEntry = entryFromRoute();
 if (routedEntry) { activeWeek = routedEntry.week; activeDay = routedEntry.day; }
 window.addEventListener("popstate", () => { const entry = entryFromRoute(); if (entry) { activeWeek = entry.week; mode = "human"; loadPuzzle(entry.day, false); } });
