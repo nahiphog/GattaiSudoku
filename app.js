@@ -25,7 +25,7 @@ const digits = [1, 2, 3, 4, 5, 6, 7, 8, 9];
 const techniqueScores = { "Full House": 4, "Naked Single": 4, "Hidden Single": 14, "Locked Pair": 40, "Locked Triple": 60, "Pointing": 50, "Claiming": 50, "Naked Pair": 60, "Naked Triple": 80, "Hidden Pair": 70, "Hidden Triple": 100, "Naked Quad": 120, "Hidden Quad": 150, "X-Wing": 140, "XY-Wing": 160 };
 const techniqueLevels = { "Full House": "Beginner", "Naked Single": "Beginner", "Hidden Single": "Beginner", "Locked Pair": "Medium", "Locked Triple": "Medium", "Pointing": "Medium", "Claiming": "Medium", "Naked Pair": "Medium", "Naked Triple": "Medium", "Hidden Pair": "Medium", "Hidden Triple": "Medium", "Naked Quad": "Hard", "Hidden Quad": "Hard", "X-Wing": "Hard", "XY-Wing": "Tricky" };
 const levelOrder = ["Beginner", "Easy", "Medium", "Tricky", "Hard", "Unfair", "Extreme", "Nightmare"];
-function rateSteps(solveSteps) { const score = solveSteps.reduce((total, step) => total + (techniqueScores[step.technique] || 0), 0); let rating = score <= 400 ? "Beginner" : score <= 800 ? "Easy" : score <= 1000 ? "Medium" : score <= 1150 ? "Tricky" : score <= 1600 ? "Hard" : score <= 1800 ? "Unfair" : score <= 3000 ? "Extreme" : "Nightmare"; solveSteps.forEach(step => { const techniqueLevel = techniqueLevels[step.technique] || "Nightmare"; if (levelOrder.indexOf(techniqueLevel) > levelOrder.indexOf(rating)) rating = techniqueLevel; }); return { score, rating }; }
+function rateSteps(solveSteps) { if (solveSteps.some(step => step.technique === "Trial and error")) return { score: 9001, rating: "Over 9000" }; const score = solveSteps.reduce((total, step) => total + (techniqueScores[step.technique] || 0), 0); let rating = score <= 400 ? "Beginner" : score <= 800 ? "Easy" : score <= 1000 ? "Medium" : score <= 1150 ? "Tricky" : score <= 1600 ? "Hard" : score <= 1800 ? "Unfair" : score <= 3000 ? "Extreme" : "Nightmare"; solveSteps.forEach(step => { const techniqueLevel = techniqueLevels[step.technique] || "Nightmare"; if (levelOrder.indexOf(techniqueLevel) > levelOrder.indexOf(rating)) rating = techniqueLevel; }); return { score, rating }; }
 const units = [];
 for (const [name, rowOffset, columnOffset] of [["G1", 0, 0], ["G2", 3, 3]]) {
   for (let n = 0; n < 9; n += 1) {
@@ -83,6 +83,25 @@ function countGattaiSolutions(givens, limit = 2) {
   function search() { let choice = -1, choices = null; for (const index of active) if (!values[index]) { const possible = candidates(values, index); if (!possible.length) return 0; if (!choices || possible.length < choices.length) { choice = index; choices = possible; } } if (choice === -1) return 1; let total = 0; for (const digit of choices) { values[choice] = digit; total += search(); values[choice] = 0; if (total >= limit) return total; } return total; }
   return search();
 }
+function findGattaiSolution(givens) {
+  const values = [...givens];
+  function search() {
+    let choice = -1, choices = null;
+    for (const index of active) if (!values[index]) {
+      const possible = candidates(values, index);
+      if (!possible.length) return false;
+      if (!choices || possible.length < choices.length) { choice = index; choices = possible; }
+    }
+    if (choice === -1) return true;
+    for (const digit of choices) {
+      values[choice] = digit;
+      if (search()) return true;
+    }
+    values[choice] = 0;
+    return false;
+  }
+  return search() ? values : null;
+}
 const rowsFromBoard = boardValues => Array.from({ length: 12 }, (_, row) => Array.from({ length: 12 }, (_, column) => boardValues[row * 12 + column] || ".").join(""));
 function choose(items, size) { if (size === 0) return [[]]; if (items.length < size) return []; return choose(items.slice(1), size - 1).map(group => [items[0], ...group]).concat(choose(items.slice(1), size)); }
 function deriveSteps(preferAdvanced = false) {
@@ -136,7 +155,9 @@ function deriveSteps(preferAdvanced = false) {
         const firstWings = [...peers[pivot]].filter(index => notes[index]?.size === 2 && notes[index].has(pivotDigit));
         for (const wingA of firstWings) {
           const shared = [...notes[wingA]].find(digit => digit !== pivotDigit);
-          if (!shared) continue;
+          // A pincer must contain the third digit, not merely repeat the
+          // pivot's other digit (which would produce a spurious “9/9 wing”).
+          if (!shared || shared === otherDigit) continue;
           for (const wingB of peers[pivot]) {
             if (wingB === wingA || notes[wingB]?.size !== 2 || !notes[wingB].has(otherDigit) || !notes[wingB].has(shared)) continue;
             const victims = active.filter(index => index !== pivot && index !== wingA && index !== wingB && notes[index]?.has(shared) && peers[index].has(wingA) && peers[index].has(wingB));
@@ -192,6 +213,16 @@ function deriveSteps(preferAdvanced = false) {
     if ([3, 4].some(size => nakedSubset(size) || hiddenSubset(size))) continue;
     if (basicFish()) continue;
     if (xyWing()) continue;
+    // Every implemented named technique has been exhausted.  Complete the
+    // remaining cells openly as search steps instead of presenting a made-up
+    // Sudoku technique or silently leaving a partial "solution" on screen.
+    const completion = findGattaiSolution(values);
+    if (!completion) return found;
+    for (const index of active) if (!values[index]) {
+      const digit = completion[index], beforeNotes = snapshotNotes(), eliminations = [...(notes[index] || [])].filter(candidate => candidate !== digit).map(candidate => ({ index, digit: candidate }));
+      values[index] = digit; delete notes[index]; peers[index].forEach(peer => notes[peer]?.delete(digit));
+      addStep({ technique: "Trial and error", index, digit, house: "", highlight: [index], text: `${nameFor(index)} = ${digit} is selected by a search branch after the implemented named techniques are exhausted.` }, beforeNotes, eliminations);
+    }
     return found;
   }
 }
