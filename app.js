@@ -136,7 +136,17 @@ function deriveSteps(preferAdvanced = false) {
   const values = [...original], found = [], notes = Object.fromEntries(active.filter(index => !values[index]).map(index => [index, new Set(candidates(values, index))]));
   const subsetName = size => ({ 2: "Pair", 3: "Triple", 4: "Quad" }[size]);
   const snapshotNotes = () => Object.fromEntries(Object.entries(notes).map(([index, note]) => [index, [...note]]));
-  function addStep(step, beforeNotes, eliminations = []) { found.push({ ...step, beforeNotes, eliminations }); }
+  // Record the grid that establishes the deduction.  Highlighted cells in the
+  // overlap belong to both boards, so inferring a grid from the first such cell
+  // can put the explanation and the visual outline on different grids.
+  const primaryGrid = index => {
+    const row = Math.floor(index / 12), column = index % 12;
+    return row >= 3 && column >= 3 ? "G2" : "G1";
+  };
+  function addStep(step, beforeNotes, eliminations = []) {
+    const grid = step.grid || step.house?.match(/^G[12]/)?.[0] || step.text?.match(/\bG[12]\b/)?.[0] || (step.index !== null && step.index !== undefined ? primaryGrid(step.index) : primaryGrid(step.highlight?.[0] ?? 0));
+    found.push({ ...step, grid, beforeNotes, eliminations });
+  }
   function place(technique, index, digit, house, text) {
     const beforeNotes = snapshotNotes(), eliminations = [...peers[index]].filter(peer => notes[peer]?.has(digit)).map(peer => ({ index: peer, digit }));
     values[index] = digit; delete notes[index]; peers[index].forEach(peer => notes[peer]?.delete(digit));
@@ -192,7 +202,7 @@ function deriveSteps(preferAdvanced = false) {
             if (!victims.length) continue;
             const beforeNotes = snapshotNotes(), eliminations = victims.map(index => ({ index, digit: shared }));
             victims.forEach(index => notes[index].delete(shared));
-            addStep({ technique: "XY-Wing", index: null, digit: null, house: "", highlight: [pivot, wingA, wingB, ...victims], text: `${nameFor(pivot)} is the ${pivotDigit}/${otherDigit} pivot. Its ${pivotDigit}/${shared} and ${otherDigit}/${shared} wings force ${shared} into one wing, so remove ${shared} from cells that see both wings.` }, beforeNotes, eliminations);
+            addStep({ technique: "XY-Wing", index: null, digit: null, house: "", grid: primaryGrid(pivot), highlight: [pivot, wingA, wingB, ...victims], text: `${nameFor(pivot)} is the ${pivotDigit}/${otherDigit} pivot. Its ${pivotDigit}/${shared} and ${otherDigit}/${shared} wings force ${shared} into one wing, so remove ${shared} from cells that see both wings.` }, beforeNotes, eliminations);
             return true;
           }
         }
@@ -235,7 +245,7 @@ function deriveSteps(preferAdvanced = false) {
         const beforeNotes = snapshotNotes(), eliminations = victims.map(index => ({ index, digit }));
         victims.forEach(index => notes[index].delete(digit));
         const axis = byRows ? "rows" : "columns", coverAxis = byRows ? "columns" : "rows";
-        addStep({ technique: fishNames[size], index: null, digit: null, house: "", highlight: [...corners, ...victims], emphasis: corners.map(index => ({ index, digit })), text: `In ${grid}, candidate ${digit} in ${axis} ${group.map(pattern => pattern.base + 1).join(", ")} is restricted to ${coverAxis} ${[...coverSet].map(cover => cover + 1).join(", ")}. This ${fishNames[size]} removes ${digit} from ${victims.map(index => nameFor(index, grid)).join(", ")}.` }, beforeNotes, eliminations);
+        addStep({ technique: fishNames[size], index: null, digit: null, house: "", grid, highlight: [...corners, ...victims], emphasis: corners.map(index => ({ index, digit })), text: `In ${grid}, candidate ${digit} in ${axis} ${group.map(pattern => pattern.base + 1).join(", ")} is restricted to ${coverAxis} ${[...coverSet].map(cover => cover + 1).join(", ")}. This ${fishNames[size]} removes ${digit} from ${victims.map(index => nameFor(index, grid)).join(", ")}.` }, beforeNotes, eliminations);
         return true;
       }
     }
@@ -273,7 +283,7 @@ function deriveSteps(preferAdvanced = false) {
           if (!victims.length) continue;
           const beforeNotes = snapshotNotes(), eliminations = victims.map(index => ({ index, digit }));
           victims.forEach(index => notes[index].delete(digit));
-          addStep({ technique: "Skyscraper", index: null, digit: null, house: "", highlight: [...bases, ...roofs, ...victims], emphasis: [...bases, ...roofs].map(index => ({ index, digit })), text: `In ${grid}, candidate ${digit} forms a Skyscraper from ${byRows ? "rows" : "columns"} ${first.unit + 1} and ${second.unit + 1}. The two roofs force ${digit} out of ${victims.map(index => nameFor(index, grid)).join(", ")}.` }, beforeNotes, eliminations);
+          addStep({ technique: "Skyscraper", index: null, digit: null, house: "", grid, highlight: [...bases, ...roofs, ...victims], emphasis: [...bases, ...roofs].map(index => ({ index, digit })), text: `In ${grid}, candidate ${digit} forms a Skyscraper from ${byRows ? "rows" : "columns"} ${first.unit + 1} and ${second.unit + 1}. The two roofs force ${digit} out of ${victims.map(index => nameFor(index, grid)).join(", ")}.` }, beforeNotes, eliminations);
           return true;
         }
       }
@@ -292,7 +302,7 @@ function deriveSteps(preferAdvanced = false) {
         if (!victims.length) continue;
         const beforeNotes = snapshotNotes(), eliminations = victims.map(index => ({ index, digit }));
         victims.forEach(index => notes[index].delete(digit));
-        addStep({ technique: "2-String Kite", index: null, digit: null, house: "", highlight: [baseA, baseB, roofA, roofB, ...victims], emphasis: [baseA, baseB, roofA, roofB].map(index => ({ index, digit })), text: `In ${grid}, the row and column strong links for candidate ${digit} meet in one house, forming a 2-String Kite. Remove ${digit} from ${victims.map(index => nameFor(index, grid)).join(", ")}.` }, beforeNotes, eliminations);
+        addStep({ technique: "2-String Kite", index: null, digit: null, house: "", grid, highlight: [baseA, baseB, roofA, roofB, ...victims], emphasis: [baseA, baseB, roofA, roofB].map(index => ({ index, digit })), text: `In ${grid}, the row and column strong links for candidate ${digit} meet in one house, forming a 2-String Kite. Remove ${digit} from ${victims.map(index => nameFor(index, grid)).join(", ")}.` }, beforeNotes, eliminations);
         return true;
       }
     }
@@ -312,7 +322,7 @@ function deriveSteps(preferAdvanced = false) {
           if (!victims.length) continue;
           const beforeNotes = snapshotNotes(), eliminations = victims.map(index => ({ index, digit: shared }));
           victims.forEach(index => notes[index].delete(shared));
-          addStep({ technique: "XYZ-Wing", index: null, digit: null, house: "", highlight: [pivot, wingA, wingB, ...victims], emphasis: [{ index: pivot, digit: shared }, { index: wingA, digit: shared }, { index: wingB, digit: shared }], text: `${nameFor(pivot)} is the ${first}/${second}/${shared} pivot. Its ${first}/${shared} and ${second}/${shared} wings make ${shared} impossible in cells that see the pivot and both wings, including ${victims.map(index => nameFor(index)).join(", ")}.` }, beforeNotes, eliminations);
+          addStep({ technique: "XYZ-Wing", index: null, digit: null, house: "", grid: primaryGrid(pivot), highlight: [pivot, wingA, wingB, ...victims], emphasis: [{ index: pivot, digit: shared }, { index: wingA, digit: shared }, { index: wingB, digit: shared }], text: `${nameFor(pivot)} is the ${first}/${second}/${shared} pivot. Its ${first}/${shared} and ${second}/${shared} wings make ${shared} impossible in cells that see the pivot and both wings, including ${victims.map(index => nameFor(index)).join(", ")}.` }, beforeNotes, eliminations);
           return true;
         }
       }
@@ -336,7 +346,7 @@ function deriveSteps(preferAdvanced = false) {
           if (!victims.length) continue;
           const beforeNotes = snapshotNotes(), eliminations = victims.map(index => ({ index, digit: target }));
           victims.forEach(index => notes[index].delete(target));
-          addStep({ technique: "W-Wing", index: null, digit: null, house: houseName, highlight: [wingA, wingB, ...strong, ...victims], emphasis: [{ index: wingA, digit: bridge }, { index: wingB, digit: bridge }, ...strong.map(index => ({ index, digit: bridge }))], text: `${nameFor(wingA)} and ${nameFor(wingB)} are a ${bridge}/${target} pair. Candidate ${bridge} is a strong link in ${houseName}, so ${target} can be removed from ${victims.map(index => nameFor(index)).join(", ")}.` }, beforeNotes, eliminations);
+          addStep({ technique: "W-Wing", index: null, digit: null, house: houseName, grid: houseName.split(" ")[0], highlight: [wingA, wingB, ...strong, ...victims], emphasis: [{ index: wingA, digit: bridge }, { index: wingB, digit: bridge }, ...strong.map(index => ({ index, digit: bridge }))], text: `${nameFor(wingA)} and ${nameFor(wingB)} are a ${bridge}/${target} pair. Candidate ${bridge} is a strong link in ${houseName}, so ${target} can be removed from ${victims.map(index => nameFor(index)).join(", ")}.` }, beforeNotes, eliminations);
           return true;
         }
       }
@@ -372,7 +382,7 @@ function deriveSteps(preferAdvanced = false) {
     const index = active.filter(cell => !values[cell]).sort((left, right) => notes[left].size - notes[right].size || left - right)[0];
     const digit = completion[index], beforeNotes = snapshotNotes(), eliminations = [...(notes[index] || [])].filter(candidate => candidate !== digit).map(candidate => ({ index, digit: candidate }));
     values[index] = digit; delete notes[index]; peers[index].forEach(peer => notes[peer]?.delete(digit));
-    addStep({ technique: "Trial and error", index, digit, house: "", highlight: [index], text: `${nameFor(index)} = ${digit} is selected by a search branch after the implemented named techniques are exhausted.` }, beforeNotes, eliminations);
+    addStep({ technique: "Trial and error", index, digit, house: "", grid: primaryGrid(index), highlight: [index], text: `${nameFor(index)} = ${digit} is selected by a search branch after the implemented named techniques are exhausted.` }, beforeNotes, eliminations);
     continue;
   }
 }
@@ -387,6 +397,8 @@ function drawBoardBoundaries() {
   lines.forEach(([direction, position]) => { const line = document.createElement("span"); line.className = `board-boundary ${direction} ${position}`; board.append(line); });
 }
 function gridForStep(step) {
+  if (step?.grid === "G2") return "two";
+  if (step?.grid === "G1") return "one";
   if (step?.house?.startsWith("G2")) return "two";
   if (step?.house?.startsWith("G1")) return "one";
   const index = step?.index ?? step?.highlight?.[0];
