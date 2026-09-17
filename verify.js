@@ -26,7 +26,8 @@
   const walkthroughRating = document.querySelector("#walkthroughRating");
   const evaluationTime = document.querySelector("#evaluationTime");
   const walkthroughSteps = document.querySelector("#walkthroughSteps");
-  const tallyButton = document.querySelector("#walkthroughTally");
+  const inputGivenCount = document.querySelector("#inputGivenCount");
+  const inputTechniqueTally = document.querySelector("#inputTechniqueTally");
   const tallyResults = document.querySelector("#tallyResults");
   let verifiedSolution = null, verifiedPuzzle = null, verifiedGivens = new Set();
   const setStatus = (message, kind = "") => { status.textContent = message; status.className = `dialog-status ${kind}`; };
@@ -53,7 +54,7 @@
     }
     drawBoundaries(grid); figure.append(title, grid); solutionResults.append(figure);
   }
-  function clearResults() { solutionResults.replaceChildren(); verifiedSolution = null; verifiedPuzzle = null; verifiedGivens = new Set(); evaluateButton.hidden = true; copyInputImage.hidden = true; copyCompletedImage.hidden = true; uniquenessTime.hidden = true; walkthrough.hidden = true; tallyResults.hidden = true; }
+  function clearResults() { solutionResults.replaceChildren(); verifiedSolution = null; verifiedPuzzle = null; verifiedGivens = new Set(); evaluateButton.hidden = true; copyInputImage.hidden = true; copyCompletedImage.hidden = true; uniquenessTime.hidden = true; walkthrough.hidden = true; inputTechniqueTally.hidden = true; tallyResults.replaceChildren(); }
   async function copyGridImage(grid, givens, button, label) {
     const cell = 48, margin = 26, size = cell * 12, canvas = document.createElement("canvas"), context = canvas.getContext("2d");
     canvas.width = size + margin * 2; canvas.height = size + margin * 2; context.fillStyle = "#fff"; context.fillRect(0, 0, canvas.width, canvas.height);
@@ -131,6 +132,7 @@
     walkthroughRating.textContent = `Difficulty: ${rating} (${score})`;
     evaluationTime.textContent = `Difficulty evaluation: ${Math.max(1, Math.round(performance.now() - started))} ms`;
     tallyResults.innerHTML = `<table><thead><tr><th>Technique</th><th>Steps</th></tr></thead><tbody>${[...tally.entries()].map(([technique, stepsForTechnique]) => `<tr><td>${technique}</td><td>${stepsForTechnique.join(", ")}</td></tr>`).join("")}</tbody></table>`;
+    inputTechniqueTally.hidden = false;
     walkthrough.hidden = false;
   }
   function render() {
@@ -148,6 +150,7 @@
     }
     drawBoundaries();
     stringBox.value = values.map((value, index) => activeSet.has(index) ? (value || ".") : ".").join("");
+    inputGivenCount.textContent = `${active.filter(index => values[index]).length} given cells`;
   }
   function parseString(text) {
     const clean = text.replace(/\s/g, "");
@@ -205,7 +208,6 @@
   evaluateButton.addEventListener("click", renderWalkthrough);
   copyInputImage.addEventListener("click", () => copyGridImage(verifiedPuzzle, verifiedGivens, copyInputImage, "Copy input grid as image"));
   copyCompletedImage.addEventListener("click", () => copyGridImage(verifiedSolution, verifiedGivens, copyCompletedImage, "Copy completed grid as image"));
-  tallyButton.addEventListener("click", () => { tallyResults.hidden = !tallyResults.hidden; tallyButton.textContent = tallyResults.hidden ? "Technique tally" : "Hide technique tally"; });
   document.querySelector("#clearGrid").addEventListener("click", () => { values.fill(0); clearResults(); setStatus(""); render(); });
   document.querySelector("#importString").addEventListener("click", () => { const issue = parseString(stringBox.value); clearResults(); setStatus(issue || "String imported. Fill or edit any cell, then check uniqueness.", issue ? "error" : "success"); render(); });
   document.querySelector("#exportString").addEventListener("click", async () => { const output = values.map((value, index) => activeSet.has(index) ? (value || ".") : ".").join(""); try { await navigator.clipboard.writeText(output); setStatus("144-character string copied.", "success"); } catch { setStatus("Unable to access the clipboard.", "error"); } });
