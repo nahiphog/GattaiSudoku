@@ -453,7 +453,7 @@ function renderBoard() {
   drawBoardBoundaries();
 }
 function refresh() { const showingSolution = mode === "solver", unlimited = isUnlimited(); if (showingSolution) boardCard.append(solutionRail); else puzzleSurface.append(solutionRail); renderStep(); renderBoard(); const givens = original.filter((value, index) => active.includes(index) && value).length, rating = rateSteps(steps); givenCount.textContent = unlimited ? `${givens} given cells · generated in ${(unlimitedGenerationMilliseconds / 1000).toFixed(2)} s` : `${givens} given cells`; document.querySelector("#puzzleDate").textContent = puzzleDate.replace(/^[^,]+,\s*/, ""); updatePuzzleNavigation(); document.querySelector("#difficultyLabel").textContent = unlimited && !unlimitedRated ? "Difficulty: Unrated (unique-only)" : `Difficulty: ${rating.rating} (${rating.score})`; document.querySelector("#difficultyLabel").classList.toggle("is-hidden", !difficultyVisible); givenCount.classList.toggle("is-hidden", !givenCountVisible); solutionToggle.setAttribute("aria-pressed", String(showingSolution)); solutionToggle.textContent = unlimited ? (showingSolution ? "Hide final grid" : "Show final grid") : (showingSolution ? "Hide solution" : "Read solution"); guide.classList.toggle("hidden", mode === "human" || unlimited); solutionRail.classList.toggle("hidden", mode === "human" || unlimited); boardCard.classList.toggle("solver-active", showingSolution); updateEntryControls(); setTimerRunning(mode === "human"); }
-function loadPuzzle(day) { activeDay = day; const selectedWeek = activeWeek === "previous" ? previousWeekPuzzles : dailyPuzzles, selectedPuzzle = (day === "unlimited" ? puzzles : selectedWeek)[day]; rows = selectedPuzzle.rows; puzzleDate = selectedPuzzle.date; original.fill(0); rows.forEach((row, r) => [...row].forEach((value, c) => { if (value !== ".") original[r * 12 + c] = Number(value); })); const key = stateKey(); ensureState(key); human = userInputs[key]; playNotes = userNotes[key]; playColors = userColors[key]; selectedCell = null; steps = deriveSteps(["friday", "saturday", "sunday"].includes(day)); const walked = [...original]; steps.forEach(step => { if (step.index !== null) walked[step.index] = step.digit; }); unlimitedRated = day === "unlimited" && active.every(index => walked[index]); stepIndex = 0; document.querySelector("#unlimitedMode").classList.toggle("active", day === "unlimited"); refresh(); }
+function loadPuzzle(day, syncRoute = true) { activeDay = day; const selectedWeek = activeWeek === "previous" ? previousWeekPuzzles : dailyPuzzles, selectedPuzzle = (day === "unlimited" ? puzzles : selectedWeek)[day]; rows = selectedPuzzle.rows; puzzleDate = selectedPuzzle.date; original.fill(0); rows.forEach((row, r) => [...row].forEach((value, c) => { if (value !== ".") original[r * 12 + c] = Number(value); })); const key = stateKey(); ensureState(key); human = userInputs[key]; playNotes = userNotes[key]; playColors = userColors[key]; selectedCell = null; steps = deriveSteps(["friday", "saturday", "sunday"].includes(day)); const walked = [...original]; steps.forEach(step => { if (step.index !== null) walked[step.index] = step.digit; }); unlimitedRated = day === "unlimited" && active.every(index => walked[index]); stepIndex = 0; document.querySelector("#unlimitedMode").classList.toggle("active", day === "unlimited"); if (syncRoute) syncPuzzleRoute(); refresh(); }
 const archiveEntries = [
   ["previous", "monday", 2026, 8, 31], ["previous", "tuesday", 2026, 9, 1], ["previous", "wednesday", 2026, 9, 2], ["previous", "thursday", 2026, 9, 3], ["previous", "friday", 2026, 9, 4], ["previous", "saturday", 2026, 9, 5], ["previous", "sunday", 2026, 9, 6],
   ["current", "monday", 2026, 9, 7], ["current", "tuesday", 2026, 9, 8], ["current", "wednesday", 2026, 9, 9], ["current", "thursday", 2026, 9, 10], ["current", "friday", 2026, 9, 11], ["current", "saturday", 2026, 9, 12], ["current", "sunday", 2026, 9, 13],
@@ -461,6 +461,9 @@ const archiveEntries = [
 ].map(([week, day, year, month, date]) => ({ week, day, year, month, date }));
 const archiveKey = (year, month, date) => `${year}-${month}-${date}`;
 const archiveByDate = new Map(archiveEntries.map(entry => [archiveKey(entry.year, entry.month, entry.date), entry]));
+const archiveRoute = entry => `/daily/${entry.year}_${String(entry.month).padStart(2, "0")}_${String(entry.date).padStart(2, "0")}/`;
+function entryFromRoute(pathname = window.location.pathname) { const match = pathname.match(/^\/daily\/(\d{4})_(\d{2})_(\d{2})\/?$/); return match ? archiveByDate.get(archiveKey(Number(match[1]), Number(match[2]), Number(match[3]))) : null; }
+function syncPuzzleRoute() { const entry = archiveEntries.find(item => item.week === activeWeek && item.day === activeDay); if (entry && window.location.pathname !== archiveRoute(entry)) window.history.pushState({ puzzle: archiveKey(entry.year, entry.month, entry.date) }, "", archiveRoute(entry)); }
 function currentPuzzlePosition() { return archiveEntries.findIndex(entry => entry.week === activeWeek && entry.day === activeDay); }
 function updatePuzzleNavigation() { const previous = document.querySelector("#previousPuzzle"), next = document.querySelector("#nextPuzzle"), position = currentPuzzlePosition(), unavailable = activeDay === "unlimited" || position === -1; previous.disabled = unavailable || position === 0; next.disabled = unavailable || position === archiveEntries.length - 1; }
 function navigatePuzzle(offset) { const position = currentPuzzlePosition(), target = archiveEntries[position + offset]; if (!target || activeDay === "unlimited") return; activeWeek = target.week; mode = "human"; loadPuzzle(target.day); }
@@ -470,11 +473,10 @@ function renderArchiveCalendar() {
   for (let offset = 0; offset < 35; offset += 1) {
     const date = new Date(2026, 7, 31 + offset), year = date.getFullYear(), month = date.getMonth() + 1, day = date.getDate(), entry = archiveByDate.get(archiveKey(year, month, day));
     if (!entry) { const blank = document.createElement("span"); blank.textContent = day; if (month !== 9) blank.classList.add("outside"); calendar.append(blank); continue; }
-    const button = document.createElement("button");
-    button.type = "button"; button.textContent = day; button.title = (entry.week === "previous" ? previousWeekPuzzles : dailyPuzzles)[entry.day].date;
-    if (entry.week === activeWeek && entry.day === activeDay) button.classList.add("is-current");
-    button.addEventListener("click", () => { activeWeek = entry.week; mode = "human"; loadPuzzle(entry.day); document.querySelector("#archiveDialog").close(); });
-    calendar.append(button);
+    const link = document.createElement("a");
+    link.href = archiveRoute(entry); link.textContent = day; link.title = (entry.week === "previous" ? previousWeekPuzzles : dailyPuzzles)[entry.day].date;
+    if (entry.week === activeWeek && entry.day === activeDay) link.classList.add("is-current");
+    calendar.append(link);
   }
 }
 async function generateUnlimitedPuzzle() {
@@ -571,8 +573,13 @@ function addSidebarToggle(sidebar, label) {
   sidebar.prepend(button);
 }
 addSidebarToggle(document.querySelector(".control-sidebar"), "puzzle controls sidebar");
+const settingsIcon = document.querySelector("#settings svg");
+if (settingsIcon) settingsIcon.innerHTML = '<circle cx="12" cy="12" r="3.5"/><path d="M12 2.5v3M12 18.5v3M2.5 12h3M18.5 12h3M5.3 5.3l2.1 2.1M16.6 16.6l2.1 2.1M18.7 5.3l-2.1 2.1M7.4 16.6l-2.1 2.1"/>';
 document.querySelector(".generator-rule").textContent = "Both published weeks are independently rechecked for exactly one solution. The previous week uses paired rotational digging; every listed walkthrough resolves the entire Gattai using named Singles techniques only.";
-loadPuzzle(activeDay);
+const routedEntry = entryFromRoute();
+if (routedEntry) { activeWeek = routedEntry.week; activeDay = routedEntry.day; }
+window.addEventListener("popstate", () => { const entry = entryFromRoute(); if (entry) { activeWeek = entry.week; mode = "human"; loadPuzzle(entry.day, false); } });
+loadPuzzle(activeDay, false);
 
 /* One home for the two generator workflows.  This intentionally leaves the
    existing build workspace intact, but makes it reachable through a single
