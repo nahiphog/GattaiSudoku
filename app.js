@@ -574,7 +574,7 @@ function addSidebarToggle(sidebar, label) {
 }
 addSidebarToggle(document.querySelector(".control-sidebar"), "puzzle controls sidebar");
 const settingsIcon = document.querySelector("#settings svg");
-if (settingsIcon) settingsIcon.innerHTML = '<circle cx="12" cy="12" r="3.5"/><path d="M12 2.5v3M12 18.5v3M2.5 12h3M18.5 12h3M5.3 5.3l2.1 2.1M16.6 16.6l2.1 2.1M18.7 5.3l-2.1 2.1M7.4 16.6l-2.1 2.1"/>';
+if (settingsIcon) settingsIcon.innerHTML = '<path d="M19.43 12.98c.04-.32.07-.65.07-.98s-.03-.66-.08-.98l2.11-1.65-2-3.46-2.49 1a7.3 7.3 0 0 0-1.7-.98L15 3.28h-4l-.37 2.65a7.3 7.3 0 0 0-1.7.98l-2.49-1-2 3.46 2.11 1.65c-.05.32-.08.65-.08.98s.03.66.08.98l-2.11 1.65 2 3.46 2.49-1c.53.4 1.1.73 1.7.98l.37 2.65h4l.37-2.65c.6-.25 1.17-.58 1.7-.98l2.49 1 2-3.46-2.06-1.65ZM13 16h-2v-3H8v-2h3V8h2v3h3v2h-3v3Z"/>';
 document.querySelector(".generator-rule").textContent = "Both published weeks are independently rechecked for exactly one solution. The previous week uses paired rotational digging; every listed walkthrough resolves the entire Gattai using named Singles techniques only.";
 const routedEntry = entryFromRoute();
 if (routedEntry) { activeWeek = routedEntry.week; activeDay = routedEntry.day; }
