@@ -34,6 +34,15 @@ const digits = [1, 2, 3, 4, 5, 6, 7, 8, 9];
 // points, for example.
 const techniqueScores = { "Full House": 4, "Naked Single": 4, "Hidden Single": 14, "Locked Pair": 40, "Locked Triple": 60, "Pointing": 50, "Claiming": 50, "Naked Pair": 60, "Naked Triple": 80, "Hidden Pair": 70, "Hidden Triple": 100, "Naked Quad": 120, "Hidden Quad": 150, "X-Wing": 140, "Swordfish": 150, "Jellyfish": 160, "Skyscraper": 130, "2-String Kite": 150, "W-Wing": 150, "XY-Wing": 160, "XYZ-Wing": 180, "Trial and error": 10000 };
 const techniqueLevels = { "Full House": "Beginner", "Naked Single": "Beginner", "Hidden Single": "Beginner", "Locked Pair": "Medium", "Locked Triple": "Medium", "Pointing": "Medium", "Claiming": "Medium", "Naked Pair": "Medium", "Naked Triple": "Medium", "Hidden Pair": "Medium", "Hidden Triple": "Medium", "Naked Quad": "Hard", "Hidden Quad": "Hard", "X-Wing": "Hard", "Swordfish": "Hard", "Jellyfish": "Hard", "Skyscraper": "Hard", "2-String Kite": "Hard", "W-Wing": "Hard", "XY-Wing": "Hard", "XYZ-Wing": "Hard", "Trial and error": "Extreme" };
+const techniqueFamilyRank = technique => {
+  if (["Full House", "Naked Single", "Hidden Single"].includes(technique)) return 0; // Singles
+  if (["Locked Pair", "Locked Triple", "Pointing", "Claiming"].includes(technique)) return 1; // Intersections
+  if (/^(Naked|Hidden) (Pair|Triple|Quad)$/.test(technique)) return 2; // Subsets
+  if (["X-Wing", "Swordfish", "Jellyfish"].includes(technique)) return 3; // Basic Fish
+  if (["Skyscraper", "2-String Kite"].includes(technique)) return 4; // Single-Digit Patterns
+  if (["W-Wing", "XY-Wing", "XYZ-Wing"].includes(technique)) return 5; // Wings
+  return 6; // Last resorts and any future unclassified method
+};
 const levelOrder = ["Beginner", "Easy", "Medium", "Tricky", "Hard", "Unfair", "Extreme", "Nightmare"];
 const levelMaxScore = { Beginner: 400, Easy: 800, Medium: 1000, Tricky: 1150, Hard: 1600, Unfair: 1800, Extreme: 3000, Nightmare: Number.MAX_SAFE_INTEGER };
 // SudokUI's HoDoKu-compatible model: take the cheapest available deduction at
@@ -468,7 +477,7 @@ function renderStep() {
   const plainText = step.text.replace(/In G[12],\s*/g, "").replace(/\bG[12]\s+/g, "");
   document.querySelector("#stepReasoning").textContent = `Grid ${grid}: ${plainText}`;
   header.innerHTML = "<tr><th>Technique</th><th>Steps</th></tr>";
-  Object.entries(grouped).sort(([left], [right]) => (levelOrder.indexOf(techniqueLevels[left] || "Nightmare") - levelOrder.indexOf(techniqueLevels[right] || "Nightmare")) || (techniqueScores[left] || 0) - (techniqueScores[right] || 0) || left.localeCompare(right)).forEach(([technique, stepNumbers]) => { const row = document.createElement("tr"), name = document.createElement("th"), details = document.createElement("td"); name.scope = "row"; name.textContent = technique; details.textContent = stepNumbers.join(", "); row.append(name, details); body.append(row); });
+  Object.entries(grouped).sort(([left], [right]) => techniqueFamilyRank(left) - techniqueFamilyRank(right) || (techniqueScores[left] || 0) - (techniqueScores[right] || 0) || left.localeCompare(right)).forEach(([technique, stepNumbers]) => { const row = document.createElement("tr"), name = document.createElement("th"), details = document.createElement("td"); name.scope = "row"; name.textContent = technique; details.textContent = stepNumbers.join(", "); row.append(name, details); body.append(row); });
   table.append(header, body); tallyList.replaceChildren(table);
   document.querySelector("#firstStep").disabled = stepIndex === 0; document.querySelector("#previousStep").disabled = stepIndex === 0; document.querySelector("#nextStep").disabled = stepIndex === steps.length - 1; document.querySelector("#lastStep").disabled = stepIndex === steps.length - 1;
 }
