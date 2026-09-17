@@ -198,6 +198,7 @@ function deriveSteps(preferAdvanced = false) {
     return false;
   }
   while (true) {
+    if (active.every(index => values[index])) return found;
     let move = null;
     for (const [label, house] of units) { const blanks = house.filter(index => !values[index]), missing = digits.filter(digit => !house.some(index => values[index] === digit)); if (blanks.length === 1 && missing.length === 1) { move = ["Full House", blanks[0], missing[0], label]; break; } }
     if (!move) for (const index of active) if (!values[index] && notes[index].size === 1) { move = ["Naked Single", index, [...notes[index]][0], ""]; break; }
@@ -213,17 +214,17 @@ function deriveSteps(preferAdvanced = false) {
     if ([3, 4].some(size => nakedSubset(size) || hiddenSubset(size))) continue;
     if (basicFish()) continue;
     if (xyWing()) continue;
-    // Every implemented named technique has been exhausted.  Complete the
-    // remaining cells openly as search steps instead of presenting a made-up
-    // Sudoku technique or silently leaving a partial "solution" on screen.
+    // Every implemented named technique has been exhausted.  Make only one
+    // transparent search choice, then restart from the easiest techniques.
+    // Filling every remaining cell from a completed search branch would make
+    // later logical deductions look like needless trial-and-error steps.
     const completion = findGattaiSolution(values);
     if (!completion) return found;
-    for (const index of active) if (!values[index]) {
-      const digit = completion[index], beforeNotes = snapshotNotes(), eliminations = [...(notes[index] || [])].filter(candidate => candidate !== digit).map(candidate => ({ index, digit: candidate }));
-      values[index] = digit; delete notes[index]; peers[index].forEach(peer => notes[peer]?.delete(digit));
-      addStep({ technique: "Trial and error", index, digit, house: "", highlight: [index], text: `${nameFor(index)} = ${digit} is selected by a search branch after the implemented named techniques are exhausted.` }, beforeNotes, eliminations);
-    }
-    return found;
+    const index = active.filter(cell => !values[cell]).sort((left, right) => notes[left].size - notes[right].size || left - right)[0];
+    const digit = completion[index], beforeNotes = snapshotNotes(), eliminations = [...(notes[index] || [])].filter(candidate => candidate !== digit).map(candidate => ({ index, digit: candidate }));
+    values[index] = digit; delete notes[index]; peers[index].forEach(peer => notes[peer]?.delete(digit));
+    addStep({ technique: "Trial and error", index, digit, house: "", highlight: [index], text: `${nameFor(index)} = ${digit} is selected by a search branch after the implemented named techniques are exhausted.` }, beforeNotes, eliminations);
+    continue;
   }
 }
 let steps = deriveSteps(), mode = "human", stepIndex = 0, selectedCell = null, entryMode = "digit", unlimitedSolution = null, unlimitedGenerationMilliseconds = 0, unlimitedRated = false;
