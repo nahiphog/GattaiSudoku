@@ -26,19 +26,29 @@ const digits = [1, 2, 3, 4, 5, 6, 7, 8, 9];
 // inserted here only after their eliminations have been independently checked
 // against a completed Gattai grid.  A search step must never be represented as
 // one of these named deductions.
-const techniqueScores = { "Full House": 100, "Naked Single": 200, "Hidden Single": 300, "Locked Pair": 1000, "Locked Triple": 1100, "Pointing": 1200, "Claiming": 1210, "Naked Pair": 1300, "Naked Triple": 1400, "Hidden Pair": 1500, "Hidden Triple": 1600, "Naked Quad": 2000, "Hidden Quad": 2100, "X-Wing": 2200, "Swordfish": 2300, "Jellyfish": 2400, "Skyscraper": 3000, "2-String Kite": 3100, "W-Wing": 3200, "XY-Wing": 3300, "XYZ-Wing": 3400 };
-const techniqueLevels = { "Full House": "Beginner", "Naked Single": "Beginner", "Hidden Single": "Beginner", "Locked Pair": "Medium", "Locked Triple": "Medium", "Pointing": "Medium", "Claiming": "Medium", "Naked Pair": "Medium", "Naked Triple": "Medium", "Hidden Pair": "Medium", "Hidden Triple": "Medium", "Naked Quad": "Hard", "Hidden Quad": "Hard", "X-Wing": "Hard", "Swordfish": "Hard", "Jellyfish": "Hard", "Skyscraper": "Tricky", "2-String Kite": "Tricky", "W-Wing": "Tricky", "XY-Wing": "Tricky", "XYZ-Wing": "Tricky" };
+// SudokUI / HoDoKu-compatible per-step ratings.  These are deliberately not
+// the technique search-order indexes: a 100-value Full House is worth 4
+// points, for example.
+const techniqueScores = { "Full House": 4, "Naked Single": 4, "Hidden Single": 14, "Locked Pair": 40, "Locked Triple": 60, "Pointing": 50, "Claiming": 50, "Naked Pair": 60, "Naked Triple": 80, "Hidden Pair": 70, "Hidden Triple": 100, "Naked Quad": 120, "Hidden Quad": 150, "X-Wing": 140, "Swordfish": 150, "Jellyfish": 160, "Skyscraper": 130, "2-String Kite": 150, "W-Wing": 150, "XY-Wing": 160, "XYZ-Wing": 180, "Trial and error": 10000 };
+const techniqueLevels = { "Full House": "Beginner", "Naked Single": "Beginner", "Hidden Single": "Beginner", "Locked Pair": "Medium", "Locked Triple": "Medium", "Pointing": "Medium", "Claiming": "Medium", "Naked Pair": "Medium", "Naked Triple": "Medium", "Hidden Pair": "Medium", "Hidden Triple": "Medium", "Naked Quad": "Hard", "Hidden Quad": "Hard", "X-Wing": "Hard", "Swordfish": "Hard", "Jellyfish": "Hard", "Skyscraper": "Hard", "2-String Kite": "Hard", "W-Wing": "Hard", "XY-Wing": "Hard", "XYZ-Wing": "Hard", "Trial and error": "Extreme" };
 const levelOrder = ["Beginner", "Easy", "Medium", "Tricky", "Hard", "Unfair", "Extreme", "Nightmare"];
-// Difficulty reflects the hardest deduction a solver must make.  Repeating a
-// simple placement many times is normal Sudoku progress, not added difficulty.
+const levelMaxScore = { Beginner: 400, Easy: 800, Medium: 1000, Tricky: 1150, Hard: 1600, Unfair: 1800, Extreme: 3000, Nightmare: Number.MAX_SAFE_INTEGER };
+// SudokUI's HoDoKu-compatible model: take the cheapest available deduction at
+// each step, sum the per-step scores, and apply technique-class floors.
 function rateSteps(solveSteps) {
-  if (solveSteps.some(step => step.technique === "Trial and error")) return { score: 9001, rating: "Over 9000" };
   let score = 0, rating = "Beginner";
+  let hardSteps = 0;
   solveSteps.forEach(step => {
-    score = Math.max(score, techniqueScores[step.technique] || 0);
+    score += techniqueScores[step.technique] || 0;
     const techniqueLevel = techniqueLevels[step.technique] || "Nightmare";
-    if (levelOrder.indexOf(techniqueLevel) > levelOrder.indexOf(rating)) rating = techniqueLevel;
+    // SudokUI treats one Hard-class fish/wing/pattern as Tricky; two such
+    // deductions floor the result at Hard.
+    const floor = techniqueLevel === "Hard" ? "Tricky" : techniqueLevel;
+    if (levelOrder.indexOf(floor) > levelOrder.indexOf(rating)) rating = floor;
+    if (techniqueLevel === "Hard") hardSteps += 1;
   });
+  if (hardSteps >= 2 && levelOrder.indexOf("Hard") > levelOrder.indexOf(rating)) rating = "Hard";
+  while (levelOrder.indexOf(rating) < levelOrder.length - 1 && score > levelMaxScore[rating]) rating = levelOrder[levelOrder.indexOf(rating) + 1];
   return { score, rating };
 }
 const units = [];
