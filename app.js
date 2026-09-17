@@ -9,6 +9,7 @@ const dailyPuzzles = {
   september15: { date: "Tuesday, September 15, 2026", rows: [".9.4.6......", "7.2.........", "8......1....", ".2........4.", "....3.2....8", "..5.....19..", "......6....2", ".........5..", "..1.27.3....", "...3........", "....8.......", ".......4.19."] },
   september16: { date: "Wednesday, September 16, 2026", rows: ["2...3...5...", ".9.....4....", "..8.9.7.....", "...4.1.....2", "1.3.6.4...8.", "...7.3.8.9..", "..9.1.8.4...", ".5...6.7.5.8", "3.....9.1...", ".....5.4.3..", "....3.....2.", "...1...9...4"] },
   september17: { date: "Thursday, September 17, 2026", rows: [".....8..1...", "..6..2.5....", "5.7.........", ".4326.......", "...........8", "..5..1..6..2", ".3........9.", "......1397..", "....2.......", "...91......3", "....7.6..8..", "....4......."] },
+  september29: { date: "Tuesday, September 29, 2026", rows: ["1.5...7.9...", ".7.....5....", "3.2...1.8...", "...1.3...5.6", "....5.....1.", "...7.9...3.2", "5.6...4.1...", ".4.....9....", "7.9...8.6...", "...2.6...7.9", "....1.....2.", "...8.7...4.1"] },
   september30: { date: "Wednesday, September 30, 2026", rows: ["..37........", "..79814.....", "......2.....", ".......4.3..", ".6....1.5.4.", "291....6....", "....2.......", "...3..8.....", ".........7..", "...........8", "....6...3.2.", ".....4......"] }
 };
 const previousWeekPuzzles = {
@@ -459,7 +460,7 @@ function loadPuzzle(day, syncRoute = true) { activeDay = day; const selectedWeek
 const archiveEntries = [
   ["previous", "monday", 2026, 8, 31], ["previous", "tuesday", 2026, 9, 1], ["previous", "wednesday", 2026, 9, 2], ["previous", "thursday", 2026, 9, 3], ["previous", "friday", 2026, 9, 4], ["previous", "saturday", 2026, 9, 5], ["previous", "sunday", 2026, 9, 6],
   ["current", "monday", 2026, 9, 7], ["current", "tuesday", 2026, 9, 8], ["current", "wednesday", 2026, 9, 9], ["current", "thursday", 2026, 9, 10], ["current", "friday", 2026, 9, 11], ["current", "saturday", 2026, 9, 12], ["current", "sunday", 2026, 9, 13],
-  ["current", "september15", 2026, 9, 15], ["current", "september16", 2026, 9, 16], ["current", "september17", 2026, 9, 17], ["current", "september30", 2026, 9, 30]
+  ["current", "september15", 2026, 9, 15], ["current", "september16", 2026, 9, 16], ["current", "september17", 2026, 9, 17], ["current", "september29", 2026, 9, 29], ["current", "september30", 2026, 9, 30]
 ].map(([week, day, year, month, date]) => ({ week, day, year, month, date }));
 const archiveKey = (year, month, date) => `${year}-${month}-${date}`;
 const archiveByDate = new Map(archiveEntries.map(entry => [archiveKey(entry.year, entry.month, entry.date), entry]));
@@ -530,6 +531,8 @@ document.addEventListener("keydown", event => { if (event.defaultPrevented || mo
 const timerControls = document.querySelector(".timer-controls"), resetTimerButton = document.querySelector("#resetTimer");
 if (timerControls) { document.querySelector(".board-footer")?.append(timerControls); }
 if (resetTimerButton) { resetTimerButton.textContent = "Reset timer"; controlSidebar.append(resetTimerButton); resetTimerButton.addEventListener("click", () => { if (window.confirm("Reset the timer to 00:00?")) resetTimer(); }); }
+const resetGridButton = document.querySelector("#resetGrid");
+if (resetGridButton) { resetGridButton.classList.add("footer-reset-grid"); document.querySelector(".board-footer")?.append(resetGridButton); }
 const setSharedHighlight = checked => { sharedHighlight = checked; document.querySelector("#sharedToggle").checked = checked; document.querySelector("#settingsSharedToggle").checked = checked; refresh(); };
 document.querySelector("#sharedToggle").addEventListener("change", event => setSharedHighlight(event.target.checked));
 document.querySelectorAll(".color-button").forEach(button => button.addEventListener("click", () => applyCellColor(button.dataset.color)));

@@ -158,13 +158,14 @@ a{color:inherit}
 .step-controls span{min-width:100px;font-size:11px}
 .control-sidebar{justify-content:center}
 }
-.puzzle-date{display:flex;align-items:center;justify-content:center;gap:7px;line-height:1.2}.puzzle-date-details{display:flex;flex-direction:column;align-items:flex-start}.puzzle-number{font-size:14px;font-weight:700;white-space:nowrap}.puzzle-date .weekday{font-size:11px;font-weight:600;letter-spacing:.08em;text-transform:uppercase}.puzzle-date .calendar-date{font-size:14px;font-weight:700}
+.puzzle-date{display:flex;align-items:center;justify-content:center;gap:7px;line-height:1.2;text-align:center}.puzzle-date-details{display:flex;flex-direction:column;align-items:center;text-align:center}.puzzle-number{font-size:14px;font-weight:700;white-space:nowrap}.puzzle-date .weekday{font-size:11px;font-weight:600;letter-spacing:.08em;text-transform:uppercase}.puzzle-date .calendar-date{font-size:14px;font-weight:700}
 /* Sidebar clarity and input focus */
 .control-sidebar button{display:flex;align-items:center;justify-content:center;text-align:center;color:var(--ink);border-color:var(--line)}
 .control-sidebar button:not(.sidebar-toggle):not(.numpad button){background:var(--muted)}
 .control-sidebar button:hover:not(:disabled),.control-sidebar button:focus-visible{background:var(--shared)}
 .control-sidebar button{border-radius:0!important}
 .board-footer{justify-content:space-between;min-height:70px}.board-footer .board-details{align-items:flex-start;margin-right:auto}.board-footer #givenCount{order:-1}.board-footer .timer-controls{margin:15px 0 0 auto}.control-sidebar .timer-reset{width:100%;height:auto;padding:8px 11px;font:inherit;background:var(--muted);color:var(--ink);border:1px solid var(--ink)}
+.board-footer .footer-reset-grid{margin:15px 0 0;background:var(--muted);color:var(--ink)}
 .help-page{min-height:270px}.help-page p{margin:0 0 14px}.help-pagination{display:flex;align-items:center;justify-content:center;gap:12px;margin-top:16px}.help-pagination button{width:32px;height:30px;border:1px solid var(--ink);background:transparent;color:var(--ink);font:700 21px/1 sans-serif;cursor:pointer}.help-pagination button:disabled{opacity:.35;cursor:default}.help-pagination span{font-size:12px;font-weight:700}
 .about-list{margin:0;padding-left:20px}.about-list li+li{margin-top:14px}
 @media(max-width:520px){.puzzle-date{gap:4px}.puzzle-number,.puzzle-date .calendar-date{font-size:12px}.puzzle-date .weekday{font-size:9px}.board-footer .timer-controls{margin-top:15px}.help-page{min-height:290px}}
