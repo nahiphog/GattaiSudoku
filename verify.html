@@ -38,7 +38,12 @@
         <div id="solutionResults" class="verify-results" aria-live="polite"></div>
       </aside>
     </section>
-    <section id="walkthrough" class="verify-walkthrough" hidden aria-live="polite"><h2>Solution walkthrough</h2><p id="walkthroughRating"></p><p id="evaluationTime" class="verify-timing"></p><ol id="walkthroughSteps"></ol></section>
+    <section id="walkthrough" class="verify-walkthrough" hidden aria-live="polite">
+      <h2>Solution walkthrough</h2>
+      <p id="walkthroughRating"></p><p id="evaluationTime" class="verify-timing"></p>
+      <div class="verify-step-controls" aria-label="Solution walkthrough controls"><button id="firstWalkthroughStep" type="button" aria-label="First step">&lt;&lt;</button><button id="previousWalkthroughStep" type="button" aria-label="Previous step">&lt;</button><span id="walkthroughStepCount"></span><button id="nextWalkthroughStep" type="button" aria-label="Next step">&gt;</button><button id="lastWalkthroughStep" type="button" aria-label="Last step">&gt;&gt;</button></div>
+      <div class="verify-step-workspace"><div id="walkthroughGrid" class="board verify-walkthrough-grid" aria-label="Interactive walkthrough grid"></div><div class="verify-step-explanation"><h3 id="walkthroughTechnique"></h3><p id="walkthroughReasoning"></p></div></div>
+    </section>
   </main>
   <script src="/verify.js"></script>
 </body>

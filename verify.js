@@ -25,11 +25,14 @@
   const walkthrough = document.querySelector("#walkthrough");
   const walkthroughRating = document.querySelector("#walkthroughRating");
   const evaluationTime = document.querySelector("#evaluationTime");
-  const walkthroughSteps = document.querySelector("#walkthroughSteps");
+  const walkthroughGrid = document.querySelector("#walkthroughGrid");
+  const walkthroughTechnique = document.querySelector("#walkthroughTechnique");
+  const walkthroughReasoning = document.querySelector("#walkthroughReasoning");
+  const walkthroughStepCount = document.querySelector("#walkthroughStepCount");
   const inputGivenCount = document.querySelector("#inputGivenCount");
   const inputTechniqueTally = document.querySelector("#inputTechniqueTally");
   const tallyResults = document.querySelector("#tallyResults");
-  let verifiedSolution = null, verifiedPuzzle = null, verifiedGivens = new Set();
+  let verifiedSolution = null, verifiedPuzzle = null, verifiedGivens = new Set(), walkthroughData = [], walkthroughIndex = 0;
   const setStatus = (message, kind = "") => { status.textContent = message; status.className = `dialog-status ${kind}`; };
   const conflicts = () => {
     const found = new Set();
@@ -54,7 +57,7 @@
     }
     drawBoundaries(grid); figure.append(title, grid); solutionResults.append(figure);
   }
-  function clearResults() { solutionResults.replaceChildren(); verifiedSolution = null; verifiedPuzzle = null; verifiedGivens = new Set(); evaluateButton.hidden = true; copyInputImage.hidden = true; copyCompletedImage.hidden = true; uniquenessTime.hidden = true; walkthrough.hidden = true; inputTechniqueTally.hidden = true; tallyResults.replaceChildren(); }
+  function clearResults() { solutionResults.replaceChildren(); verifiedSolution = null; verifiedPuzzle = null; verifiedGivens = new Set(); walkthroughData = []; walkthroughIndex = 0; walkthroughGrid.replaceChildren(); evaluateButton.hidden = true; copyInputImage.hidden = true; copyCompletedImage.hidden = true; uniquenessTime.hidden = true; walkthrough.hidden = true; inputTechniqueTally.hidden = true; tallyResults.replaceChildren(); }
   async function copyGridImage(grid, givens, button, label) {
     const cell = 48, margin = 26, size = cell * 12, canvas = document.createElement("canvas"), context = canvas.getContext("2d");
     canvas.width = size + margin * 2; canvas.height = size + margin * 2; context.fillStyle = "#fff"; context.fillRect(0, 0, canvas.width, canvas.height);
@@ -71,9 +74,10 @@
     const candidatesFor = index => { const used = new Set(); peersFor(index).forEach(other => { if (working[other]) used.add(working[other]); }); return digits.filter(digit => !used.has(digit)); };
     const notes = Object.fromEntries(active.filter(index => !working[index]).map(index => [index, new Set(candidatesFor(index))]));
     const combinations = (items, size) => size === 0 ? [[]] : items.length < size ? [] : combinations(items.slice(1), size - 1).map(group => [items[0], ...group]).concat(combinations(items.slice(1), size));
-    const add = (technique, text, index = null, digit = null) => steps.push({ technique, text, index, digit });
-    const place = (technique, index, digit, text) => { working[index] = digit; delete notes[index]; peersFor(index).forEach(peer => notes[peer]?.delete(digit)); add(technique, text, index, digit); };
-    const eliminate = (technique, changes, text) => { const actual = changes.filter(({ index, digit }) => notes[index]?.has(digit)); if (!actual.length) return false; actual.forEach(({ index, digit }) => notes[index].delete(digit)); add(technique, text); return true; };
+    const snapshot = () => ({ values: [...working], notes: Object.fromEntries(Object.entries(notes).map(([index, candidates]) => [index, [...candidates]])) });
+    const add = (technique, text, index = null, digit = null, before = snapshot(), affected = [], eliminations = []) => steps.push({ technique, text, index, digit, before, values: [...working], notes: Object.fromEntries(Object.entries(notes).map(([cell, candidates]) => [cell, [...candidates]])), affected, eliminations });
+    const place = (technique, index, digit, text) => { const before = snapshot(); working[index] = digit; delete notes[index]; peersFor(index).forEach(peer => notes[peer]?.delete(digit)); add(technique, text, index, digit, before, [index]); };
+    const eliminate = (technique, changes, text) => { const actual = changes.filter(({ index, digit }) => notes[index]?.has(digit)); if (!actual.length) return false; const before = snapshot(); actual.forEach(({ index, digit }) => notes[index].delete(digit)); add(technique, text, null, null, before, actual.map(({ index }) => index), actual); return true; };
     function fullHouse() { for (const [label, house] of units) { const blanks = house.filter(index => !working[index]), missing = digits.filter(digit => !house.some(index => working[index] === digit)); if (blanks.length === 1 && missing.length === 1) { place("Full House", blanks[0], missing[0], `${label} has one empty cell: ${cellName(blanks[0])} = ${missing[0]}.`); return true; } } return false; }
     function nakedSingle() { for (const index of active) if (!working[index] && notes[index]?.size === 1) { const digit = [...notes[index]][0]; place("Naked Single", index, digit, `${cellName(index)} has only one candidate: ${digit}.`); return true; } return false; }
     function hiddenSingle() { for (const [label, house] of units) for (const digit of digits) { if (house.some(index => working[index] === digit)) continue; const places = house.filter(index => !working[index] && notes[index]?.has(digit)); if (places.length === 1) { place("Hidden Single", places[0], digit, `${digit} appears in only one open cell of ${label}: ${cellName(places[0])}.`); return true; } } return false; }
@@ -119,10 +123,48 @@
     }
     return steps;
   }
+  function walkthroughGridFor(step) {
+    if (/\bGrid 2\b/.test(step.text)) return "two";
+    const index = step.index ?? step.affected?.[0];
+    if (index !== undefined && index !== null) {
+      const row = Math.floor(index / 12), column = index % 12;
+      if (row >= 3 && column >= 3 && (row >= 9 || column >= 9)) return "two";
+    }
+    return "one";
+  }
+  function makeWalkthroughCandidates(candidates, index, eliminations) {
+    const notation = document.createElement("span"), removed = new Set(eliminations.filter(item => item.index === index).map(item => item.digit));
+    notation.className = "snyder";
+    [...new Set([...(candidates || []), ...removed])].sort((left, right) => left - right).forEach(digit => {
+      const mark = document.createElement("i"); mark.className = `candidate-${digit}${removed.has(digit) ? " eliminated" : ""}`; mark.textContent = digit; notation.append(mark);
+    });
+    return notation;
+  }
+  function renderWalkthroughStep() {
+    const step = walkthroughData[walkthroughIndex]; if (!step) return;
+    const selectedGrid = walkthroughGridFor(step), affected = new Set(step.affected || []);
+    walkthroughGrid.replaceChildren();
+    for (let row = 0; row < 12; row += 1) for (let column = 0; column < 12; column += 1) {
+      const index = row * 12 + column; if (!activeSet.has(index)) continue;
+      const cell = document.createElement("span"); cell.className = `cell${verifiedGivens.has(index) ? " given" : ""}${affected.has(index) ? " affected-house" : ""}${step.index === index ? " focus" : ""}`;
+      cell.style.gridRowStart = row + 1; cell.style.gridColumnStart = column + 1;
+      if (step.values[index]) cell.textContent = step.values[index]; else cell.append(makeWalkthroughCandidates(step.before.notes[index], index, step.eliminations || []));
+      walkthroughGrid.append(cell);
+    }
+    drawBoundaries(walkthroughGrid);
+    const outline = document.createElement("span"); outline.className = `solver-grid-outline solver-grid-${selectedGrid}`; walkthroughGrid.append(outline);
+    walkthroughTechnique.textContent = step.technique;
+    walkthroughReasoning.textContent = `Grid ${selectedGrid === "one" ? 1 : 2}: ${step.text.replace(/In Grid [12],\s*/g, "").replace(/\bGrid [12]:?\s*/g, "")}`;
+    walkthroughStepCount.textContent = `Step ${walkthroughIndex + 1} of ${walkthroughData.length}`;
+    document.querySelector("#firstWalkthroughStep").disabled = walkthroughIndex === 0;
+    document.querySelector("#previousWalkthroughStep").disabled = walkthroughIndex === 0;
+    document.querySelector("#nextWalkthroughStep").disabled = walkthroughIndex === walkthroughData.length - 1;
+    document.querySelector("#lastWalkthroughStep").disabled = walkthroughIndex === walkthroughData.length - 1;
+  }
   function renderWalkthrough() {
     const started = performance.now();
-    const steps = buildWalkthrough(verifiedSolution, verifiedGivens), tally = new Map(); walkthroughSteps.replaceChildren();
-    steps.forEach((step, index) => { tally.set(step.technique, [...(tally.get(step.technique) || []), index + 1]); const item = document.createElement("li"); item.innerHTML = `<strong>Step ${index + 1}: ${step.technique}</strong> — ${step.text}`; walkthroughSteps.append(item); });
+    const steps = buildWalkthrough(verifiedSolution, verifiedGivens), tally = new Map();
+    steps.forEach((step, index) => { tally.set(step.technique, [...(tally.get(step.technique) || []), index + 1]); });
     const scores = { "Full House": 4, "Naked Single": 4, "Hidden Single": 14, "Locked Pair": 40, "Locked Triple": 60, "Pointing": 50, "Claiming": 50, "Naked Pair": 60, "Naked Triple": 80, "Hidden Pair": 70, "Hidden Triple": 100, "Naked Quad": 120, "Hidden Quad": 150, "X-Wing": 140, "Swordfish": 150, "Jellyfish": 160, "Skyscraper": 130, "2-String Kite": 150, "W-Wing": 150, "XY-Wing": 160, "XYZ-Wing": 180, "Trial and error": 10000 };
     const levels = { "Full House": "Beginner", "Naked Single": "Beginner", "Hidden Single": "Beginner", "Locked Pair": "Medium", "Locked Triple": "Medium", "Pointing": "Medium", "Claiming": "Medium", "Naked Pair": "Medium", "Naked Triple": "Medium", "Hidden Pair": "Medium", "Hidden Triple": "Medium", "Naked Quad": "Hard", "Hidden Quad": "Hard", "X-Wing": "Hard", "Swordfish": "Hard", "Jellyfish": "Hard", "Skyscraper": "Hard", "2-String Kite": "Hard", "W-Wing": "Hard", "XY-Wing": "Hard", "XYZ-Wing": "Hard", "Trial and error": "Extreme" };
     const order = ["Beginner", "Easy", "Medium", "Tricky", "Hard", "Unfair", "Extreme", "Nightmare"], caps = { Beginner: 400, Easy: 800, Medium: 1000, Tricky: 1150, Hard: 1600, Unfair: 1800, Extreme: 3000, Nightmare: Number.MAX_SAFE_INTEGER }; let score = 0, rating = "Beginner", hardSteps = 0;
@@ -134,6 +176,7 @@
     tallyResults.innerHTML = `<table><thead><tr><th>Technique</th><th>Steps</th></tr></thead><tbody>${[...tally.entries()].map(([technique, stepsForTechnique]) => `<tr><td>${technique}</td><td>${stepsForTechnique.join(", ")}</td></tr>`).join("")}</tbody></table>`;
     inputTechniqueTally.hidden = false;
     walkthrough.hidden = false;
+    walkthroughData = steps; walkthroughIndex = 0; renderWalkthroughStep();
   }
   function render() {
     const bad = conflicts(); board.innerHTML = "";
@@ -206,6 +249,10 @@
     }
   });
   evaluateButton.addEventListener("click", renderWalkthrough);
+  document.querySelector("#firstWalkthroughStep").addEventListener("click", () => { walkthroughIndex = 0; renderWalkthroughStep(); });
+  document.querySelector("#previousWalkthroughStep").addEventListener("click", () => { if (walkthroughIndex > 0) { walkthroughIndex -= 1; renderWalkthroughStep(); } });
+  document.querySelector("#nextWalkthroughStep").addEventListener("click", () => { if (walkthroughIndex < walkthroughData.length - 1) { walkthroughIndex += 1; renderWalkthroughStep(); } });
+  document.querySelector("#lastWalkthroughStep").addEventListener("click", () => { if (walkthroughData.length) { walkthroughIndex = walkthroughData.length - 1; renderWalkthroughStep(); } });
   copyInputImage.addEventListener("click", () => copyGridImage(verifiedPuzzle, verifiedGivens, copyInputImage, "Copy input grid as image"));
   copyCompletedImage.addEventListener("click", () => copyGridImage(verifiedSolution, verifiedGivens, copyCompletedImage, "Copy completed grid as image"));
   document.querySelector("#clearGrid").addEventListener("click", () => { values.fill(0); clearResults(); setStatus(""); render(); });
