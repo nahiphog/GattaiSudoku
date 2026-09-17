@@ -17,6 +17,9 @@ import tkinter as tk
 from dataclasses import dataclass
 from tkinter import messagebox, ttk
 
+from gattai_digger_human_solver_first import is_unique_logic_first
+from generate_logical_gattai import allowed_logic
+
 N = 12
 DIGITS = set(range(1, 10))
 
@@ -141,36 +144,29 @@ def full_gattai(rng):
 
 
 def simple_difficulty(givens):
-    """A transparent basic rating; unsolved states are marked Over 9000."""
-    board = list(givens)
-    steps = 0
-    changed = True
-    while changed:
-        changed = False
-        # Full houses, naked singles, then hidden singles.
-        for _, unit in UNITS:
-            missing = DIGITS - {board[c] for c in unit if board[c]}
-            empty = [c for c in unit if not board[c]]
-            if len(empty) == len(missing) == 1:
-                board[empty[0]] = next(iter(missing)); steps += 1; changed = True; break
-        if changed:
-            continue
-        for cell in ACTIVE:
-            if not board[cell] and len(candidates(board, cell)) == 1:
-                board[cell] = next(iter(candidates(board, cell))); steps += 1; changed = True; break
-        if changed:
-            continue
-        for _, unit in UNITS:
-            missing = DIGITS - {board[c] for c in unit if board[c]}
-            for value in missing:
-                places = [c for c in unit if not board[c] and value in candidates(board, c)]
-                if len(places) == 1:
-                    board[places[0]] = value; steps += 1; changed = True; break
-            if changed:
-                break
-    if any(not board[cell] for cell in ACTIVE):
-        return "Over 9000", steps
-    return ("Easy" if steps < 65 else "Medium"), steps
+    """Rate via the shared ordered human solver, never just singles.
+
+    If the supported logic cannot complete the grid, it is deliberately
+    reported as ``Over 9000`` rather than disguising a search completion as a
+    named human deduction.
+    """
+    logical, steps, _solved, *_families = allowed_logic(list(givens), record=True)
+    if not logical:
+        return "Over 9000", 9001
+    scores = {"Full House": 4, "Naked Single": 4, "Hidden Single": 14,
+              "Locked Pair": 40, "Locked Triple": 60, "Pointing": 50,
+              "Claiming": 50, "Naked Pair": 60, "Hidden Pair": 70,
+              "Naked Triple": 80, "Hidden Triple": 100, "Naked Quad": 120,
+              "Hidden Quad": 150, "X-Wing": 140, "XY-Wing": 160}
+    score = sum(scores.get(step[0], 0) for step in steps)
+    if score <= 400: return "Beginner", score
+    if score <= 800: return "Easy", score
+    if score <= 1000: return "Medium", score
+    if score <= 1150: return "Tricky", score
+    if score <= 1600: return "Hard", score
+    if score <= 1800: return "Unfair", score
+    if score <= 3000: return "Extreme", score
+    return "Nightmare", score
 
 
 @dataclass
@@ -200,7 +196,7 @@ def build_custom(kept, forbidden, stop, progress, max_extra_clues=30):
         progress(f"Checking selected clues — attempt {attempt}", len(kept))
         # Reverse digging: add one eligible clue at a time until unique.
         added = 0
-        while count_solutions(puzzle, stop) != 1:
+        while not is_unique_logic_first(puzzle, full):
             if stop.is_set():
                 return None
             if added >= max_extra_clues or not pool:
@@ -210,7 +206,7 @@ def build_custom(kept, forbidden, stop, progress, max_extra_clues=30):
             added += 1
             progress("Adding one clue", sum(1 for c in ACTIVE if puzzle[c]))
         clue_count = sum(1 for cell in ACTIVE if puzzle[cell])
-        if count_solutions(puzzle, stop) == 1:
+        if is_unique_logic_first(puzzle, full):
             difficulty, steps = simple_difficulty(puzzle)
             return Result(puzzle, full, round(time.monotonic() - started), difficulty, steps)
         progress("Restarting with a fresh 126-cell Gattai", clue_count)

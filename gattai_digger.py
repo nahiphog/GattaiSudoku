@@ -2,8 +2,10 @@
 
 This module creates a complete overlapping Gattai solution, then removes
 clues one at a time.  A removal is kept only when the combined 126-cell
-Gattai structure still has exactly one solution.  It makes no logical-technique
-or difficulty requirement: uniqueness is the sole digging rule.
+Gattai structure still has exactly one solution.  The ordered human solver is
+always tried before exact backtracking; however, this unlimited-mode generator
+has no technique gate, so a unique puzzle is retained even when search is
+needed to certify it.
 
 The public generator returns the clue count, the 144-character puzzle string,
 and the elapsed generation time.
@@ -16,7 +18,7 @@ import time
 from collections.abc import Callable
 from dataclasses import dataclass
 
-from generate_logical_gattai import N, active as ACTIVE, count_solutions, make_full
+from generate_logical_gattai import N, active as ACTIVE, allowed_logic, count_solutions, make_full
 
 
 Progress = Callable[[int, int], None]
@@ -39,6 +41,14 @@ def board_to_string(board: list[int]) -> str:
     periods, so the result can be imported directly by the website.
     """
     return "".join(str(board[cell]) if cell in ACTIVE_SET and board[cell] else "." for cell in range(N * N))
+
+
+def unique_with_logic_fallback(puzzle: list[int], solution: list[int]) -> bool:
+    """Certify uniqueness after first exhausting the ordered human solver."""
+    logical, _steps, solved, *_families = allowed_logic(puzzle, record=True)
+    if logical and solved == solution:
+        return True
+    return count_solutions(puzzle, limit=2) == 1
 
 
 def dig_unique_gattai(
@@ -76,7 +86,7 @@ def dig_unique_gattai(
             value = puzzle[cell]
             puzzle[cell] = 0
             tested += 1
-            if count_solutions(puzzle, limit=2) == 1:
+            if unique_with_logic_fallback(puzzle, full):
                 removed_any = True
             else:
                 puzzle[cell] = value
@@ -94,12 +104,12 @@ def dig_unique_gattai(
             continue
         value = puzzle[cell]
         puzzle[cell] = 0
-        still_unique = count_solutions(puzzle, limit=2) == 1
+        still_unique = unique_with_logic_fallback(puzzle, full)
         puzzle[cell] = value
         if still_unique:
             raise RuntimeError("Digging stopped before reaching a minimal unique-clue state.")
 
-    if count_solutions(puzzle, limit=2) != 1:
+    if not unique_with_logic_fallback(puzzle, full):
         raise RuntimeError("Final puzzle failed uniqueness validation.")
     return DugPuzzle(
         given_cells=sum(bool(puzzle[cell]) for cell in ACTIVE),

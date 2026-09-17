@@ -3,6 +3,15 @@ from itertools import combinations
 
 N=12
 ALL=set(range(1,10))
+# This is the shared, deterministic human-solver order used by the Python
+# generators.  It mirrors the low-to-high family ordering used by the site:
+# never let a fish or wing pre-empt a currently available simpler deduction.
+SUPPORTED_SOLVE_ORDER=(
+    'Full House','Naked Single','Hidden Single',
+    'Naked Pair','Hidden Pair','Locked Pair','Locked Triple','Pointing','Claiming',
+    'Naked Triple','Hidden Triple','Naked Quad','Hidden Quad',
+    'X-Wing','XY-Wing',
+)
 units=[]
 for name,(ro,co) in (("G1",(0,0)),("G2",(3,3))):
     for i in range(9):
@@ -78,6 +87,61 @@ def allowed_logic(givens,record=False):
                     before=len(notes[cell]); notes[cell]&=digits; changed|=len(notes[cell])!=before
                 if changed: used_subsets.add(f"Hidden {('Pair','Triple','Quad')[size-2]}"); return True
         return False
+    def locked_candidates():
+        """Apply box-line intersections without allowing a harder pattern first.
+
+        Both component grids are scanned independently.  The shared cells are
+        naturally included in each scan, so an elimination remains valid for
+        both grids that own the cell.
+        """
+        for grid,ro,co in (("G1",0,0),("G2",3,3)):
+            grid_cells={(ro+r)*N+co+c for r in range(9) for c in range(9)}
+            for box_row in range(3):
+                for box_col in range(3):
+                    box={(ro+box_row*3+r)*N+co+box_col*3+c for r in range(3) for c in range(3)}
+                    for digit in ALL:
+                        places=[cell for cell in box if cell in notes and digit in notes[cell]]
+                        if len(places)<2: continue
+                        rows={cell//N for cell in places}; cols={cell%N for cell in places}
+                        if len(rows)==1:
+                            row=next(iter(rows)); victims=[row*N+column for column in range(co,co+9) if row*N+column in notes and row*N+column not in box and digit in notes[row*N+column]]
+                            if victims:
+                                for victim in victims: notes[victim].discard(digit)
+                                if record: steps.append(("Locked Pair" if len(places)==2 else "Locked Triple" if len(places)==3 else "Pointing",None,digit,f"{grid} box {box_row+1},{box_col+1}"))
+                                return True
+                        if len(cols)==1:
+                            column=next(iter(cols)); victims=[row*N+column for row in range(ro,ro+9) if row*N+column in notes and row*N+column not in box and digit in notes[row*N+column]]
+                            if victims:
+                                for victim in victims: notes[victim].discard(digit)
+                                if record: steps.append(("Locked Pair" if len(places)==2 else "Locked Triple" if len(places)==3 else "Pointing",None,digit,f"{grid} box {box_row+1},{box_col+1}"))
+                                return True
+            for local_row in range(9):
+                row_cells={(ro+local_row)*N+co+c for c in range(9)}
+                for digit in ALL:
+                    places=[cell for cell in row_cells if cell in notes and digit in notes[cell]]
+                    if len(places)<2: continue
+                    boxes={((cell//N-ro)//3,(cell%N-co)//3) for cell in places}
+                    if len(boxes)!=1: continue
+                    box_row,box_col=next(iter(boxes)); box={(ro+box_row*3+r)*N+co+box_col*3+c for r in range(3) for c in range(3)}
+                    victims=[cell for cell in box-row_cells if cell in notes and digit in notes[cell]]
+                    if victims:
+                        for victim in victims: notes[victim].discard(digit)
+                        if record: steps.append(("Claiming",None,digit,f"{grid} row {local_row+1}"))
+                        return True
+            for local_col in range(9):
+                column_cells={(ro+r)*N+co+local_col for r in range(9)}
+                for digit in ALL:
+                    places=[cell for cell in column_cells if cell in notes and digit in notes[cell]]
+                    if len(places)<2: continue
+                    boxes={((cell//N-ro)//3,(cell%N-co)//3) for cell in places}
+                    if len(boxes)!=1: continue
+                    box_row,box_col=next(iter(boxes)); box={(ro+box_row*3+r)*N+co+box_col*3+c for r in range(3) for c in range(3)}
+                    victims=[cell for cell in box-column_cells if cell in notes and digit in notes[cell]]
+                    if victims:
+                        for victim in victims: notes[victim].discard(digit)
+                        if record: steps.append(("Claiming",None,digit,f"{grid} column {local_col+1}"))
+                        return True
+        return False
     def xy_wing():
         for pivot in active:
             if pivot not in notes or len(notes[pivot])!=2: continue
@@ -139,10 +203,18 @@ def allowed_logic(givens,record=False):
                     places=[x for x in unit if not board[x] and value in notes[x]]
                     if len(places)==1: move=("Hidden Single",places[0],value,label); break
                 if move: break
-        # Prefer a visible advanced pattern over larger subset escalation.  This
-        # keeps the recorded walkthrough honest when a fish or wing is already
-        # available, while pairs/triples/quads remain the next logical choice.
-        if not move and (basic_fish() or xy_wing() or any(naked_subset(size) or hidden_subset(size) for size in range(2,5))): continue
+        # Always exhaust the lowest available family first.  In particular,
+        # Naked and Hidden Pairs come before Pointing and Claiming; fish and
+        # wings are never allowed to jump ahead of intersections or subsets.
+        if not move and naked_subset(2): continue
+        if not move and hidden_subset(2): continue
+        if not move and locked_candidates(): continue
+        if not move and naked_subset(3): continue
+        if not move and hidden_subset(3): continue
+        if not move and naked_subset(4): continue
+        if not move and hidden_subset(4): continue
+        if not move and basic_fish(): continue
+        if not move and xy_wing(): continue
         if not move: break
         place(*move)
     return all(board[x] for x in active),steps,board,used_subsets,used_fish,used_single_digit_patterns,used_wings
