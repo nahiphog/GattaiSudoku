@@ -11,8 +11,8 @@ import random
 import time
 from collections.abc import Callable
 
-from gattai_digger import DugPuzzle, board_to_string
-from generate_logical_gattai import active as ACTIVE, allowed_logic, count_solutions, make_full
+from gattai_digger import DugPuzzle, board_to_string, unique_with_logic_fallback
+from generate_logical_gattai import active as ACTIVE, make_full
 
 
 Progress = Callable[[int, int], None]
@@ -25,10 +25,7 @@ def is_unique_logic_first(puzzle: list[int], solution: list[int]) -> bool:
     establishes uniqueness.  An incomplete technique solve is inconclusive,
     not a rejection: exact solution counting then makes the decision.
     """
-    solved_by_logic, _steps, solved, *_families = allowed_logic(puzzle, record=True)
-    if solved_by_logic and solved == solution:
-        return True
-    return count_solutions(puzzle, limit=2) == 1
+    return unique_with_logic_fallback(puzzle, solution)
 
 
 def dig_human_solver_first(

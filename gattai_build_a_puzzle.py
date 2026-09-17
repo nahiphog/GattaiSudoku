@@ -34,8 +34,8 @@ def build_a_puzzle(
         raise ValueError("Constraints may contain only playable Gattai cells.")
     if keep & empty:
         raise ValueError("A cell cannot be both must-keep and must-be-empty.")
-    if not 0 <= max_extra_clues <= len(ACTIVE):
-        raise ValueError("max_extra_clues must be between 0 and 126.")
+    if not 0 <= max_extra_clues <= 30:
+        raise ValueError("max_extra_clues must be between 0 and 30.")
 
     started = time.perf_counter()
     rng = random.Random(seed)
