@@ -22,8 +22,18 @@ const previousWeekPuzzles = {
   saturday: { date: "Saturday, September 5, 2026", rows: ["...375......", ".8...1......", "3..2....6...", ".72.9.......", "..3.2.1.....", ".......7.9..", "6....3..1...", "...4...9.3.8", ".........2.4", ".....8.5....", "......3.7.9.", "......2...5."] },
   sunday: { date: "Sunday, September 6, 2026", rows: ["8...25......", "..5...3.....", ".7..84......", ".....85...6.", "..263.4.....", ".48.......9.", "....6..3...9", "..7.........", "...8....6.3.", "....2.74....", "........1.53", "....1...284."] }
 };
+// The rotational-pair archive replaces the earlier hand-picked weeks when
+// daily-puzzles.js is available.  Keeping the legacy data as a fallback lets
+// the page remain usable if that optional archive file is unavailable.
+const rotationalArchive = window.ROTATIONAL_ARCHIVE || null;
+if (rotationalArchive) {
+  Object.keys(dailyPuzzles).forEach(key => delete dailyPuzzles[key]);
+  Object.assign(dailyPuzzles, rotationalArchive);
+  Object.keys(previousWeekPuzzles).forEach(key => delete previousWeekPuzzles[key]);
+}
 const puzzles = { ...dailyPuzzles, unlimited: { date: "Unlimited", rows: Array(12).fill("............") } };
-let activeWeek = "current", activeDay = "tuesday", rows = dailyPuzzles.tuesday.rows, puzzleDate = dailyPuzzles.tuesday.date;
+const defaultDailyKey = rotationalArchive ? "2026-08-01" : "tuesday";
+let activeWeek = rotationalArchive ? "archive" : "current", activeDay = defaultDailyKey, rows = dailyPuzzles[defaultDailyKey].rows, puzzleDate = dailyPuzzles[defaultDailyKey].date;
 const digits = [1, 2, 3, 4, 5, 6, 7, 8, 9];
 // The order is deliberately explicit.  New technique implementations are
 // inserted here only after their eliminations have been independently checked
@@ -408,13 +418,11 @@ function drawBoardBoundaries() {
 function gridForStep(step) {
   if (step?.grid === "G2") return "two";
   if (step?.grid === "G1") return "one";
-  if (step?.house?.startsWith("G2")) return "two";
-  if (step?.house?.startsWith("G1")) return "one";
+  if (step?.house?.startsWith("G2") || (!step?.house && /\bG2\b/.test(step?.text || ""))) return "two";
   const index = step?.index ?? step?.highlight?.[0];
   if (index !== undefined && index !== null) {
     const row = Math.floor(index / 12), column = index % 12;
-    if (row < 9 && column < 9) return "one";
-    if (row >= 3 && column >= 3) return "two";
+    if (row >= 3 && column >= 3 && (row >= 9 || column >= 9)) return "two";
   }
   return "one";
 }
@@ -473,7 +481,7 @@ function renderStep() {
   const step = steps[stepIndex], grouped = steps.reduce((groups, item, index) => { (groups[item.technique] ||= []).push(index + 1); return groups; }, {}), tallyList = document.querySelector("#techniqueTallyList"), table = document.createElement("table"), header = document.createElement("thead"), body = document.createElement("tbody");
   document.querySelector("#stepCount").textContent = `Step ${stepIndex + 1} of ${steps.length}`;
   document.querySelector("#stepTechnique").textContent = step.technique;
-  const grid = gridForStep(step) === "two" ? 2 : 1;
+  const grid = step.house?.startsWith("G2") || (!step.house && /\bG2\b/.test(step.text)) ? 2 : 1;
   const plainText = step.text.replace(/In G[12],\s*/g, "").replace(/\bG[12]\s+/g, "");
   document.querySelector("#stepReasoning").textContent = `Grid ${grid}: ${plainText}`;
   header.innerHTML = "<tr><th>Technique</th><th>Steps</th></tr>";
@@ -497,11 +505,17 @@ function renderBoard() {
 function renderPuzzleHeading() { const label = document.querySelector("#puzzleDate"); if (!label) return; if (activeDay === "unlimited") { label.textContent = puzzleDate; return; } const match = puzzleDate.match(/^([^,]+),\s*([A-Za-z]+)\s+(\d+),\s*(\d+)$/); const position = currentPuzzlePosition(); if (!match) { label.textContent = `Puzzle ${position + 1}: ${puzzleDate}`; return; } const [, weekday, month, day, year] = match, shortMonth = month.slice(0, 3); label.replaceChildren(); const number = document.createElement("span"), details = document.createElement("span"), date = document.createElement("span"), dayLabel = document.createElement("span"); number.className = "puzzle-number"; details.className = "puzzle-date-details"; date.className = "calendar-date"; dayLabel.className = "weekday"; number.textContent = `Puzzle ${position + 1}:`; date.textContent = `${shortMonth} ${day}, ${year}`; dayLabel.textContent = weekday; details.append(date, dayLabel); label.append(number, details); }
 function refresh() { const showingSolution = mode === "solver", unlimited = isUnlimited(); if (showingSolution) boardCard.append(solutionRail); else puzzleSurface.append(solutionRail); renderStep(); renderBoard(); const givens = original.filter((value, index) => active.includes(index) && value).length, rating = rateSteps(steps); givenCount.textContent = unlimited ? `${givens} given cells · generated in ${(unlimitedGenerationMilliseconds / 1000).toFixed(2)} s` : `${givens} given cells`; renderPuzzleHeading(); updatePuzzleNavigation(); document.querySelector("#difficultyLabel").textContent = unlimited && !unlimitedRated ? "Difficulty: Unrated (unique-only)" : `Difficulty: ${rating.rating} (${rating.score})`; document.querySelector("#difficultyLabel").classList.toggle("is-hidden", !difficultyVisible); givenCount.classList.toggle("is-hidden", !givenCountVisible); solutionToggle.setAttribute("aria-pressed", String(showingSolution)); solutionToggle.textContent = unlimited ? (showingSolution ? "Hide final grid" : "Show final grid") : (showingSolution ? "Hide solution" : "Read solution"); guide.classList.toggle("hidden", mode === "human" || unlimited); solutionRail.classList.toggle("hidden", mode === "human" || unlimited); boardCard.classList.toggle("solver-active", showingSolution); updateEntryControls(); setTimerRunning(mode === "human"); }
 function loadPuzzle(day, syncRoute = true) { activeDay = day; const selectedWeek = activeWeek === "previous" ? previousWeekPuzzles : dailyPuzzles, selectedPuzzle = (day === "unlimited" ? puzzles : selectedWeek)[day]; rows = selectedPuzzle.rows; puzzleDate = selectedPuzzle.date; original.fill(0); rows.forEach((row, r) => [...row].forEach((value, c) => { if (value !== ".") original[r * 12 + c] = Number(value); })); const key = stateKey(); ensureState(key); human = userInputs[key]; playNotes = userNotes[key]; playColors = userColors[key]; selectedCell = null; steps = deriveSteps(["friday", "saturday", "sunday"].includes(day)); const walked = [...original]; steps.forEach(step => { if (step.index !== null) walked[step.index] = step.digit; }); unlimitedRated = day === "unlimited" && active.every(index => walked[index]); stepIndex = 0; document.querySelector("#unlimitedMode").classList.toggle("active", day === "unlimited"); if (syncRoute) syncPuzzleRoute(); refresh(); }
-const archiveEntries = [
+const legacyArchiveEntries = [
   ["previous", "monday", 2026, 8, 31], ["previous", "tuesday", 2026, 9, 1], ["previous", "wednesday", 2026, 9, 2], ["previous", "thursday", 2026, 9, 3], ["previous", "friday", 2026, 9, 4], ["previous", "saturday", 2026, 9, 5], ["previous", "sunday", 2026, 9, 6],
   ["current", "monday", 2026, 9, 7], ["current", "tuesday", 2026, 9, 8], ["current", "wednesday", 2026, 9, 9], ["current", "thursday", 2026, 9, 10], ["current", "friday", 2026, 9, 11], ["current", "saturday", 2026, 9, 12], ["current", "sunday", 2026, 9, 13],
   ["current", "september15", 2026, 9, 15], ["current", "september16", 2026, 9, 16], ["current", "september17", 2026, 9, 17], ["current", "september28", 2026, 9, 28], ["current", "september29", 2026, 9, 29], ["current", "september30", 2026, 9, 30]
 ].map(([week, day, year, month, date]) => ({ week, day, year, month, date }));
+const archiveEntries = rotationalArchive
+  ? Object.keys(rotationalArchive).sort().map(key => {
+      const [year, month, date] = key.split("-").map(Number);
+      return { week: "archive", day: key, year, month, date };
+    })
+  : legacyArchiveEntries;
 const archiveKey = (year, month, date) => `${year}-${month}-${date}`;
 const archiveByDate = new Map(archiveEntries.map(entry => [archiveKey(entry.year, entry.month, entry.date), entry]));
 const archiveRoute = entry => `/daily/${entry.year}_${String(entry.month).padStart(2, "0")}_${String(entry.date).padStart(2, "0")}/`;
@@ -513,9 +527,17 @@ function navigatePuzzle(offset) { const position = currentPuzzlePosition(), targ
 function renderArchiveCalendar() {
   const calendar = document.querySelector("#archiveCalendar");
   calendar.replaceChildren();
-  for (let offset = 0; offset < 35; offset += 1) {
-    const date = new Date(2026, 7, 31 + offset), year = date.getFullYear(), month = date.getMonth() + 1, day = date.getDate(), entry = archiveByDate.get(archiveKey(year, month, day));
-    if (!entry) { const blank = document.createElement("span"); blank.textContent = day; if (month !== 9) blank.classList.add("outside"); calendar.append(blank); continue; }
+  const first = rotationalArchive ? new Date(2026, 7, 1) : new Date(2026, 7, 31);
+  const totalDays = rotationalArchive ? 61 : 35;
+  if (rotationalArchive) {
+    // The calendar headings start Monday, while JavaScript starts Sunday.
+    // Add the five leading slots needed for Saturday, August 1, 2026.
+    const leadingSlots = (first.getDay() + 6) % 7;
+    for (let slot = 0; slot < leadingSlots; slot += 1) calendar.append(document.createElement("span"));
+  }
+  for (let offset = 0; offset < totalDays; offset += 1) {
+    const date = new Date(first.getFullYear(), first.getMonth(), first.getDate() + offset), year = date.getFullYear(), month = date.getMonth() + 1, day = date.getDate(), entry = archiveByDate.get(archiveKey(year, month, day));
+    if (!entry) { const blank = document.createElement("span"); blank.textContent = rotationalArchive ? "X" : day; if (month !== 9) blank.classList.add("outside"); calendar.append(blank); continue; }
     const link = document.createElement("a");
     link.href = archiveRoute(entry); link.textContent = day; link.title = (entry.week === "previous" ? previousWeekPuzzles : dailyPuzzles)[entry.day].date;
     if (entry.week === activeWeek && entry.day === activeDay) link.classList.add("is-current");
@@ -837,8 +859,8 @@ loadPuzzle(activeDay, false);
     for (const index of active) if (original[index] && original[index] !== values[index]) return `The value at ${nameFor(index)} does not match this puzzle's given clue.`;
     return "";
   }
-  // Daily puzzles are served from /daily/YYYY_MM_DD/. Keep standalone page
-  // links rooted at the site so navigation cannot inherit that route.
+  // The daily board lives at /daily/YYYY_MM_DD/. Keep every standalone page
+  // link root-relative so it remains valid when invoked from a daily route.
   verifyButton?.addEventListener("click", () => { window.location.assign(new URL("/verify.html", window.location.origin)); });
   document.querySelector("#closeVerifySolution")?.addEventListener("click", () => verifyDialog.close());
   document.querySelector("#runSolutionVerification")?.addEventListener("click", () => {
