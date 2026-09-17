@@ -173,7 +173,16 @@
     while (order.indexOf(rating) < order.length - 1 && score > caps[rating]) rating = order[order.indexOf(rating) + 1];
     walkthroughRating.textContent = `Difficulty: ${rating} (${score})`;
     evaluationTime.textContent = `Difficulty evaluation: ${Math.max(1, Math.round(performance.now() - started))} ms`;
-    tallyResults.innerHTML = `<table><thead><tr><th>Technique</th><th>Steps</th></tr></thead><tbody>${[...tally.entries()].map(([technique, stepsForTechnique]) => `<tr><td>${technique}</td><td>${stepsForTechnique.join(", ")}</td></tr>`).join("")}</tbody></table>`;
+    const familyRank = technique => {
+      if (["Full House", "Naked Single", "Hidden Single"].includes(technique)) return 0;
+      if (["Locked Pair", "Locked Triple", "Pointing", "Claiming"].includes(technique)) return 1;
+      if (/^(Naked|Hidden) (Pair|Triple|Quad)$/.test(technique)) return 2;
+      if (["X-Wing", "Swordfish", "Jellyfish"].includes(technique)) return 3;
+      if (["Skyscraper", "2-String Kite"].includes(technique)) return 4;
+      if (["W-Wing", "XY-Wing", "XYZ-Wing"].includes(technique)) return 5;
+      return 6;
+    };
+    tallyResults.innerHTML = `<table><thead><tr><th>Technique</th><th>Steps</th></tr></thead><tbody>${[...tally.entries()].sort(([left], [right]) => familyRank(left) - familyRank(right) || (scores[left] || 0) - (scores[right] || 0) || left.localeCompare(right)).map(([technique, stepsForTechnique]) => `<tr><td>${technique}</td><td>${stepsForTechnique.join(", ")}</td></tr>`).join("")}</tbody></table>`;
     inputTechniqueTally.hidden = false;
     walkthrough.hidden = false;
     walkthroughData = steps; walkthroughIndex = 0; renderWalkthroughStep();
@@ -259,4 +268,18 @@
   document.querySelector("#importString").addEventListener("click", () => { const issue = parseString(stringBox.value); clearResults(); setStatus(issue || "String imported. Fill or edit any cell, then check uniqueness.", issue ? "error" : "success"); render(); });
   document.querySelector("#exportString").addEventListener("click", async () => { const output = values.map((value, index) => activeSet.has(index) ? (value || ".") : ".").join(""); try { await navigator.clipboard.writeText(output); setStatus("144-character string copied.", "success"); } catch { setStatus("Unable to access the clipboard.", "error"); } });
   render();
+  // A generated puzzle can hand off directly here for uniqueness checking,
+  // difficulty scoring, its technique tally, and an interactive walkthrough.
+  const generatedPuzzle = new URLSearchParams(window.location.search).get("puzzle");
+  if (generatedPuzzle) {
+    stringBox.value = generatedPuzzle;
+    const issue = parseString(generatedPuzzle);
+    clearResults();
+    render();
+    if (issue) setStatus(issue, "error");
+    else {
+      document.querySelector("#verifyGrid").click();
+      if (new URLSearchParams(window.location.search).get("evaluate") === "1" && !evaluateButton.hidden) renderWalkthrough();
+    }
+  }
 })();
