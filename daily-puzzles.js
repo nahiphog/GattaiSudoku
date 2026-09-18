@@ -23,11 +23,11 @@
   let current = new Date(Date.UTC(2026, 0, 1));
   const allScheduled = () => Object.values(queues).every(queue => queue.length === 0);
 
-  // Wednesday remains available for future Easy or Medium additions.
   while (!allScheduled()) {
     const weekday = current.getUTCDay();
     let puzzle = null;
     if (weekday === 1 || weekday === 2) puzzle = take(queues.easy);
+    else if (weekday === 3) puzzle = take(queues.easy) || take(queues.medium);
     else if (weekday === 4) puzzle = take(queues.medium);
     else if (weekday === 5) puzzle = take(queues.medium) || take(queues.tricky);
     else if (weekday === 6) puzzle = take(queues.tricky) || take(queues.hard);
