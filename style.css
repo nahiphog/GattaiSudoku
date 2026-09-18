@@ -295,6 +295,18 @@ dialog{font-size:17px}.help-pagination{font-size:14px}.archive-weekdays{font-siz
 .difficulty-guide .technique-name{color:#c32626;text-decoration:underline;text-decoration-thickness:1px;text-underline-offset:2px}
 .difficulty-guide thead th{position:sticky;top:0;z-index:2;background:var(--surface)}
 
+/* Small screens preserve readable candidates and stack every sidebar section. */
+@media(max-width:820px){
+  .board-card.solver-active .puzzle-surface{grid-column:1;grid-row:1}
+  .board-card.solver-active .solution-rail{grid-column:1;grid-row:2;order:initial}
+  .control-sidebar{flex-direction:column!important;flex-wrap:nowrap!important;align-items:stretch!important;width:100%}
+  .control-sidebar>.sidebar-toggle,.control-sidebar>.entry-panel,.control-sidebar>.sidebar-utilities{width:100%;min-width:0;align-self:stretch}
+  .control-sidebar>.sidebar-utilities{grid-template-columns:1fr}
+}
+@media(max-width:520px){
+  .board-card.solver-active .snyder{padding:1px;font-size:clamp(7px,2.6vw,11px);line-height:1;overflow:hidden}
+}
+
 /* Sidebar mode controls: visible symbols make the active input and grid choices clear. */
 .entry-panel>span,.highlight-panel>span,.others-panel>span{text-align:center;width:100%}
 .entry-tabs .entry-button{gap:7px;justify-content:space-between}
