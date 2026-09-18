@@ -286,6 +286,15 @@ dialog{font-size:17px}.help-pagination{font-size:14px}.archive-weekdays{font-siz
 .sidebar-utilities{display:grid;gap:12px;margin-top:auto;background:transparent!important}
 .sidebar-utilities .highlight-panel,.sidebar-utilities .others-panel{margin:0;background:transparent!important}
 
+/* Sidebar mode controls: visible symbols make the active input and grid choices clear. */
+.entry-panel>span,.highlight-panel>span,.others-panel>span{text-align:center;width:100%}
+.entry-tabs .entry-button{gap:7px;justify-content:space-between}
+.entry-tabs .digit-symbol{font:700 18px/1 Arial,sans-serif}
+.entry-tabs .snyder-symbol{display:grid;grid-template-columns:repeat(3,5px);grid-template-rows:repeat(3,5px);gap:1px;font:700 5px/5px Arial,sans-serif;text-align:center}
+.entry-tabs .snyder-symbol i{font:inherit;font-style:normal}
+.highlight-panel .grid-button[aria-pressed=true]{background:var(--select)!important;color:#fff!important;box-shadow:inset 0 0 0 2px var(--ink);font-weight:800}
+.highlight-panel .grid-button[aria-pressed=false]{opacity:.62}
+
 /* Compact stacked wordmark, with the logo sitting to its left. */
 .brand{display:grid;grid-template-columns:auto auto;grid-template-rows:repeat(3,auto);column-gap:.42em;row-gap:0;font-size:23.4px}
 .brand .gattai-logo{grid-column:1;grid-row:1 / span 3;align-self:center}
