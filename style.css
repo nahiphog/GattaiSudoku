@@ -263,3 +263,7 @@ dialog{font-size:17px}.help-pagination{font-size:14px}.archive-weekdays{font-siz
 .dialog-field,.settings-row,.settings-colours,.settings-about{font-size:16px}
 .dialog-field input,.dialog-field textarea{font-size:17px}
 .difficulty-guide,.technique-tally-list table{font-size:16px}
+
+/* Closed native dialogs must remain out of the document flow. */
+#howToPlayDialog,#archiveDialog{display:none}
+#howToPlayDialog[open],#archiveDialog[open]{display:flex}
