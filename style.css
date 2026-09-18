@@ -303,9 +303,9 @@ dialog{font-size:17px}.help-pagination{font-size:14px}.archive-weekdays{font-siz
   .board-card.solver-active .puzzle-surface{grid-column:1;grid-row:1}
   .board-card.solver-active .solution-rail{grid-column:1;grid-row:2;order:initial}
   .board-card.solver-active .control-sidebar{display:flex;grid-column:1;grid-row:3}
-  .control-sidebar{flex-direction:column!important;flex-wrap:nowrap!important;align-items:stretch!important;width:100%}
+  .control-sidebar{display:grid!important;grid-template-columns:minmax(0,1.2fr) minmax(0,.8fr);gap:14px;align-items:start;width:100%}
   .control-sidebar>.entry-panel,.control-sidebar>.sidebar-utilities{width:100%;min-width:0;align-self:stretch}
-  .control-sidebar>.sidebar-utilities{grid-template-columns:1fr}
+  .control-sidebar>.sidebar-utilities{grid-template-columns:1fr;gap:12px;margin-top:0}
 }
 @media(max-width:520px){
   .board-card.solver-active .snyder{padding:1px;font-size:clamp(7px,2.6vw,11px);line-height:1;overflow:hidden}
@@ -313,11 +313,12 @@ dialog{font-size:17px}.help-pagination{font-size:14px}.archive-weekdays{font-siz
 
 /* Sidebar mode controls: visible symbols make the active input and grid choices clear. */
 .entry-panel>span,.highlight-panel>span,.others-panel>span{text-align:center;width:100%}
-.entry-tabs .entry-button{gap:7px;justify-content:space-between}
+.entry-tabs .entry-button{position:relative;display:flex;align-items:center;justify-content:center;padding-inline:28px}
+.entry-tabs .digit-symbol,.entry-tabs .snyder-symbol{position:absolute;right:8px}
 .entry-tabs .digit-symbol{font:700 18px/1 Arial,sans-serif}
 .entry-tabs .snyder-symbol{display:grid;grid-template-columns:repeat(3,5px);grid-template-rows:repeat(3,5px);gap:1px;font:700 5px/5px Arial,sans-serif;text-align:center}
 .entry-tabs .snyder-symbol i{font:inherit;font-style:normal}
-.highlight-panel .grid-button[aria-pressed=true]{background:var(--select)!important;color:#fff!important;box-shadow:inset 0 0 0 2px var(--ink);font-weight:800}
+.highlight-panel{display:grid;grid-template-columns:1fr 1fr;align-items:stretch}.highlight-panel>span{grid-column:1 / -1}.highlight-panel .grid-button[aria-pressed=true]{background:var(--select)!important;color:#fff!important;box-shadow:inset 0 0 0 2px var(--ink);font-weight:800}
 .highlight-panel .grid-button[aria-pressed=false]{opacity:.62}
 
 /* Compact stacked wordmark, with the logo sitting to its left. */
