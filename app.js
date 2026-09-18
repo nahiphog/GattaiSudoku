@@ -97,14 +97,29 @@ document.querySelector("#archiveDialog .eyebrow")?.remove();
 // The overlap is a filled square; the grid itself is a separate stroked path.
 const headerLogo = document.querySelector(".gattai-logo");
 if (headerLogo) headerLogo.innerHTML = '<path class="logo-overlap" d="M30 30H90V90H30Z"/><path class="logo-lines" d="M0 0H90V30H120V120H30V90H0ZM10 0V90M20 0V90M30 0V120M40 0V120M50 0V120M60 0V120M70 0V120M80 0V120M90 0V120M100 30V120M110 30V120M0 10H90M0 20H90M0 30H120M0 40H120M0 50H120M0 60H120M0 70H120M0 80H120M0 90H120M30 100H120M30 110H120"/>';
-copyPng.textContent = "Copy grid";
+const brandWords = [...document.querySelectorAll(".brand > span")];
+if (brandWords.length >= 3) {
+  brandWords[1].innerHTML = 'Gattai <em>Sudoku</em>';
+  brandWords[2].remove();
+}
+const cameraIcon = '<svg class="button-symbol" viewBox="0 0 24 24" aria-hidden="true"><path d="M4 7h3l1.5-2h7L17 7h3v12H4Z"/><circle cx="12" cy="13" r="3.5"/></svg>';
+const searchIcon = '<svg class="button-symbol" viewBox="0 0 24 24" aria-hidden="true"><circle cx="10.5" cy="10.5" r="5.5"/><path d="m15 15 5 5"/></svg>';
+const setSidebarButtonLabel = (button, label, icon) => { button.innerHTML = `<span>${label}</span>${icon}`; };
+setSidebarButtonLabel(copyPng, "Copy grid", cameraIcon);
 const othersPanel = document.createElement("section");
 othersPanel.className = "others-panel";
 othersPanel.innerHTML = "<span>Others</span>";
 othersPanel.append(solutionToggle, copyPng);
 controlSidebar.append(othersPanel);
 const entryPanel = controlSidebar.querySelector(".entry-panel");
-entryPanel?.append(controlSidebar.querySelector(".play-actions"), controlSidebar.querySelector(".numpad"));
+const playActions = controlSidebar.querySelector(".play-actions"), undoButton = document.querySelector("#undoMove"), redoButton = document.querySelector("#redoMove"), resetGrid = document.querySelector("#resetGrid"), numberPad = controlSidebar.querySelector(".numpad");
+if (entryPanel) {
+  const historyActions = document.createElement("div");
+  historyActions.className = "history-actions";
+  historyActions.append(undoButton, redoButton);
+  entryPanel.append(resetGrid, numberPad, historyActions);
+  playActions?.remove();
+}
 const sidebarUtilities = document.createElement("section");
 sidebarUtilities.className = "sidebar-utilities";
 sidebarUtilities.append(controlSidebar.querySelector(".highlight-panel"), othersPanel);
@@ -533,7 +548,7 @@ function renderBoard() {
   drawGridOutline(activeStep ? gridForStep(activeStep) : highlightedGrid);
 }
 function renderPuzzleHeading() { const label = document.querySelector("#puzzleDate"); if (!label) return; if (activeDay === "unlimited") { label.textContent = puzzleDate; return; } const match = puzzleDate.match(/^([^,]+),\s*([A-Za-z]+)\s+(\d+),\s*(\d+)$/); const position = currentPuzzlePosition(); if (!match) { label.textContent = `Puzzle ${position + 1}: ${puzzleDate}`; return; } const [, weekday, month, day, year] = match, shortMonth = month.slice(0, 3); label.replaceChildren(); const number = document.createElement("span"), details = document.createElement("span"), date = document.createElement("span"), dayLabel = document.createElement("span"); number.className = "puzzle-number"; details.className = "puzzle-date-details"; date.className = "calendar-date"; dayLabel.className = "weekday"; number.textContent = `Puzzle ${position + 1}:`; date.textContent = `${shortMonth} ${day}, ${year}`; dayLabel.textContent = weekday; details.append(date, dayLabel); label.append(number, details); }
-function refresh() { const showingSolution = mode === "solver", unlimited = isUnlimited(); if (showingSolution) boardCard.append(solutionRail); else puzzleSurface.append(solutionRail); renderStep(); renderBoard(); const givens = original.filter((value, index) => active.includes(index) && value).length, rating = rateSteps(steps); givenCount.textContent = unlimited ? `${givens} given cells · generated in ${(unlimitedGenerationMilliseconds / 1000).toFixed(2)} s` : `${givens} given cells`; renderPuzzleHeading(); updatePuzzleNavigation(); document.querySelector("#difficultyLabel").textContent = unlimited && !unlimitedRated ? "Difficulty: Unrated (unique-only)" : `Difficulty: ${rating.rating} (${rating.score})`; document.querySelector("#difficultyLabel").classList.toggle("is-hidden", !difficultyVisible); givenCount.classList.toggle("is-hidden", !givenCountVisible); solutionToggle.setAttribute("aria-pressed", String(showingSolution)); solutionToggle.textContent = unlimited ? (showingSolution ? "Hide final grid" : "Show final grid") : (showingSolution ? "Hide solution" : "Read solution"); guide.classList.toggle("hidden", mode === "human" || unlimited); solutionRail.classList.toggle("hidden", mode === "human" || unlimited); boardCard.classList.toggle("solver-active", showingSolution); document.querySelector(".puzzle-meta")?.classList.toggle("solution-active", showingSolution); document.querySelector(".timer-controls")?.classList.toggle("timer-hidden", showingSolution || !(document.querySelector("#timerVisibility")?.checked ?? true)); document.querySelector("#resetGrid")?.classList.toggle("is-hidden", showingSolution); updateEntryControls(); setTimerRunning(mode === "human"); }
+function refresh() { const showingSolution = mode === "solver", unlimited = isUnlimited(); if (showingSolution) boardCard.append(solutionRail); else puzzleSurface.append(solutionRail); renderStep(); renderBoard(); const givens = original.filter((value, index) => active.includes(index) && value).length, rating = rateSteps(steps); givenCount.textContent = unlimited ? `${givens} given cells · generated in ${(unlimitedGenerationMilliseconds / 1000).toFixed(2)} s` : `${givens} given cells`; renderPuzzleHeading(); updatePuzzleNavigation(); document.querySelector("#difficultyLabel").textContent = unlimited && !unlimitedRated ? "Difficulty: Unrated (unique-only)" : `Difficulty: ${rating.rating} (${rating.score})`; document.querySelector("#difficultyLabel").classList.toggle("is-hidden", !difficultyVisible); givenCount.classList.toggle("is-hidden", !givenCountVisible); solutionToggle.setAttribute("aria-pressed", String(showingSolution)); setSidebarButtonLabel(solutionToggle, unlimited ? (showingSolution ? "Hide final grid" : "Show final grid") : (showingSolution ? "Hide solution" : "Read solution"), searchIcon); guide.classList.toggle("hidden", mode === "human" || unlimited); solutionRail.classList.toggle("hidden", mode === "human" || unlimited); boardCard.classList.toggle("solver-active", showingSolution); document.querySelector(".puzzle-meta")?.classList.toggle("solution-active", showingSolution); document.querySelector(".timer-controls")?.classList.toggle("timer-hidden", showingSolution || !(document.querySelector("#timerVisibility")?.checked ?? true)); document.querySelector("#resetGrid")?.classList.toggle("is-hidden", showingSolution); updateEntryControls(); setTimerRunning(mode === "human"); }
 function loadPuzzle(day, syncRoute = true) { activeDay = day; const selectedWeek = activeWeek === "previous" ? previousWeekPuzzles : dailyPuzzles, selectedPuzzle = (day === "unlimited" ? puzzles : selectedWeek)[day]; rows = selectedPuzzle.rows; puzzleDate = selectedPuzzle.date; original.fill(0); rows.forEach((row, r) => [...row].forEach((value, c) => { if (value !== ".") original[r * 12 + c] = Number(value); })); const key = stateKey(); ensureState(key); human = userInputs[key]; playNotes = userNotes[key]; playColors = userColors[key]; selectedCell = null; steps = deriveSteps(["friday", "saturday", "sunday"].includes(day)); const walked = [...original]; steps.forEach(step => { if (step.index !== null) walked[step.index] = step.digit; }); unlimitedRated = day === "unlimited" && active.every(index => walked[index]); stepIndex = 0; document.querySelector("#unlimitedMode").classList.toggle("active", day === "unlimited"); if (syncRoute) syncPuzzleRoute(); refresh(); }
 const legacyArchiveEntries = [
   ["previous", "monday", 2026, 8, 31], ["previous", "tuesday", 2026, 9, 1], ["previous", "wednesday", 2026, 9, 2], ["previous", "thursday", 2026, 9, 3], ["previous", "friday", 2026, 9, 4], ["previous", "saturday", 2026, 9, 5], ["previous", "sunday", 2026, 9, 6],
@@ -564,6 +579,10 @@ const firstArchiveMonth = (() => {
   const first = archiveEntries[0];
   return first ? new Date(first.year, first.month - 1, 1) : new Date(2026, 0, 1);
 })();
+const lastArchiveMonth = (() => {
+  const last = archiveEntries[archiveEntries.length - 1];
+  return last ? new Date(last.year, last.month - 1, 1) : firstArchiveMonth;
+})();
 function renderArchiveCalendar() {
   const calendar = document.querySelector("#archiveCalendar"); let monthLabel = document.querySelector("#archiveMonthLabel");
   if (!calendar) return;
@@ -576,14 +595,15 @@ function renderArchiveCalendar() {
     controls.innerHTML = `<button type="button" aria-label="Previous month">‹</button><strong id="archiveMonthLabel"></strong><button type="button" aria-label="Next month">›</button>`;
     dialog.querySelector(".archive-weekdays")?.before(controls);
     controls.querySelectorAll("button")[0].addEventListener("click", () => { if (archiveViewMonth > firstArchiveMonth) { archiveViewMonth.setMonth(archiveViewMonth.getMonth() - 1); renderArchiveCalendar(); } });
-    controls.querySelectorAll("button")[1].addEventListener("click", () => { archiveViewMonth.setMonth(archiveViewMonth.getMonth() + 1); renderArchiveCalendar(); });
+    controls.querySelectorAll("button")[1].addEventListener("click", () => { if (archiveViewMonth < lastArchiveMonth) { archiveViewMonth.setMonth(archiveViewMonth.getMonth() + 1); renderArchiveCalendar(); } });
     monthLabel = controls.querySelector("#archiveMonthLabel");
   }
   calendar.replaceChildren();
   if (monthLabel) monthLabel.textContent = archiveViewMonth.toLocaleDateString("en-US", { month: "long", year: "numeric" });
   const year = archiveViewMonth.getFullYear(), monthIndex = archiveViewMonth.getMonth();
-  const previousMonthButton = dialog?.querySelector("#archiveMonthControls button");
+  const previousMonthButton = dialog?.querySelector("#archiveMonthControls button"), nextMonthButton = dialog?.querySelectorAll("#archiveMonthControls button")[1];
   if (previousMonthButton) previousMonthButton.disabled = archiveViewMonth.getFullYear() === firstArchiveMonth.getFullYear() && archiveViewMonth.getMonth() === firstArchiveMonth.getMonth();
+  if (nextMonthButton) nextMonthButton.disabled = archiveViewMonth.getFullYear() === lastArchiveMonth.getFullYear() && archiveViewMonth.getMonth() === lastArchiveMonth.getMonth();
   const leadingSlots = (new Date(year, monthIndex, 1).getDay() + 6) % 7;
   const totalDays = new Date(year, monthIndex + 1, 0).getDate();
   for (let slot = 0; slot < leadingSlots; slot += 1) calendar.append(document.createElement("span"));
@@ -676,7 +696,7 @@ document.querySelector("#copyPng").addEventListener("click", async () => {
   context.strokeStyle = "#173a4c"; context.lineWidth = 3;
   [[0, 0, 9, 0], [0, 3, 12, 3], [0, 6, 12, 6], [0, 9, 12, 9], [3, 12, 12, 12]].forEach(([x1, y1, x2, y2]) => { context.beginPath(); context.moveTo(x1 * scale, y1 * scale); context.lineTo(x2 * scale, y2 * scale); context.stroke(); });
   [[0, 0, 0, 9], [3, 0, 3, 12], [6, 0, 6, 12], [9, 0, 9, 12], [12, 3, 12, 12]].forEach(([x1, y1, x2, y2]) => { context.beginPath(); context.moveTo(x1 * scale, y1 * scale); context.lineTo(x2 * scale, y2 * scale); context.stroke(); });
-  const button = document.querySelector("#copyPng"); try { const blob = await new Promise(resolve => canvas.toBlob(resolve, "image/png")); await navigator.clipboard.write([new ClipboardItem({ "image/png": blob })]); button.textContent = "Grid copied"; } catch { button.textContent = "Grid copy unavailable"; } setTimeout(() => { button.textContent = "Copy grid"; }, 2000);
+  const button = document.querySelector("#copyPng"); try { const blob = await new Promise(resolve => canvas.toBlob(resolve, "image/png")); await navigator.clipboard.write([new ClipboardItem({ "image/png": blob })]); setSidebarButtonLabel(button, "Grid copied", cameraIcon); } catch { setSidebarButtonLabel(button, "Grid copy unavailable", cameraIcon); } setTimeout(() => { setSidebarButtonLabel(button, "Copy grid", cameraIcon); }, 2000);
 });
 const howToPlayDialog = document.querySelector("#howToPlayDialog");
 if (howToPlayDialog) {
