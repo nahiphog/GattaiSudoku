@@ -85,6 +85,10 @@ const active = [...new Set(units.flatMap(([, house]) => house))];
 const housesFor = Object.fromEntries(active.map(index => [index, units.filter(([, house]) => house.includes(index)).map(([, house]) => house)]));
 const peers = Object.fromEntries(active.map(index => [index, new Set(housesFor[index].flat().filter(other => other !== index))]));
 const board = document.querySelector("#board"), guide = document.querySelector("#guide"), givenCount = document.querySelector("#givenCount"), solutionToggle = document.querySelector("#solutionToggle"), copyPng = document.querySelector("#copyPng"), boardCard = document.querySelector("#boardCard"), puzzleSurface = document.querySelector(".puzzle-surface"), controlSidebar = document.querySelector(".control-sidebar");
+// Keep the inline logo resilient when the compact header markup is edited.
+// The overlap is a filled square; the grid itself is a separate stroked path.
+const headerLogo = document.querySelector(".gattai-logo");
+if (headerLogo) headerLogo.innerHTML = '<path class="logo-overlap" d="M30 30H90V90H30Z"/><path class="logo-lines" d="M0 0H90V30H120V120H30V90H0ZM10 0V90M20 0V90M30 0V120M40 0V120M50 0V120M60 0V120M70 0V120M80 0V120M90 0V120M100 30V120M110 30V120M0 10H90M0 20H90M0 30H120M0 40H120M0 50H120M0 60H120M0 70H120M0 80H120M0 90H120M30 100H120M30 110H120"/>';
 copyPng.textContent = "Copy grid"; controlSidebar.prepend(copyPng); controlSidebar.prepend(solutionToggle);
 const solutionRail = document.createElement("aside"), stepControls = document.querySelector(".step-controls"), techniqueTallyButton = document.querySelector("#techniqueTally"); solutionRail.className = "solution-rail hidden"; guide.before(solutionRail); solutionRail.append(techniqueTallyButton, guide); guide.prepend(stepControls);
 const historyIcons = { undoMove: '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M9 7 4 12l5 5M5 12h9a5 5 0 0 1 0 10h-1" /></svg>', redoMove: '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="m15 7 5 5-5 5m4-5h-9a5 5 0 0 0 0 10h1" /></svg>' };
