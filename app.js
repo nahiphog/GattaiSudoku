@@ -34,6 +34,7 @@ if (rotationalArchive) {
 const puzzles = { ...dailyPuzzles, unlimited: { date: "Unlimited", rows: Array(12).fill("............") } };
 const defaultDailyKey = rotationalArchive ? Object.keys(rotationalArchive).sort()[0] : "tuesday";
 let activeWeek = rotationalArchive ? "archive" : "current", activeDay = defaultDailyKey, rows = dailyPuzzles[defaultDailyKey].rows, puzzleDate = dailyPuzzles[defaultDailyKey].date;
+document.body.classList.toggle("dark", localStorage.getItem("gattai-theme") === "dark");
 const digits = [1, 2, 3, 4, 5, 6, 7, 8, 9];
 // The order is deliberately explicit.  New technique implementations are
 // inserted here only after their eliminations have been independently checked
@@ -532,6 +533,10 @@ let archiveViewMonth = (() => {
   const first = archiveEntries[0];
   return first ? new Date(first.year, first.month - 1, 1) : new Date(2026, 0, 1);
 })();
+const firstArchiveMonth = (() => {
+  const first = archiveEntries[0];
+  return first ? new Date(first.year, first.month - 1, 1) : new Date(2026, 0, 1);
+})();
 function renderArchiveCalendar() {
   const calendar = document.querySelector("#archiveCalendar"); let monthLabel = document.querySelector("#archiveMonthLabel");
   if (!calendar) return;
@@ -547,13 +552,15 @@ function renderArchiveCalendar() {
     notice.className = "archive-release-note";
     notice.textContent = "New daily puzzles are released at 00:00 UTC. Dates marked X have no scheduled puzzle.";
     dialog.querySelector(".archive-weekdays")?.before(controls, notice);
-    controls.querySelectorAll("button")[0].addEventListener("click", () => { archiveViewMonth.setMonth(archiveViewMonth.getMonth() - 1); renderArchiveCalendar(); });
+    controls.querySelectorAll("button")[0].addEventListener("click", () => { if (archiveViewMonth > firstArchiveMonth) { archiveViewMonth.setMonth(archiveViewMonth.getMonth() - 1); renderArchiveCalendar(); } });
     controls.querySelectorAll("button")[1].addEventListener("click", () => { archiveViewMonth.setMonth(archiveViewMonth.getMonth() + 1); renderArchiveCalendar(); });
     monthLabel = controls.querySelector("#archiveMonthLabel");
   }
   calendar.replaceChildren();
   if (monthLabel) monthLabel.textContent = archiveViewMonth.toLocaleDateString("en-US", { month: "long", year: "numeric" });
   const year = archiveViewMonth.getFullYear(), monthIndex = archiveViewMonth.getMonth();
+  const previousMonthButton = dialog?.querySelector("#archiveMonthControls button");
+  if (previousMonthButton) previousMonthButton.disabled = archiveViewMonth.getFullYear() === firstArchiveMonth.getFullYear() && archiveViewMonth.getMonth() === firstArchiveMonth.getMonth();
   const leadingSlots = (new Date(year, monthIndex, 1).getDay() + 6) % 7;
   const totalDays = new Date(year, monthIndex + 1, 0).getDate();
   for (let slot = 0; slot < leadingSlots; slot += 1) calendar.append(document.createElement("span"));
@@ -643,14 +650,14 @@ document.querySelector("#copyPng").addEventListener("click", async () => {
 });
 const howToPlayDialog = document.querySelector("#howToPlayDialog");
 if (howToPlayDialog) {
-  const difficultyGuideHtml = `<p class="difficulty-method-note">Cheapest applicable steps are scored individually. Singles are 4, 4, and 14 points for Full House, Naked Single, and Hidden Single.</p><div class="table-wrap"><table class="difficulty-guide"><thead><tr><th>Difficulty</th><th>How the score is determined</th><th>Scheduled days</th></tr></thead><tbody><tr><th scope="row">Beginner · ≤400</th><td>Full House, Naked Single, and Hidden Single.</td><td>—</td></tr><tr><th scope="row">Easy · ≤800</th><td>All Beginner methods; enough routine deductions can raise the cumulative score into Easy.</td><td>Monday · Tuesday</td></tr><tr><th scope="row">Medium · ≤1000</th><td>All earlier methods, plus intersections and Naked or Hidden Pairs and Triples.</td><td>Wednesday · Thursday · Friday</td></tr><tr><th scope="row">Tricky · ≤1150</th><td>All earlier methods. One Hard-class fish, wing, or single-digit pattern sets a Tricky floor.</td><td>Friday · Saturday</td></tr><tr><th scope="row">Hard · ≤1600</th><td>All earlier methods. Two or more Hard-class deductions set a Hard floor; cumulative score can raise it further.</td><td>Saturday</td></tr><tr><th scope="row">Unfair, Extreme, Nightmare</th><td>Each subsequent band includes all techniques from every earlier band, then adds progressively more complex chains, colouring, ALSs, and last-resort patterns.</td><td>Sunday</td></tr></tbody></table></div>`;
+  const difficultyGuideHtml = `<div class="table-wrap"><table class="difficulty-guide"><thead><tr><th>Difficulty</th><th>Techniques used</th><th>Scheduled days</th></tr></thead><tbody><tr><th scope="row">Beginner · ≤400</th><td>Full House, Naked Single, and Hidden Single.</td><td>—</td></tr><tr><th scope="row">Easy · ≤800</th><td>All Beginner methods; enough routine deductions can raise the cumulative score into Easy.</td><td>Monday · Tuesday</td></tr><tr><th scope="row">Medium · ≤1000</th><td>All earlier methods, plus intersections and Naked or Hidden Pairs and Triples.</td><td>Wednesday · Thursday · Friday</td></tr><tr><th scope="row">Tricky · ≤1150</th><td>All earlier methods. One Hard-class fish, wing, or single-digit pattern sets a Tricky floor.</td><td>Friday · Saturday</td></tr><tr><th scope="row">Hard · ≤1600</th><td>All earlier methods. Two or more Hard-class deductions set a Hard floor; cumulative score can raise it further.</td><td>Saturday</td></tr><tr><th scope="row">Unfair, Extreme, Nightmare</th><td>Each subsequent band includes all techniques from every earlier band, then adds progressively more complex chains, colouring, ALSs, and last-resort patterns.</td><td>Sunday</td></tr></tbody></table></div>`;
   const helpPages = [
     { title: "", body: '<p>Fill each 9×9 grid so every row, column, and 3×3 house contains 1–9 exactly once. The shared six-by-six area obeys both grids at once.</p><p>A fresh daily puzzle is published on the calendar, while Generate a puzzle offers both Digging and Build a puzzle modes.</p>' },
     { title: "Difficulty ratings", body: difficultyGuideHtml },
-    { title: "", body: '<ul class="about-list"><li>Method names and ratings follow <a href="https://github.com/AImenes/sudokUI">sudokUI</a>.</li><li>Built primarily using ChatGPT Plus.</li></ul>' }
+    { title: "", body: '<ul class="about-list"><li>Method names and ratings follow <a href="https://github.com/AImenes/sudokUI">sudokUI</a>.</li><li>Built primarily using ChatGPT Plus.</li><li>All puzzles are computer generated and have a unique solution.</li><li>This website was built by a Sudoku enthusiast.</li></ul>' }
   ];
   let helpPage = 0;
-  const renderHelpPage = () => { const page = helpPages[helpPage], eyebrow = helpPage === 2 ? "ABOUT" : "HOW TO PLAY", heading = page.title || "Help"; howToPlayDialog.innerHTML = `<button id="closeHowToPlay" class="dialog-close" aria-label="Close">×</button><p class="eyebrow">${eyebrow}</p><h2 id="howToPlayTitle" class="${page.title ? "" : "visually-hidden"}">${heading}</h2><section class="help-page">${page.body}</section><nav class="help-pagination" aria-label="How to play pages"><button id="previousHelpPage" type="button" ${helpPage === 0 ? "disabled" : ""}>‹</button><span>Page ${helpPage + 1} of ${helpPages.length}</span><button id="nextHelpPage" type="button" ${helpPage === helpPages.length - 1 ? "disabled" : ""}>›</button></nav>`; howToPlayDialog.querySelector("#closeHowToPlay").addEventListener("click", () => howToPlayDialog.close()); howToPlayDialog.querySelector("#previousHelpPage").addEventListener("click", () => { helpPage -= 1; renderHelpPage(); }); howToPlayDialog.querySelector("#nextHelpPage").addEventListener("click", () => { helpPage += 1; renderHelpPage(); }); };
+  const renderHelpPage = () => { const page = helpPages[helpPage], eyebrow = helpPage === 0 ? "HOW TO PLAY" : helpPage === 2 ? "ABOUT" : "", heading = page.title || "Help"; howToPlayDialog.innerHTML = `<button id="closeHowToPlay" class="dialog-close" aria-label="Close">×</button>${eyebrow ? `<p class="eyebrow">${eyebrow}</p>` : ""}<h2 id="howToPlayTitle" class="${page.title ? "" : "visually-hidden"}">${heading}</h2><section class="help-page">${page.body}</section><nav class="help-pagination" aria-label="How to play pages"><button id="previousHelpPage" type="button" ${helpPage === 0 ? "disabled" : ""}>‹</button><span>Page ${helpPage + 1} of ${helpPages.length}</span><button id="nextHelpPage" type="button" ${helpPage === helpPages.length - 1 ? "disabled" : ""}>›</button></nav>`; howToPlayDialog.querySelector("#closeHowToPlay").addEventListener("click", () => howToPlayDialog.close()); howToPlayDialog.querySelector("#previousHelpPage").addEventListener("click", () => { helpPage -= 1; renderHelpPage(); }); howToPlayDialog.querySelector("#nextHelpPage").addEventListener("click", () => { helpPage += 1; renderHelpPage(); }); };
   renderHelpPage();
   document.querySelector("#howToPlay").addEventListener("click", () => { helpPage = 0; renderHelpPage(); howToPlayDialog.showModal(); });
   howToPlayDialog.addEventListener("click", event => { if (event.target === howToPlayDialog) howToPlayDialog.close(); });
@@ -663,7 +670,7 @@ if (settingsDialog) {
   if (sharedRow) { let next = sharedRow.nextElementSibling; while (next) { const remove = next; next = next.nextElementSibling; remove.remove(); } }
 }
 const techniqueDialog = document.querySelector("#techniqueDialog"); document.querySelector("#techniqueTally").addEventListener("click", () => techniqueDialog.showModal()); document.querySelector("#closeTechniqueDialog").addEventListener("click", () => techniqueDialog.close()); techniqueDialog.addEventListener("click", event => { if (event.target === techniqueDialog) techniqueDialog.close(); });
-function setTheme(dark) { document.body.classList.toggle("dark", dark); document.querySelector("#darkTheme")?.setAttribute("aria-pressed", String(dark)); document.querySelector("#lightTheme")?.setAttribute("aria-pressed", String(!dark)); window.syncGattaiLogoTheme?.(); }
+function setTheme(dark) { document.body.classList.toggle("dark", dark); localStorage.setItem("gattai-theme", dark ? "dark" : "light"); document.querySelector("#darkTheme")?.setAttribute("aria-pressed", String(dark)); document.querySelector("#lightTheme")?.setAttribute("aria-pressed", String(!dark)); window.syncGattaiLogoTheme?.(); }
 document.querySelector("#darkTheme")?.addEventListener("click", () => setTheme(true));
 document.querySelector("#lightTheme")?.addEventListener("click", () => setTheme(false));
 document.querySelector("#timerVisibility")?.addEventListener("change", event => document.querySelector(".timer-controls")?.classList.toggle("timer-hidden", !event.target.checked));

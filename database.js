@@ -1,3 +1,4 @@
+document.body.classList.toggle("dark", localStorage.getItem("gattai-theme") === "dark");
 (() => {
   const difficultyRank = { Beginner: 0, Easy: 1, Medium: 2, Tricky: 3, Hard: 4, Unfair: 5, Extreme: 6, Nightmare: 7 };
   // The catalogue is ordered by difficulty band first, then by the exact
