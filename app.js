@@ -87,6 +87,7 @@ const housesFor = Object.fromEntries(active.map(index => [index, units.filter(([
 const peers = Object.fromEntries(active.map(index => [index, new Set(housesFor[index].flat().filter(other => other !== index))]));
 const board = document.querySelector("#board"), guide = document.querySelector("#guide"), givenCount = document.querySelector("#givenCount"), solutionToggle = document.querySelector("#solutionToggle"), copyPng = document.querySelector("#copyPng"), boardCard = document.querySelector("#boardCard"), puzzleSurface = document.querySelector(".puzzle-surface"), controlSidebar = document.querySelector(".control-sidebar");
 document.querySelector(".database-link")?.remove();
+document.querySelector(".archive-button")?.remove();
 const clearCellButton = document.querySelector(".numpad-delete");
 if (clearCellButton) { clearCellButton.setAttribute("aria-label", "Erase selected cell"); clearCellButton.innerHTML = '<span>Erase</span><svg viewBox="0 0 24 24" aria-hidden="true"><path d="m15 3 6 6-8 8H7l-4-4 8-8Z"/><path d="M7 17h14"/></svg>'; }
 const archiveHeading = document.querySelector("#archiveTitle");
@@ -102,6 +103,8 @@ othersPanel.className = "others-panel";
 othersPanel.innerHTML = "<span>Others</span>";
 othersPanel.append(solutionToggle, copyPng);
 controlSidebar.append(othersPanel);
+const entryPanel = controlSidebar.querySelector(".entry-panel");
+entryPanel?.append(controlSidebar.querySelector(".play-actions"), controlSidebar.querySelector(".numpad"));
 const solutionRail = document.createElement("aside"), stepControls = document.querySelector(".step-controls"), techniqueTallyButton = document.querySelector("#techniqueTally"); solutionRail.className = "solution-rail hidden"; guide.before(solutionRail); solutionRail.append(techniqueTallyButton, guide); guide.prepend(stepControls);
 const historyIcons = { undoMove: '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M9 7 4 12l5 5M5 12h9a5 5 0 0 1 0 10h-1" /></svg>', redoMove: '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="m15 7 5 5-5 5m4-5h-9a5 5 0 0 0 0 10h1" /></svg>' };
 Object.entries(historyIcons).forEach(([id, icon]) => { const button = document.querySelector(`#${id}`), label = id === "undoMove" ? "Undo" : "Redo"; button.classList.add("history-icon"); button.setAttribute("aria-label", label); button.innerHTML = `<span>${label}</span>${icon}`; });
@@ -626,13 +629,20 @@ document.querySelectorAll(".numpad [data-key]").forEach(button => button.addEven
 document.querySelectorAll("[data-action=erase]").forEach(button => button.addEventListener("click", eraseSelected));
 document.querySelector("#undoMove").addEventListener("click", undoMove);
 document.querySelector("#redoMove").addEventListener("click", redoMove);
-document.querySelector("#resetGrid").addEventListener("click", () => {
-  if (!window.confirm("Reset this grid? Your entered digits, Snyder notes, and cell colours will be cleared.")) return;
-  const resetTheTimer = window.confirm("Also reset the timer to 00:00?");
+const resetGridDialog = document.createElement("dialog");
+resetGridDialog.id = "resetGridDialog";
+resetGridDialog.innerHTML = '<button class="dialog-close" type="button" aria-label="Close">×</button><h2>Reset grid?</h2><p>Your entered digits, Snyder notes, and cell colours will be cleared.</p><label class="reset-timer-choice"><input id="resetGridTimerChoice" type="checkbox" /> Also restart the timer</label><div class="reset-grid-actions"><button id="cancelGridReset" type="button">Cancel</button><button id="confirmGridReset" type="button">Reset grid</button></div>';
+document.body.append(resetGridDialog);
+document.querySelector("#resetGrid").addEventListener("click", () => { document.querySelector("#resetGridTimerChoice").checked = false; resetGridDialog.showModal(); });
+resetGridDialog.querySelector(".dialog-close").addEventListener("click", () => resetGridDialog.close());
+resetGridDialog.querySelector("#cancelGridReset").addEventListener("click", () => resetGridDialog.close());
+resetGridDialog.querySelector("#confirmGridReset").addEventListener("click", () => {
+  const resetTheTimer = document.querySelector("#resetGridTimerChoice").checked;
   snapshot(); human.fill(0); playNotes.forEach(note => note.clear()); playColors.fill(""); selectedCell = null;
   if (resetTheTimer) resetTimer();
-  refresh();
+  resetGridDialog.close(); refresh();
 });
+resetGridDialog.addEventListener("click", event => { if (event.target === resetGridDialog) resetGridDialog.close(); });
 document.addEventListener("keydown", event => { if (event.defaultPrevented || mode !== "human" || selectedCell === null || original[selectedCell]) return; if (/^[1-9]$/.test(event.key)) { event.preventDefault(); applyEntry(Number(event.key)); return; } if ((event.key === "Backspace" || event.key === "Delete") && !event.target.closest(".editable")) { event.preventDefault(); eraseSelected(); } });
 const timerControls = document.querySelector(".timer-controls"), resetTimerButton = document.querySelector("#resetTimer");
 if (timerControls) { document.querySelector(".board-footer")?.append(timerControls); }
@@ -659,7 +669,7 @@ document.querySelector("#copyPng").addEventListener("click", async () => {
 });
 const howToPlayDialog = document.querySelector("#howToPlayDialog");
 if (howToPlayDialog) {
-  const difficultyGuideHtml = `<div class="table-wrap"><table class="difficulty-guide"><thead><tr><th>Difficulty</th><th>Techniques used</th><th>Scheduled days</th></tr></thead><tbody><tr><th scope="row">Beginner · ≤400</th><td>Full House, Naked Single, and Hidden Single.</td><td>—</td></tr><tr><th scope="row">Easy · ≤800</th><td>All Beginner methods; enough routine deductions can raise the cumulative score into Easy.</td><td>Monday · Tuesday</td></tr><tr><th scope="row">Medium · ≤1000</th><td>All earlier methods, plus intersections and Naked or Hidden Pairs and Triples.</td><td>Wednesday · Thursday · Friday</td></tr><tr><th scope="row">Tricky · ≤1150</th><td>All earlier methods. One Hard-class fish, wing, or single-digit pattern sets a Tricky floor.</td><td>Friday · Saturday</td></tr><tr><th scope="row">Hard · ≤1600</th><td>All earlier methods. Two or more Hard-class deductions set a Hard floor; cumulative score can raise it further.</td><td>Saturday</td></tr><tr><th scope="row">Unfair, Extreme, Nightmare</th><td>Each subsequent band includes all techniques from every earlier band, then adds progressively more complex chains, colouring, ALSs, and last-resort patterns.</td><td>Sunday</td></tr></tbody></table></div>`;
+  const difficultyGuideHtml = `<div class="table-wrap"><table class="difficulty-guide"><thead><tr><th>Difficulty</th><th>Techniques used</th><th>Scheduled days</th></tr></thead><tbody><tr><th scope="row">Easy · ≤800</th><td>Full House, Naked Single, and Hidden Single only.</td><td>Monday · Tuesday</td></tr><tr><th scope="row">Medium · ≤1000</th><td>All earlier methods, plus intersections and Naked or Hidden Pairs and Triples.</td><td>Wednesday · Thursday · Friday</td></tr><tr><th scope="row">Tricky · ≤1150</th><td>All earlier methods. One Hard-class fish, wing, or single-digit pattern sets a Tricky floor.</td><td>Friday · Saturday</td></tr><tr><th scope="row">Hard · ≤1600</th><td>All earlier methods. Two or more Hard-class deductions set a Hard floor; cumulative score can raise it further.</td><td>Saturday</td></tr><tr><th scope="row">Unfair, Extreme, Nightmare</th><td>Each subsequent band includes all techniques from every earlier band, then adds progressively more complex chains, colouring, ALSs, and last-resort patterns.</td><td>Sunday</td></tr></tbody></table></div>`;
   const helpPages = [
     { title: "How to play", body: '<p>Fill each 9×9 grid so every row, column, and 3×3 house contains 1–9 exactly once. The shared 6×6 area obeys both grids at once.</p><p>A fresh daily puzzle is published on the calendar everyday at midnight UTC.</p>' },
     { title: "Difficulty ratings", body: difficultyGuideHtml },
@@ -853,11 +863,14 @@ loadPuzzle(activeDay, false);
    puzzle's givens without changing the active board. */
 (() => {
   const signUp = document.querySelector("#signUp"), signUpDialog = document.querySelector("#signUpDialog"), signUpName = document.querySelector("#signUpName"), signUpStatus = document.querySelector("#signUpStatus");
+  signUp?.remove();
+  signUpDialog?.remove();
   const verifyButton = document.querySelector("#verifySolution"), verifyDialog = document.querySelector("#verifySolutionDialog"), verifyString = document.querySelector("#verifySolutionString"), verifyStatus = document.querySelector("#verifySolutionStatus");
   const closeOnBackdrop = dialog => dialog?.addEventListener("click", event => { if (event.target === dialog) dialog.close(); });
   const setStatus = (node, message, kind = "") => { node.textContent = message; node.className = `dialog-status ${kind}`; };
 
   function updateProfileButton() {
+    if (!signUp) return;
     const name = localStorage.getItem("gattai-profile-name");
     signUp.textContent = name ? name : "Sign up";
     signUp.title = name ? "Edit local profile" : "Sign up";
@@ -924,7 +937,8 @@ loadPuzzle(activeDay, false);
     /* Keep puzzle digits and the keypad in their original, high-legibility numeral face. */
     .cell, .snyder, .control-sidebar .numpad button { font-family:Arial,Helvetica,sans-serif!important; }
     .control-sidebar, .control-sidebar * { color:var(--ink)!important; }
-    .control-sidebar button, .control-sidebar .entry-panel, .control-sidebar .highlight-panel { background:var(--muted)!important; }
+    .control-sidebar button { background:var(--muted)!important; }
+    .control-sidebar .entry-panel, .control-sidebar .highlight-panel, .control-sidebar .others-panel { background:transparent!important; }
     .control-sidebar .numpad button { border-color:var(--ink)!important; box-shadow:none!important; }
   `;
   document.head.append(style);

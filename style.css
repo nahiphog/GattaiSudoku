@@ -267,3 +267,17 @@ dialog{font-size:17px}.help-pagination{font-size:14px}.archive-weekdays{font-siz
 /* Closed native dialogs must remain out of the document flow. */
 #howToPlayDialog,#archiveDialog{display:none}
 #howToPlayDialog[open],#archiveDialog[open]{display:flex}
+
+/* Three transparent sidebar groups keep controls easy to scan. */
+.entry-panel,.highlight-panel,.others-panel{background:transparent!important}
+.entry-panel .play-actions{width:100%;align-self:auto}
+.entry-panel .numpad{width:100%}
+
+/* One deliberate reset decision, with an optional timer reset. */
+#resetGridDialog{width:min(430px,calc(100vw - 24px))}
+#resetGridDialog p{margin:0 0 14px}
+.reset-timer-choice{display:flex;align-items:center;gap:8px;margin:14px 0;font-weight:700}
+.reset-timer-choice input{width:18px;height:18px;accent-color:var(--ink)}
+.reset-grid-actions{display:flex;justify-content:flex-end;gap:8px;margin-top:18px}
+.reset-grid-actions button{border:1px solid var(--ink);background:var(--muted);color:var(--ink);padding:8px 11px;cursor:pointer;font:inherit}
+.reset-grid-actions #confirmGridReset{background:var(--ink);color:var(--surface)}
