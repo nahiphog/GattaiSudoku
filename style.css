@@ -2,7 +2,7 @@
 :root{--ink:#102b3b;--paper:#f5f1e8;--surface:#f5f1e8;--red:#ed6239;--gold:#f1bf5a;--line:#173a4c;--thin:#9aa6a8;--muted:#e7eceb;--shared:#f7eac8;--shadow:#d5cdc0;--select:#2f9e63}
 *{box-sizing:border-box}
 body{margin:0;background:var(--paper);color:var(--ink);font:16px/1.5 'Nunito',Arial,sans-serif}
-body.dark{--ink:#e6f0ed;--paper:#172126;--surface:#172126;--line:#d4e5df;--thin:#688087;--muted:#31454c;--shared:#393a2c;--shadow:#0d1518;--select:#62d795;color-scheme:dark}
+body.dark{--ink:#e6f0ed;--paper:#172126;--surface:#172126;--line:#d4e5df;--thin:#688087;--muted:#31454c;--shared:#393a2c;--shadow:#0d1518;--select:#62d795;--red:#ff9276;--gold:#ffd36b;color-scheme:dark}
 header{display:grid;grid-template-columns:1fr auto 1fr;align-items:center;padding:16px clamp(20px,7vw,100px);border-bottom:2px solid var(--ink)}
 .header-start{display:flex;align-items:center;gap:9px}
 .timer-controls{display:flex;align-items:center;gap:8px}.timer-hidden{display:none}
@@ -53,7 +53,10 @@ dialog .unlimited-button{width:100%;margin:20px 0 0;text-align:center}
 .color-picker{display:grid;grid-template-columns:repeat(4,1fr);gap:5px}.color-button{min-height:28px;border:1px solid var(--ink);background:var(--surface);font:18px/1 sans-serif;cursor:pointer}.color-button:disabled{opacity:.45;cursor:not-allowed}.color-clear{color:var(--ink)}.color-blue{color:#2d73b9}.color-green{color:#2f9e63}.color-yellow{color:#d39d1e}.color-purple{color:#7a55aa}.color-teal{color:#188b92}.color-orange{color:#e18426}
 .entry-panel,.highlight-panel,.color-panel{display:flex;flex-direction:column;gap:7px}
 .entry-tabs,.play-actions{display:grid;grid-template-columns:1fr 1fr;gap:6px}
+.entry-tabs{gap:0;border:1px solid var(--ink);background:var(--muted)}
 .entry-button,.play-actions button{border:1px solid var(--ink);background:var(--muted);color:var(--ink);padding:7px 4px;cursor:pointer;font:inherit;font-size:11px}
+.entry-tabs .entry-button{border:0;border-left:1px solid var(--ink);background:transparent;font-weight:700}
+.entry-tabs .entry-button:first-child{border-left:0}
 .history-icon{position:relative;display:grid;place-items:center;min-height:36px;padding:6px!important}.history-icon svg{width:19px;height:19px;fill:none;stroke:currentColor;stroke-width:1.9;stroke-linecap:round;stroke-linejoin:round;pointer-events:none}.history-icon::after{content:attr(data-tooltip);position:absolute;z-index:4;bottom:calc(100% + 6px);left:50%;transform:translateX(-50%);padding:4px 6px;border:1px solid var(--ink);background:var(--surface);color:var(--ink);white-space:nowrap;font:11px/1 'Nunito',sans-serif;opacity:0;pointer-events:none;transition:opacity .12s ease}.history-icon:hover::after,.history-icon:focus-visible::after{opacity:1}
 .entry-button[aria-pressed=true]{background:var(--ink);color:var(--surface)}
 .play-actions #resetGrid{grid-column:span 2}
@@ -69,6 +72,7 @@ dialog .unlimited-button{width:100%;margin:20px 0 0;text-align:center}
 .board{display:grid;grid-template-columns:repeat(12,minmax(0,1fr));grid-template-rows:repeat(12,minmax(0,1fr));aspect-ratio:1;width:min(100%,650px);margin:auto;position:relative}
 .cell{min-width:0;min-height:0;border:0;border-top:1px solid var(--thin);border-left:1px solid var(--thin);background:var(--paper);display:grid;place-items:center;font:600 clamp(18px,4vw,30px)/1 Arial,Helvetica,sans-serif;color:#1c6fa1;position:relative;transition:none!important;animation:none!important}
 .given{color:#111;font-weight:700}
+body.dark .cell{color:#8bc7ff}body.dark .given{color:#f5fbf8}body.dark .cell.conflict{color:#ff9276!important}
 .cell.conflict{color:var(--red)!important;font-weight:600}
 .shared{background:var(--shared)}
 .cell.user-color-blue{color:#2d73b9}.cell.user-color-green{color:#2f9e63}.cell.user-color-yellow{color:#a97200}.cell.user-color-purple{color:#7a55aa}.cell.user-color-teal{color:#188b92}.cell.user-color-orange{color:#d86d15}.cell[class*="user-color-"] .snyder{color:inherit}
@@ -158,6 +162,7 @@ a{color:inherit}
 .control-sidebar{justify-content:center}
 }
 .puzzle-date{display:flex;align-items:center;justify-content:center;gap:7px;line-height:1.2;text-align:center}.puzzle-date-details{display:flex;flex-direction:column;align-items:center;text-align:center}.puzzle-number{font-size:14px;font-weight:700;white-space:nowrap}.puzzle-date .weekday{font-size:11px;font-weight:600;letter-spacing:.08em;text-transform:uppercase}.puzzle-date .calendar-date{font-size:14px;font-weight:700}
+body.dark .snyder{color:#8bc7ff}body.dark .verify-result-cell{color:#8bc7ff}body.dark .verify-result-cell.given-cell{color:#f5fbf8}body.dark .verify-result-cell.solution-difference{background:#63481d;color:#ffd78b}body.dark .database-cell,body.dark .manual-cell,body.dark .builder-final-grid span{color:#f5fbf8}body.dark .generator-cell{color:#f5fbf8}body.dark .result-grid .generator-cell.solved{color:#8bc7ff}
 /* Sidebar clarity and input focus */
 .control-sidebar button{display:flex;align-items:center;justify-content:center;text-align:center;color:var(--ink);border-color:var(--line)}
 .control-sidebar button:not(.sidebar-toggle):not(.numpad button){background:var(--muted)}
@@ -165,7 +170,7 @@ a{color:inherit}
 .control-sidebar button{border-radius:0!important}
 .board-footer{justify-content:space-between;min-height:70px}.board-footer .board-details{align-items:flex-start;margin-right:auto}.board-footer #givenCount{order:-1}.board-footer .timer-controls{margin:15px 0 0 auto}.control-sidebar .timer-reset{width:100%;height:auto;padding:8px 11px;font:inherit;background:var(--muted);color:var(--ink);border:1px solid var(--ink)}
 .board-footer .footer-reset-grid{margin:15px 0 0;background:var(--muted);color:var(--ink)}
-.help-page{min-height:270px}.help-page p{margin:0 0 14px}.help-pagination{display:flex;align-items:center;justify-content:center;gap:12px;margin-top:16px}.help-pagination button{width:32px;height:30px;border:1px solid var(--ink);background:transparent;color:var(--ink);font:700 21px/1 sans-serif;cursor:pointer}.help-pagination button:disabled{opacity:.35;cursor:default}.help-pagination span{font-size:12px;font-weight:700}.visually-hidden{position:absolute!important;width:1px!important;height:1px!important;padding:0!important;margin:-1px!important;overflow:hidden!important;clip:rect(0,0,0,0)!important;white-space:nowrap!important;border:0!important}.difficulty-method-note{margin:0 0 14px!important;font-size:13px;line-height:1.5}
+.help-page{min-height:270px}.help-page p{margin:0 0 14px}.help-pagination{display:flex;align-items:center;justify-content:center;gap:12px;margin-top:16px}.help-pagination button{width:32px;height:30px;border:1px solid var(--ink);background:transparent;color:var(--ink);font:700 21px/1 sans-serif;cursor:pointer}.help-pagination button:disabled{opacity:.35;cursor:default}.help-pagination span{font-size:12px;font-weight:700}.visually-hidden{position:absolute!important;width:1px!important;height:1px!important;padding:0!important;margin:-1px!important;overflow:hidden!important;clip:rect(0,0,0,0)!important;white-space:nowrap!important;border:0!important}#howToPlayDialog,#archiveDialog{width:min(490px,calc(100vw - 24px));min-height:430px}#archiveCalendar{min-height:265px}
 .about-list{margin:0;padding-left:20px}.about-list li+li{margin-top:14px}
 @media(max-width:520px){.puzzle-date{gap:4px}.puzzle-number,.puzzle-date .calendar-date{font-size:12px}.puzzle-date .weekday{font-size:9px}.board-footer .timer-controls{margin-top:15px}.help-page{min-height:290px}}
 .cell.editable{caret-color:transparent;cursor:pointer;user-select:none;outline:none}
