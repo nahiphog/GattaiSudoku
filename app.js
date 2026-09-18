@@ -86,6 +86,11 @@ const active = [...new Set(units.flatMap(([, house]) => house))];
 const housesFor = Object.fromEntries(active.map(index => [index, units.filter(([, house]) => house.includes(index)).map(([, house]) => house)]));
 const peers = Object.fromEntries(active.map(index => [index, new Set(housesFor[index].flat().filter(other => other !== index))]));
 const board = document.querySelector("#board"), guide = document.querySelector("#guide"), givenCount = document.querySelector("#givenCount"), solutionToggle = document.querySelector("#solutionToggle"), copyPng = document.querySelector("#copyPng"), boardCard = document.querySelector("#boardCard"), puzzleSurface = document.querySelector(".puzzle-surface"), controlSidebar = document.querySelector(".control-sidebar");
+document.querySelector(".database-link")?.remove();
+const clearCellButton = document.querySelector(".numpad-delete");
+if (clearCellButton) { clearCellButton.setAttribute("aria-label", "Clear selected cell"); clearCellButton.innerHTML = '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="m15 3 6 6-8 8H7l-4-4 8-8Z"/><path d="M7 17h14"/></svg>'; }
+const archiveHeading = document.querySelector("#archiveTitle");
+if (archiveHeading) { archiveHeading.textContent = "Puzzle calendar"; archiveHeading.classList.add("visually-hidden"); }
 // Keep the inline logo resilient when the compact header markup is edited.
 // The overlap is a filled square; the grid itself is a separate stroked path.
 const headerLogo = document.querySelector(".gattai-logo");
@@ -515,12 +520,14 @@ const legacyArchiveEntries = [
   ["current", "monday", 2026, 9, 7], ["current", "tuesday", 2026, 9, 8], ["current", "wednesday", 2026, 9, 9], ["current", "thursday", 2026, 9, 10], ["current", "friday", 2026, 9, 11], ["current", "saturday", 2026, 9, 12], ["current", "sunday", 2026, 9, 13],
   ["current", "september15", 2026, 9, 15], ["current", "september16", 2026, 9, 16], ["current", "september17", 2026, 9, 17], ["current", "september28", 2026, 9, 28], ["current", "september29", 2026, 9, 29], ["current", "september30", 2026, 9, 30]
 ].map(([week, day, year, month, date]) => ({ week, day, year, month, date }));
-const archiveEntries = rotationalArchive
+const releaseCutoff = (() => { const now = new Date(); return Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate()); })();
+const isReleasedArchiveEntry = entry => Date.UTC(entry.year, entry.month - 1, entry.date) <= releaseCutoff;
+const archiveEntries = (rotationalArchive
   ? Object.keys(rotationalArchive).sort().map(key => {
       const [year, month, date] = key.split("-").map(Number);
       return { week: "archive", day: key, year, month, date };
     })
-  : legacyArchiveEntries;
+  : legacyArchiveEntries).filter(isReleasedArchiveEntry);
 const archiveKey = (year, month, date) => `${year}-${month}-${date}`;
 const archiveByDate = new Map(archiveEntries.map(entry => [archiveKey(entry.year, entry.month, entry.date), entry]));
 const archiveRoute = entry => `/daily/${entry.year}_${String(entry.month).padStart(2, "0")}_${String(entry.date).padStart(2, "0")}/`;
@@ -541,17 +548,13 @@ function renderArchiveCalendar() {
   const calendar = document.querySelector("#archiveCalendar"); let monthLabel = document.querySelector("#archiveMonthLabel");
   if (!calendar) return;
   const dialog = calendar.closest("dialog");
-  dialog?.querySelector("#archiveTitle") && (dialog.querySelector("#archiveTitle").textContent = "Daily puzzle archive");
   calendar.setAttribute("aria-label", "Daily puzzle calendar");
   if (dialog && !dialog.querySelector("#archiveMonthControls")) {
     const controls = document.createElement("div");
     controls.id = "archiveMonthControls";
     controls.className = "archive-month-controls";
     controls.innerHTML = `<button type="button" aria-label="Previous month">‹</button><strong id="archiveMonthLabel"></strong><button type="button" aria-label="Next month">›</button>`;
-    const notice = document.createElement("p");
-    notice.className = "archive-release-note";
-    notice.textContent = "New daily puzzles are released at 00:00 UTC. Dates marked X have no scheduled puzzle.";
-    dialog.querySelector(".archive-weekdays")?.before(controls, notice);
+    dialog.querySelector(".archive-weekdays")?.before(controls);
     controls.querySelectorAll("button")[0].addEventListener("click", () => { if (archiveViewMonth > firstArchiveMonth) { archiveViewMonth.setMonth(archiveViewMonth.getMonth() - 1); renderArchiveCalendar(); } });
     controls.querySelectorAll("button")[1].addEventListener("click", () => { archiveViewMonth.setMonth(archiveViewMonth.getMonth() + 1); renderArchiveCalendar(); });
     monthLabel = controls.querySelector("#archiveMonthLabel");
@@ -642,7 +645,7 @@ document.querySelectorAll(".grid-button").forEach(button => button.addEventListe
 }));
 document.querySelector("#copyPng").addEventListener("click", async () => {
   const scale = 60, gridSize = scale * 12, margin = gridSize / 18, canvas = document.createElement("canvas"), context = canvas.getContext("2d"), values = currentValues(); canvas.width = canvas.height = gridSize + margin * 2; context.fillStyle = "#fff"; context.fillRect(0, 0, canvas.width, canvas.height); context.translate(margin, margin);
-  for (let row = 0; row < 12; row += 1) for (let column = 0; column < 12; column += 1) if (hasCell(row, column)) { context.fillStyle = row >= 3 && column >= 3 && row < 9 && column < 9 ? "#fff1c7" : "#fff"; context.fillRect(column * scale, row * scale, scale, scale); context.strokeStyle = "#9aa6a8"; context.lineWidth = 1; context.strokeRect(column * scale, row * scale, scale, scale); const value = values[row * 12 + column]; if (value) { context.fillStyle = original[row * 12 + column] ? "#111" : "#1c6fa1"; context.font = "28px sans-serif"; context.textAlign = "center"; context.textBaseline = "middle"; context.fillText(value, (column + .5) * scale, (row + .53) * scale); } }
+  for (let row = 0; row < 12; row += 1) for (let column = 0; column < 12; column += 1) if (hasCell(row, column)) { context.fillStyle = "#fff"; context.fillRect(column * scale, row * scale, scale, scale); context.strokeStyle = "#9aa6a8"; context.lineWidth = 1; context.strokeRect(column * scale, row * scale, scale, scale); const value = values[row * 12 + column]; if (value) { context.fillStyle = original[row * 12 + column] ? "#111" : "#1c6fa1"; context.font = "28px sans-serif"; context.textAlign = "center"; context.textBaseline = "middle"; context.fillText(value, (column + .5) * scale, (row + .53) * scale); } }
   context.strokeStyle = "#173a4c"; context.lineWidth = 3;
   [[0, 0, 9, 0], [0, 3, 12, 3], [0, 6, 12, 6], [0, 9, 12, 9], [3, 12, 12, 12]].forEach(([x1, y1, x2, y2]) => { context.beginPath(); context.moveTo(x1 * scale, y1 * scale); context.lineTo(x2 * scale, y2 * scale); context.stroke(); });
   [[0, 0, 0, 9], [3, 0, 3, 12], [6, 0, 6, 12], [9, 0, 9, 12], [12, 3, 12, 12]].forEach(([x1, y1, x2, y2]) => { context.beginPath(); context.moveTo(x1 * scale, y1 * scale); context.lineTo(x2 * scale, y2 * scale); context.stroke(); });
@@ -654,7 +657,7 @@ if (howToPlayDialog) {
   const helpPages = [
     { title: "", body: '<p>Fill each 9×9 grid so every row, column, and 3×3 house contains 1–9 exactly once. The shared six-by-six area obeys both grids at once.</p><p>A fresh daily puzzle is published on the calendar, while Generate a puzzle offers both Digging and Build a puzzle modes.</p>' },
     { title: "Difficulty ratings", body: difficultyGuideHtml },
-    { title: "", body: '<ul class="about-list"><li>Method names and ratings follow <a href="https://github.com/AImenes/sudokUI">sudokUI</a>.</li><li>Built primarily using ChatGPT Plus.</li><li>All puzzles are computer generated and have a unique solution.</li><li>This website was built by a Sudoku enthusiast.</li></ul>' }
+    { title: "", body: '<ul class="about-list"><li>Method names and ratings follow <a href="https://github.com/AImenes/sudokUI">sudokUI</a>.</li><li>Built primarily using ChatGPT Plus.</li><li>All puzzles are computer generated and have a unique solution.</li><li>This website was built by a Sudoku enthusiast.</li><li>New daily puzzles are released at 00:00 UTC.</li></ul>' }
   ];
   let helpPage = 0;
   const renderHelpPage = () => { const page = helpPages[helpPage], eyebrow = helpPage === 0 ? "HOW TO PLAY" : helpPage === 2 ? "ABOUT" : "", heading = page.title || "Help"; howToPlayDialog.innerHTML = `<button id="closeHowToPlay" class="dialog-close" aria-label="Close">×</button>${eyebrow ? `<p class="eyebrow">${eyebrow}</p>` : ""}<h2 id="howToPlayTitle" class="${page.title ? "" : "visually-hidden"}">${heading}</h2><section class="help-page">${page.body}</section><nav class="help-pagination" aria-label="How to play pages"><button id="previousHelpPage" type="button" ${helpPage === 0 ? "disabled" : ""}>‹</button><span>Page ${helpPage + 1} of ${helpPages.length}</span><button id="nextHelpPage" type="button" ${helpPage === helpPages.length - 1 ? "disabled" : ""}>›</button></nav>`; howToPlayDialog.querySelector("#closeHowToPlay").addEventListener("click", () => howToPlayDialog.close()); howToPlayDialog.querySelector("#previousHelpPage").addEventListener("click", () => { helpPage -= 1; renderHelpPage(); }); howToPlayDialog.querySelector("#nextHelpPage").addEventListener("click", () => { helpPage += 1; renderHelpPage(); }); };
@@ -699,6 +702,7 @@ const generatorRule = document.querySelector(".generator-rule");
 if (generatorRule) generatorRule.textContent = "Both published weeks are independently rechecked for exactly one solution. The previous week uses paired rotational digging; every listed walkthrough resolves the entire Gattai using named Singles techniques only.";
 const routedEntry = entryFromRoute();
 if (routedEntry) { activeWeek = routedEntry.week; activeDay = routedEntry.day; }
+else if (/^\/daily\//.test(window.location.pathname)) { window.history.replaceState({}, "", "/"); }
 window.addEventListener("popstate", () => { const entry = entryFromRoute(); if (entry) { activeWeek = entry.week; mode = "human"; loadPuzzle(entry.day, false); } });
 loadPuzzle(activeDay, false);
 
