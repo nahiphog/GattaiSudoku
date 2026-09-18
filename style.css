@@ -219,3 +219,47 @@ body.dark .snyder{color:#8bc7ff}body.dark .verify-result-cell{color:#8bc7ff}body
 #howToPlayDialog .help-page{height:270px;min-height:270px;overflow-y:auto}
 #archiveDialog{width:min(470px,calc(100vw - 24px));height:510px;min-height:0;overflow:hidden}
 #archiveCalendar{height:265px;min-height:265px;overflow-y:auto}
+
+/* Compact, fixed-size dialog canvases: no viewport or content-driven jumping. */
+#howToPlayDialog{height:500px;overflow:hidden;display:flex;flex-direction:column}
+#howToPlayDialog h2{margin:4px 0 14px}
+#howToPlayDialog .help-page{height:360px;min-height:360px;overflow-y:auto}
+#howToPlayDialog .help-pagination{margin:10px 0 0}
+#archiveDialog{height:390px;overflow:hidden;display:flex;flex-direction:column;padding:18px 24px}
+#archiveDialog h2{margin:2px 0 6px;font-size:26px}
+#archiveDialog .archive-month-controls{margin:3px 0}
+#archiveDialog .archive-weekdays{margin:0 0 3px}
+#archiveCalendar{height:190px;min-height:190px;overflow:hidden;gap:4px}
+#archiveCalendar{grid-auto-rows:27px}
+#archiveCalendar button,#archiveCalendar a,#archiveCalendar span{aspect-ratio:auto;min-height:0}
+#generatePuzzleLauncher{margin:8px auto 0!important;padding:6px 10px}
+
+/* A selected entry mode is signalled by the full coloured segment, without a redundant label. */
+.entry-tabs .entry-button[aria-pressed=true]::after{content:none}
+.entry-tabs .entry-button[aria-pressed=true]{opacity:1!important;font-weight:800}
+.entry-tabs .entry-button[aria-pressed=false]{opacity:.6}
+
+/* Keep the secondary actions as a named, self-contained sidebar group. */
+.others-panel{display:grid;gap:6px;margin-top:auto}
+.others-panel>span{font-size:14px;font-weight:800;letter-spacing:.04em}
+.others-panel .sidebar-solution,.others-panel #copyPng{width:100%;text-align:center}
+.history-icon,.numpad .numpad-delete{display:flex!important;align-items:center;justify-content:center;gap:7px}
+.history-icon svg,.numpad .numpad-delete svg{width:20px;height:20px;flex:0 0 20px}
+.numpad .numpad-delete{font-size:16px}
+.history-icon::after{content:none}
+
+/* Scale the interface copy while deliberately leaving puzzle and candidate digits untouched. */
+body{font-size:19px}
+header button{font-size:16px}.timer{font-size:17px}.puzzle-meta{font-size:17px}
+.control-sidebar{font-size:14px}.control-sidebar button{font-size:13px}.control-sidebar section>span{font-size:14px}
+dialog{font-size:17px}.help-pagination{font-size:14px}.archive-weekdays{font-size:13px}.archive-calendar button,.archive-calendar a,.archive-calendar span{font-size:16px}
+.control-sidebar .numpad button{font-size:24px}
+.control-sidebar .numpad .numpad-delete{font-size:16px}
+.board-footer #givenCount,.board-footer .difficulty-label{font-size:16px}
+.puzzle-number,.puzzle-date .calendar-date{font-size:17px}.puzzle-date .weekday{font-size:13px}
+.guide{font-size:17px}.guide .eyebrow,.step-controls span,.technique-tally{font-size:14px}
+.brand{font-size:26px}.icon-button{font-size:22px}.info-button{font-size:25px}
+.sign-up-button,.verify-solution-button,.dialog-primary{font-size:14px}
+.dialog-field,.settings-row,.settings-colours,.settings-about{font-size:16px}
+.dialog-field input,.dialog-field textarea{font-size:17px}
+.difficulty-guide,.technique-tally-list table{font-size:16px}
