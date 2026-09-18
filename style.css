@@ -179,7 +179,7 @@ body.dark .snyder{color:#8bc7ff}body.dark .verify-result-cell{color:#8bc7ff}body
 .control-sidebar button:hover:not(:disabled),.control-sidebar button:focus-visible{background:var(--shared)}
 .control-sidebar button{border-radius:0!important}
 .board-footer{justify-content:space-between;min-height:70px}.board-footer .board-details{align-items:flex-start;margin-right:auto}.board-footer #givenCount{order:-1}.puzzle-surface>.timer-controls{justify-content:center;margin:-2px 0 8px}.control-sidebar .timer-reset{width:100%;height:auto;padding:8px 11px;font:inherit;background:var(--muted);color:var(--ink);border:1px solid var(--ink)}
-.others-panel #resetGrid{width:100%;margin:0;border:1px solid var(--ink);background:var(--muted);color:var(--ink);padding:8px;cursor:pointer;font:inherit;text-align:center}
+.others-panel #resetGrid{width:100%;margin:0;border:1px solid var(--ink);background:var(--muted);color:var(--ink);padding:8px;cursor:pointer;font:inherit;text-align:center;gap:8px}
 .help-page{min-height:270px}.help-page p{margin:0 0 14px}.help-pagination{display:flex;align-items:center;justify-content:center;gap:12px;margin-top:16px}.help-pagination button{width:32px;height:30px;border:1px solid var(--ink);background:transparent;color:var(--ink);font:700 21px/1 sans-serif;cursor:pointer}.help-pagination button:disabled{opacity:.35;cursor:default}.help-pagination span{font-size:12px;font-weight:700}.visually-hidden{position:absolute!important;width:1px!important;height:1px!important;padding:0!important;margin:-1px!important;overflow:hidden!important;clip:rect(0,0,0,0)!important;white-space:nowrap!important;border:0!important}#howToPlayDialog,#archiveDialog{width:min(490px,calc(100vw - 24px));min-height:430px}#archiveCalendar{min-height:265px}
 .about-list{margin:0;padding-left:20px}.about-list li+li{margin-top:14px}
 @media(max-width:520px){.puzzle-date{gap:4px}.puzzle-number,.puzzle-date .calendar-date{font-size:12px}.puzzle-date .weekday{font-size:9px}.snyder{width:80%;height:80%;padding:0;font-size:clamp(5px,1.8vw,9px)}.help-page{min-height:290px}}
@@ -291,6 +291,12 @@ dialog{font-size:17px}.help-pagination{font-size:14px}.archive-weekdays{font-siz
 .solution-walkthrough-title{margin:0;font-size:14px;font-weight:800;letter-spacing:.08em;text-transform:none;color:var(--ink)}
 .board-card.solver-active .solution-walkthrough-title{margin:0 0 2px}
 .puzzle-meta.solution-active .puzzle-nav{display:none}
+.board-card.solver-active{grid-template-columns:minmax(0,650px) minmax(250px,360px);max-width:1050px}.board-card.solver-active .control-sidebar{display:none!important}
+
+/* Dark mode deliberately flips the walkthrough panel and its accent contrast. */
+body.dark .guide .eyebrow,body.dark .guide h3,body.dark .guide .step-controls span,body.dark .guide .technique-tally{color:#285a9d}
+body.dark .guide .technique-tally{border-color:#285a9d}
+body.dark .guide .step-controls{border-color:rgba(16,43,59,.3)}
 
 /* Keep the guide's labels literal and its column headings visible when read. */
 .difficulty-guide .technique-name{color:#c32626}
@@ -300,12 +306,16 @@ dialog{font-size:17px}.help-pagination{font-size:14px}.archive-weekdays{font-siz
 
 /* Small screens preserve readable candidates and stack every sidebar section. */
 @media(max-width:820px){
+  .board-card.solver-active{grid-template-columns:1fr;max-width:none}
   .board-card.solver-active .puzzle-surface{grid-column:1;grid-row:1}
-  .board-card.solver-active .solution-rail{grid-column:1;grid-row:2;order:initial}
+  .board-card.solver-active .solution-rail{grid-column:1;grid-row:4;order:initial}
   .board-card.solver-active .control-sidebar{display:flex;grid-column:1;grid-row:3}
   .control-sidebar{display:grid!important;grid-template-columns:minmax(0,1.2fr) minmax(0,.8fr);gap:14px;align-items:start;width:100%}
   .control-sidebar>.entry-panel,.control-sidebar>.sidebar-utilities{width:100%;min-width:0;align-self:stretch}
   .control-sidebar>.sidebar-utilities{grid-template-columns:1fr;gap:12px;margin-top:0}
+  .puzzle-surface{display:contents}
+  .puzzle-meta,.puzzle-surface>.timer-controls,.board,.board-footer{grid-column:1}
+  .puzzle-meta{grid-row:1}.puzzle-surface>.timer-controls{grid-row:2}.board{grid-row:3}.control-sidebar{grid-row:4}.board-footer{grid-row:5;width:100%}
 }
 @media(max-width:520px){
   .board-card.solver-active .snyder{width:80%;height:80%;padding:0;font-size:clamp(5px,1.8vw,9px);line-height:1;overflow:hidden}

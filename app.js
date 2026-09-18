@@ -104,6 +104,7 @@ if (brandWords.length >= 3) {
 }
 const cameraIcon = '<svg class="button-symbol" viewBox="0 0 24 24" aria-hidden="true"><path d="M4 7h3l1.5-2h7L17 7h3v12H4Z"/><circle cx="12" cy="13" r="3.5"/></svg>';
 const searchIcon = '<svg class="button-symbol" viewBox="0 0 24 24" aria-hidden="true"><circle cx="10.5" cy="10.5" r="5.5"/><path d="m15 15 5 5"/></svg>';
+const restartIcon = '<svg class="button-symbol" viewBox="0 0 24 24" aria-hidden="true"><path d="M5 10V5h5"/><path d="M5.5 5.5A8 8 0 1 1 4 14"/></svg>';
 const setSidebarButtonLabel = (button, label, icon) => { button.innerHTML = `<span>${label}</span>${icon}`; };
 setSidebarButtonLabel(copyPng, "Copy grid", cameraIcon);
 const othersPanel = document.createElement("section");
@@ -679,7 +680,7 @@ const timerControls = document.querySelector(".timer-controls"), resetTimerButto
 if (timerControls) { document.querySelector(".puzzle-meta")?.after(timerControls); }
 if (resetTimerButton) resetTimerButton.remove();
 const resetGridButton = document.querySelector("#resetGrid");
-if (resetGridButton) { resetGridButton.classList.remove("footer-reset-grid"); othersPanel.insertBefore(resetGridButton, solutionToggle); }
+if (resetGridButton) { resetGridButton.classList.remove("footer-reset-grid"); setSidebarButtonLabel(resetGridButton, "Reset grid", restartIcon); othersPanel.insertBefore(resetGridButton, solutionToggle); }
 const setSharedHighlight = checked => { sharedHighlight = checked; document.querySelector("#sharedToggle").checked = checked; document.querySelector("#settingsSharedToggle").checked = checked; refresh(); };
 document.querySelector("#sharedToggle").addEventListener("change", event => setSharedHighlight(event.target.checked));
 document.querySelectorAll(".color-button").forEach(button => button.addEventListener("click", () => applyCellColor(button.dataset.color)));
