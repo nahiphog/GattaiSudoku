@@ -18,24 +18,48 @@
   const dateFormat = new Intl.DateTimeFormat("en-US", {
     weekday: "long", month: "long", day: "numeric", year: "numeric", timeZone: "UTC"
   });
-  // The database records are individually unique, but batches may share the
-  // same clue mask after digit permutation.  A daily schedule must not make
-  // two dates look like the same puzzle, so each clue-placement pattern is
-  // scheduled at most once.
-  const usedLayouts = new Set();
-  const layoutOf = puzzle => puzzle.rows.join("").replace(/[1-9]/g, "#");
+  // Preserve puzzle validity while varying a repeated clue mask through the
+  // Gattai layout's four symmetries: identity, transpose, half-turn, and
+  // anti-diagonal reflection.  Each maps both 9x9 grids cleanly onto grids.
+  const transforms = {
+    identity: (row, column) => [row, column],
+    transpose: (row, column) => [column, row],
+    halfTurn: (row, column) => [11 - row, 11 - column],
+    antiDiagonal: (row, column) => [11 - column, 11 - row]
+  };
+  const transformedRows = (rows, transform) => {
+    const output = Array.from({ length: 12 }, () => Array(12).fill("."));
+    rows.forEach((line, row) => [...line].forEach((value, column) => {
+      if (value === ".") return;
+      const [targetRow, targetColumn] = transforms[transform](row, column);
+      output[targetRow][targetColumn] = value;
+    }));
+    return output.map(line => line.join(""));
+  };
+  const layoutOf = rows => rows.join("").replace(/[1-9]/g, "#");
+  const usedLayouts = new Set(), usedPuzzleIds = new Set();
   const take = queue => {
-    const index = queue.findIndex(puzzle => !usedLayouts.has(layoutOf(puzzle)));
-    if (index < 0) return null;
-    const [puzzle] = queue.splice(index, 1);
-    usedLayouts.add(layoutOf(puzzle));
-    return puzzle;
+    for (let index = 0; index < queue.length; index += 1) {
+      const puzzle = queue[index];
+      if (usedPuzzleIds.has(puzzle.id)) continue;
+      const variant = Object.keys(transforms)
+        .map(transform => transformedRows(puzzle.rows, transform))
+        .find(rows => !usedLayouts.has(layoutOf(rows)));
+      if (!variant) continue;
+      queue.splice(index, 1);
+      usedPuzzleIds.add(puzzle.id);
+      usedLayouts.add(layoutOf(variant));
+      return { ...puzzle, rows: variant };
+    }
+    return null;
   };
   const scheduled = {};
-  let current = new Date(Date.UTC(2026, 0, 1));
-  const allScheduled = () => Object.values(queues).every(queue => !queue.some(puzzle => !usedLayouts.has(layoutOf(puzzle))));
+  let current = new Date(Date.UTC(2026, 7, 1));
+  const ends = new Date(Date.UTC(2026, 11, 1));
 
-  while (!allScheduled()) {
+  // Assign chronologically, one date at a time, with the weekday's intended
+  // difficulty band. This deliberately leaves later dates to a future run.
+  while (current <= ends) {
     const weekday = current.getUTCDay();
     let puzzle = null;
     if (weekday === 1 || weekday === 2) puzzle = take(queues.easy);
@@ -59,8 +83,8 @@
 
   window.ROTATIONAL_ARCHIVE = scheduled;
   window.ROTATIONAL_ARCHIVE_SCHEDULE = {
-    starts: "2026-01-01",
-    ends: new Date(current.getTime() - 86400000).toISOString().slice(0, 10),
+    starts: "2026-08-01",
+    ends: "2026-12-01",
     count: Object.keys(scheduled).length
   };
 })();
