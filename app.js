@@ -32,7 +32,7 @@ if (rotationalArchive) {
   Object.keys(previousWeekPuzzles).forEach(key => delete previousWeekPuzzles[key]);
 }
 const puzzles = { ...dailyPuzzles, unlimited: { date: "Unlimited", rows: Array(12).fill("............") } };
-const defaultDailyKey = rotationalArchive ? "2026-08-01" : "tuesday";
+const defaultDailyKey = rotationalArchive ? Object.keys(rotationalArchive).sort()[0] : "tuesday";
 let activeWeek = rotationalArchive ? "archive" : "current", activeDay = defaultDailyKey, rows = dailyPuzzles[defaultDailyKey].rows, puzzleDate = dailyPuzzles[defaultDailyKey].date;
 const digits = [1, 2, 3, 4, 5, 6, 7, 8, 9];
 // The order is deliberately explicit.  New technique implementations are
@@ -528,22 +528,40 @@ function syncPuzzleRoute() { const entry = archiveEntries.find(item => item.week
 function currentPuzzlePosition() { return archiveEntries.findIndex(entry => entry.week === activeWeek && entry.day === activeDay); }
 function updatePuzzleNavigation() { const previous = document.querySelector("#previousPuzzle"), next = document.querySelector("#nextPuzzle"), position = currentPuzzlePosition(), unavailable = activeDay === "unlimited" || position === -1; previous.disabled = unavailable || position === 0; next.disabled = unavailable || position === archiveEntries.length - 1; }
 function navigatePuzzle(offset) { const position = currentPuzzlePosition(), target = archiveEntries[position + offset]; if (!target || activeDay === "unlimited") return; activeWeek = target.week; mode = "human"; loadPuzzle(target.day); }
+let archiveViewMonth = (() => {
+  const first = archiveEntries[0];
+  return first ? new Date(first.year, first.month - 1, 1) : new Date(2026, 0, 1);
+})();
 function renderArchiveCalendar() {
-  const calendar = document.querySelector("#archiveCalendar");
-  calendar.replaceChildren();
-  const first = rotationalArchive ? new Date(2026, 7, 1) : new Date(2026, 7, 31);
-  const totalDays = rotationalArchive ? 61 : 35;
-  if (rotationalArchive) {
-    // The calendar headings start Monday, while JavaScript starts Sunday.
-    // Add the five leading slots needed for Saturday, August 1, 2026.
-    const leadingSlots = (first.getDay() + 6) % 7;
-    for (let slot = 0; slot < leadingSlots; slot += 1) calendar.append(document.createElement("span"));
+  const calendar = document.querySelector("#archiveCalendar"); let monthLabel = document.querySelector("#archiveMonthLabel");
+  if (!calendar) return;
+  const dialog = calendar.closest("dialog");
+  dialog?.querySelector("#archiveTitle") && (dialog.querySelector("#archiveTitle").textContent = "Daily puzzle archive");
+  calendar.setAttribute("aria-label", "Daily puzzle calendar");
+  if (dialog && !dialog.querySelector("#archiveMonthControls")) {
+    const controls = document.createElement("div");
+    controls.id = "archiveMonthControls";
+    controls.className = "archive-month-controls";
+    controls.innerHTML = `<button type="button" aria-label="Previous month">‹</button><strong id="archiveMonthLabel"></strong><button type="button" aria-label="Next month">›</button>`;
+    const notice = document.createElement("p");
+    notice.className = "archive-release-note";
+    notice.textContent = "New daily puzzles are released at 00:00 UTC. Dates marked X have no scheduled puzzle.";
+    dialog.querySelector(".archive-weekdays")?.before(controls, notice);
+    controls.querySelectorAll("button")[0].addEventListener("click", () => { archiveViewMonth.setMonth(archiveViewMonth.getMonth() - 1); renderArchiveCalendar(); });
+    controls.querySelectorAll("button")[1].addEventListener("click", () => { archiveViewMonth.setMonth(archiveViewMonth.getMonth() + 1); renderArchiveCalendar(); });
+    monthLabel = controls.querySelector("#archiveMonthLabel");
   }
-  for (let offset = 0; offset < totalDays; offset += 1) {
-    const date = new Date(first.getFullYear(), first.getMonth(), first.getDate() + offset), year = date.getFullYear(), month = date.getMonth() + 1, day = date.getDate(), entry = archiveByDate.get(archiveKey(year, month, day));
-    if (!entry) { const blank = document.createElement("span"); blank.textContent = rotationalArchive ? "X" : day; if (month !== 9) blank.classList.add("outside"); calendar.append(blank); continue; }
+  calendar.replaceChildren();
+  if (monthLabel) monthLabel.textContent = archiveViewMonth.toLocaleDateString("en-US", { month: "long", year: "numeric" });
+  const year = archiveViewMonth.getFullYear(), monthIndex = archiveViewMonth.getMonth();
+  const leadingSlots = (new Date(year, monthIndex, 1).getDay() + 6) % 7;
+  const totalDays = new Date(year, monthIndex + 1, 0).getDate();
+  for (let slot = 0; slot < leadingSlots; slot += 1) calendar.append(document.createElement("span"));
+  for (let day = 1; day <= totalDays; day += 1) {
+    const entry = archiveByDate.get(archiveKey(year, monthIndex + 1, day));
+    if (!entry) { const blank = document.createElement("span"); blank.textContent = "X"; calendar.append(blank); continue; }
     const link = document.createElement("a");
-    link.href = archiveRoute(entry); link.textContent = day; link.title = (entry.week === "previous" ? previousWeekPuzzles : dailyPuzzles)[entry.day].date;
+    link.href = archiveRoute(entry); link.textContent = day; link.title = dailyPuzzles[entry.day].date;
     if (entry.week === activeWeek && entry.day === activeDay) link.classList.add("is-current");
     calendar.append(link);
   }
@@ -625,9 +643,10 @@ document.querySelector("#copyPng").addEventListener("click", async () => {
 });
 const howToPlayDialog = document.querySelector("#howToPlayDialog");
 if (howToPlayDialog) {
+  const difficultyGuideHtml = `<div class="table-wrap"><table class="difficulty-guide"><thead><tr><th>Difficulty</th><th>How the score is determined</th><th>Scheduled days</th></tr></thead><tbody><tr><th scope="row">Beginner · ≤400</th><td>Cheapest applicable steps are scored individually. Singles are 4, 4, and 14 points for Full House, Naked Single, and Hidden Single.</td><td>—</td></tr><tr><th scope="row">Easy · ≤800</th><td>All Beginner methods; enough routine deductions can raise the cumulative score into Easy.</td><td>Monday · Tuesday</td></tr><tr><th scope="row">Medium · ≤1000</th><td>All earlier methods, plus intersections and Naked or Hidden Pairs and Triples.</td><td>Wednesday (optional) · Thursday · Friday</td></tr><tr><th scope="row">Tricky · ≤1150</th><td>All earlier methods. One Hard-class fish, wing, or single-digit pattern sets a Tricky floor.</td><td>Friday · Saturday</td></tr><tr><th scope="row">Hard · ≤1600</th><td>All earlier methods. Two or more Hard-class deductions set a Hard floor; cumulative score can raise it further.</td><td>Saturday</td></tr><tr><th scope="row">Unfair, Extreme, Nightmare</th><td>Each subsequent band includes all techniques from every earlier band, then adds progressively more complex chains, colouring, ALSs, and last-resort patterns.</td><td>Sunday</td></tr></tbody></table></div>`;
   const helpPages = [
     { title: "How to play", body: '<p>Fill each 9×9 grid so every row, column, and 3×3 house contains 1–9 exactly once. The shared six-by-six area obeys both grids at once.</p>' },
-    { title: "Difficulty ratings", body: '<div class="table-wrap"><table class="difficulty-guide"><thead><tr><th>Difficulty</th><th>How the score is determined</th></tr></thead><tbody><tr><th scope="row">Beginner · ≤400</th><td>Cheapest applicable steps are scored individually. Singles are 4, 4, and 14 points for Full House, Naked Single, and Hidden Single.</td></tr><tr><th scope="row">Easy · ≤800</th><td>All Beginner methods; enough routine deductions can raise the cumulative score into Easy.</td></tr><tr><th scope="row">Medium · ≤1000</th><td>All earlier methods, plus intersections and Naked or Hidden Pairs and Triples.</td></tr><tr><th scope="row">Tricky · ≤1150</th><td>All earlier methods. One Hard-class fish, wing, or single-digit pattern sets a Tricky floor.</td></tr><tr><th scope="row">Hard · ≤1600</th><td>All earlier methods. Two or more Hard-class deductions set a Hard floor; cumulative score can raise it further.</td></tr><tr><th scope="row">Unfair, Extreme, Nightmare</th><td>Each subsequent band includes all techniques from every earlier band, then adds progressively more complex chains, colouring, ALSs, and last-resort patterns.</td></tr></tbody></table></div>' },
+    { title: "Difficulty ratings", body: difficultyGuideHtml },
     { title: "ABOUT", body: '<ul class="about-list"><li>Method names and ratings follow <a href="https://github.com/AImenes/sudokUI">sudokUI</a>.</li><li>Built primarily using ChatGPT Plus.</li></ul>' }
   ];
   let helpPage = 0;
