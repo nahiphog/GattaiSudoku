@@ -1,0 +1,37 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Puzzle database · Daily Gattai Sudoku</title>
+  <link rel="stylesheet" href="/style.css" />
+</head>
+<body class="database-page">
+  <header>
+    <div class="header-start"><a class="database-back" href="/" aria-label="Back to daily puzzles">← Daily puzzles</a></div>
+    <div class="brand-stack"><div class="brand" aria-label="Daily Gattai Sudoku"><svg class="gattai-logo" viewBox="0 0 120 120" role="img" aria-label="Gattai Sudoku grid logo"><path class="logo-overlap" d="M30 30H90V90H30Z"/><path class="logo-lines" d="M0 0H90V30H120V120H30V90H0ZM10 0V90M20 0V90M30 0V120M40 0V120M50 0V120M60 0V120M70 0V120M80 0V120M90 0V120M100 30V120M110 30V120M0 10H90M0 20H90M0 30H120M0 40H120M0 50H120M0 60H120M0 70H120M0 80H120M0 90H120M30 100H120M30 110H120"/></svg><span>Daily</span><span>Gattai</span><span>Sudoku</span></div></div>
+    <div class="header-end"><span class="database-header-label">Database</span></div>
+  </header>
+  <main class="database-main">
+    <section class="database-intro">
+      <p class="eyebrow">ROTATIONAL-PAIR COLLECTION</p>
+      <h1>Gattai puzzle database</h1>
+      <p>500 distinct, exactly-one-solution puzzles, sorted from lowest to highest recorded difficulty. Each was made from a 180° rotational-pair dug Gattai base; global digit relabelling preserves its rotational clue pattern, uniqueness, and pair-minimality.</p>
+    </section>
+    <section class="database-layout" aria-label="Puzzle database">
+      <div class="database-listing">
+        <div class="database-summary" id="databaseSummary"></div>
+        <div class="table-wrap"><table class="database-table"><thead><tr><th>#</th><th>Difficulty</th><th>Given cells</th><th>Trial-and-error</th><th></th></tr></thead><tbody id="databaseRows"></tbody></table></div>
+      </div>
+      <aside class="database-preview" aria-live="polite">
+        <p class="eyebrow">SELECTED PUZZLE</p>
+        <h2 id="databaseTitle">Puzzle 1</h2>
+        <div class="database-attributes" id="databaseAttributes"></div>
+        <div class="database-board" id="databaseBoard" aria-label="Selected Gattai puzzle"></div>
+      </aside>
+    </section>
+  </main>
+  <script src="/puzzle-database.js"></script>
+  <script src="/database.js"></script>
+</body>
+</html>
