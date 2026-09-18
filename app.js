@@ -91,6 +91,7 @@ const clearCellButton = document.querySelector(".numpad-delete");
 if (clearCellButton) { clearCellButton.setAttribute("aria-label", "Clear selected cell"); clearCellButton.innerHTML = '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="m15 3 6 6-8 8H7l-4-4 8-8Z"/><path d="M7 17h14"/></svg>'; }
 const archiveHeading = document.querySelector("#archiveTitle");
 if (archiveHeading) { archiveHeading.textContent = "Puzzle calendar"; archiveHeading.classList.add("visually-hidden"); }
+document.querySelector("#archiveDialog .eyebrow")?.remove();
 // Keep the inline logo resilient when the compact header markup is edited.
 // The overlap is a filled square; the grid itself is a separate stroked path.
 const headerLogo = document.querySelector(".gattai-logo");
