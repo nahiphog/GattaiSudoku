@@ -18,10 +18,22 @@
   const dateFormat = new Intl.DateTimeFormat("en-US", {
     weekday: "long", month: "long", day: "numeric", year: "numeric", timeZone: "UTC"
   });
-  const take = queue => queue.length ? queue.shift() : null;
+  // The database records are individually unique, but batches may share the
+  // same clue mask after digit permutation.  A daily schedule must not make
+  // two dates look like the same puzzle, so each clue-placement pattern is
+  // scheduled at most once.
+  const usedLayouts = new Set();
+  const layoutOf = puzzle => puzzle.rows.join("").replace(/[1-9]/g, "#");
+  const take = queue => {
+    const index = queue.findIndex(puzzle => !usedLayouts.has(layoutOf(puzzle)));
+    if (index < 0) return null;
+    const [puzzle] = queue.splice(index, 1);
+    usedLayouts.add(layoutOf(puzzle));
+    return puzzle;
+  };
   const scheduled = {};
   let current = new Date(Date.UTC(2026, 0, 1));
-  const allScheduled = () => Object.values(queues).every(queue => queue.length === 0);
+  const allScheduled = () => Object.values(queues).every(queue => !queue.some(puzzle => !usedLayouts.has(layoutOf(puzzle))));
 
   while (!allScheduled()) {
     const weekday = current.getUTCDay();

@@ -286,6 +286,15 @@ dialog{font-size:17px}.help-pagination{font-size:14px}.archive-weekdays{font-siz
 .sidebar-utilities{display:grid;gap:12px;margin-top:auto;background:transparent!important}
 .sidebar-utilities .highlight-panel,.sidebar-utilities .others-panel{margin:0;background:transparent!important}
 
+/* Walkthrough metadata sits outside its dark explanation panel. */
+.solution-walkthrough-title{margin:0;font-size:14px;font-weight:800;letter-spacing:.08em;text-transform:none;color:var(--ink)}
+.board-card.solver-active .solution-walkthrough-title{margin:0 0 2px}
+.puzzle-meta.solution-active .puzzle-nav{display:none}
+
+/* Keep the guide's labels literal and its column headings visible when read. */
+.difficulty-guide .technique-name{color:#c32626;text-decoration:underline;text-decoration-thickness:1px;text-underline-offset:2px}
+.difficulty-guide thead th{position:sticky;top:0;z-index:2;background:var(--surface)}
+
 /* Sidebar mode controls: visible symbols make the active input and grid choices clear. */
 .entry-panel>span,.highlight-panel>span,.others-panel>span{text-align:center;width:100%}
 .entry-tabs .entry-button{gap:7px;justify-content:space-between}
