@@ -134,7 +134,7 @@ const userInputs = { monday: Array(144).fill(0), tuesday: Array(144).fill(0), we
 const userNotes = { monday: blankNotes(), tuesday: blankNotes(), wednesday: blankNotes(), thursday: blankNotes(), friday: blankNotes(), saturday: blankNotes(), sunday: blankNotes(), unlimited: blankNotes() };
 const userColors = { monday: blankColors(), tuesday: blankColors(), wednesday: blankColors(), thursday: blankColors(), friday: blankColors(), saturday: blankColors(), sunday: blankColors(), unlimited: blankColors() };
 const histories = { monday: [], tuesday: [], wednesday: [], thursday: [], friday: [], saturday: [], sunday: [], unlimited: [] }, redoHistories = { monday: [], tuesday: [], wednesday: [], thursday: [], friday: [], saturday: [], sunday: [], unlimited: [] };
-const original = Array(144).fill(0); let human = userInputs.tuesday, playNotes = userNotes.tuesday, playColors = userColors.tuesday, sharedHighlight = false, autoMarkConflicts = true, difficultyVisible = true, givenCountVisible = true;
+const original = Array(144).fill(0); let human = userInputs.tuesday, playNotes = userNotes.tuesday, playColors = userColors.tuesday, sharedHighlight = false, autoMarkConflicts = true, difficultyVisible = true, givenCountVisible = false;
 function stateKey(day = activeDay) { return day === "unlimited" ? day : `${activeWeek}:${day}`; }
 function ensureState(key) {
   if (userInputs[key]) return;
@@ -570,7 +570,7 @@ function entryFromRoute(pathname = window.location.pathname) { const match = pat
 function syncPuzzleRoute() { const entry = archiveEntries.find(item => item.week === activeWeek && item.day === activeDay); if (entry && window.location.pathname !== archiveRoute(entry)) window.history.pushState({ puzzle: archiveKey(entry.year, entry.month, entry.date) }, "", archiveRoute(entry)); }
 function currentPuzzlePosition() { return archiveEntries.findIndex(entry => entry.week === activeWeek && entry.day === activeDay); }
 function updatePuzzleNavigation() { const previous = document.querySelector("#previousPuzzle"), next = document.querySelector("#nextPuzzle"), position = currentPuzzlePosition(), unavailable = activeDay === "unlimited" || position === -1; previous.disabled = unavailable || position === 0; next.disabled = unavailable || position === archiveEntries.length - 1; }
-function navigatePuzzle(offset) { const position = currentPuzzlePosition(), target = archiveEntries[position + offset]; if (!target || activeDay === "unlimited") return; activeWeek = target.week; mode = "human"; loadPuzzle(target.day); }
+function navigatePuzzle(offset) { const position = currentPuzzlePosition(), target = archiveEntries[position + offset]; if (!target || activeDay === "unlimited") return; resetTimer(); activeWeek = target.week; mode = "human"; loadPuzzle(target.day); }
 let archiveViewMonth = (() => {
   const first = archiveEntries[0];
   return first ? new Date(first.year, first.month - 1, 1) : new Date(2026, 0, 1);
@@ -662,7 +662,7 @@ document.querySelector("#undoMove").addEventListener("click", undoMove);
 document.querySelector("#redoMove").addEventListener("click", redoMove);
 const resetGridDialog = document.createElement("dialog");
 resetGridDialog.id = "resetGridDialog";
-resetGridDialog.innerHTML = '<button class="dialog-close" type="button" aria-label="Close">×</button><h2>Reset grid?</h2><p>Your entered digits, Snyder notes, and cell colours will be cleared.</p><label class="reset-timer-choice"><input id="resetGridTimerChoice" type="checkbox" /> Also restart the timer</label><div class="reset-grid-actions"><button id="cancelGridReset" type="button">Cancel</button><button id="confirmGridReset" type="button">Reset grid</button></div>';
+resetGridDialog.innerHTML = '<button class="dialog-close" type="button" aria-label="Close">×</button><h2>Are you sure?</h2><p>Your entered digits, Snyder notes, and cell colours will be cleared.</p><label class="reset-timer-choice"><input id="resetGridTimerChoice" type="checkbox" /> Also restart the timer</label><div class="reset-grid-actions"><button id="cancelGridReset" type="button">Cancel</button><button id="confirmGridReset" type="button">Reset grid</button></div>';
 document.body.append(resetGridDialog);
 document.querySelector("#resetGrid").addEventListener("click", () => { document.querySelector("#resetGridTimerChoice").checked = false; resetGridDialog.showModal(); });
 resetGridDialog.querySelector(".dialog-close").addEventListener("click", () => resetGridDialog.close());
@@ -676,10 +676,10 @@ resetGridDialog.querySelector("#confirmGridReset").addEventListener("click", () 
 resetGridDialog.addEventListener("click", event => { if (event.target === resetGridDialog) resetGridDialog.close(); });
 document.addEventListener("keydown", event => { if (event.defaultPrevented || mode !== "human" || selectedCell === null || original[selectedCell]) return; if (/^[1-9]$/.test(event.key)) { event.preventDefault(); applyEntry(Number(event.key)); return; } if ((event.key === "Backspace" || event.key === "Delete") && !event.target.closest(".editable")) { event.preventDefault(); eraseSelected(); } });
 const timerControls = document.querySelector(".timer-controls"), resetTimerButton = document.querySelector("#resetTimer");
-if (timerControls) { document.querySelector(".board-footer")?.append(timerControls); }
+if (timerControls) { document.querySelector(".puzzle-meta")?.after(timerControls); }
 if (resetTimerButton) resetTimerButton.remove();
 const resetGridButton = document.querySelector("#resetGrid");
-if (resetGridButton) { resetGridButton.classList.add("footer-reset-grid"); document.querySelector(".board-footer")?.append(resetGridButton); }
+if (resetGridButton) { resetGridButton.classList.remove("footer-reset-grid"); othersPanel.insertBefore(resetGridButton, solutionToggle); }
 const setSharedHighlight = checked => { sharedHighlight = checked; document.querySelector("#sharedToggle").checked = checked; document.querySelector("#settingsSharedToggle").checked = checked; refresh(); };
 document.querySelector("#sharedToggle").addEventListener("change", event => setSharedHighlight(event.target.checked));
 document.querySelectorAll(".color-button").forEach(button => button.addEventListener("click", () => applyCellColor(button.dataset.color)));
@@ -717,6 +717,13 @@ const settingsDialog = document.querySelector("#settingsDialog"); if (settingsDi
 if (settingsDialog) {
   const conflictLabel = document.querySelector("#autoErrorToggle")?.closest("label")?.querySelector("span"); if (conflictLabel) conflictLabel.textContent = "Mark obviously incorrect entries as red";
   const sharedRow = document.querySelector("#settingsSharedToggle")?.closest("label");
+  if (sharedRow && !document.querySelector("#difficultyVisibility")) {
+    const difficultyRow = document.createElement("label"), givenRow = document.createElement("label");
+    difficultyRow.className = givenRow.className = "settings-row";
+    difficultyRow.innerHTML = '<span>Show difficulty rating</span><input id="difficultyVisibility" type="checkbox" checked />';
+    givenRow.innerHTML = '<span>Show number of given cells</span><input id="givenVisibility" type="checkbox" />';
+    sharedRow.before(difficultyRow, givenRow);
+  }
   if (sharedRow) { let next = sharedRow.nextElementSibling; while (next) { const remove = next; next = next.nextElementSibling; remove.remove(); } }
 }
 const techniqueDialog = document.querySelector("#techniqueDialog"); document.querySelector("#techniqueTally").addEventListener("click", () => techniqueDialog.showModal()); document.querySelector("#closeTechniqueDialog").addEventListener("click", () => techniqueDialog.close()); techniqueDialog.addEventListener("click", event => { if (event.target === techniqueDialog) techniqueDialog.close(); });
