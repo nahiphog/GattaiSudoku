@@ -487,7 +487,8 @@ function undoMove() {
 function redoMove() { const key = stateKey(), next = redoHistories[key].pop(); if (!next) return; histories[key].push(stateSnapshot()); restoreState(next); refresh(); }
 function makeSelectable(cell, index) { cell.addEventListener("click", event => { event.preventDefault(); selectedCell = selectedCell === index ? null : index; board.querySelectorAll(".cell").forEach(item => item.classList.toggle("selected", Number(item.dataset.index) === selectedCell)); if (selectedCell !== null) cell.focus({ preventScroll: true }); updateEntryControls(); }); }
 function makeEditable(cell, index) {
-  cell.classList.add("editable"); cell.tabIndex = 0; cell.contentEditable = "true"; cell.setAttribute("inputmode", "numeric"); cell.setAttribute("aria-label", `${nameFor(index)}, enter or delete a digit`); makeSelectable(cell, index);
+  const desktopKeyboard = window.matchMedia("(min-width: 821px)").matches;
+  cell.classList.add("editable"); cell.tabIndex = 0; cell.contentEditable = String(desktopKeyboard); cell.setAttribute("inputmode", desktopKeyboard ? "numeric" : "none"); cell.setAttribute("aria-label", `${nameFor(index)}, enter or delete a digit`); makeSelectable(cell, index);
   cell.addEventListener("keydown", event => {
     if (event.key === "Backspace" || event.key === "Delete" || event.key === "0") { event.preventDefault(); applyEntry(0, index); return; }
     if (/^[1-9]$/.test(event.key)) { event.preventDefault(); applyEntry(Number(event.key), index); }
@@ -683,7 +684,7 @@ if (howToPlayDialog) {
   const helpPages = [
     { title: "How to play", body: '<p>Fill each 9×9 grid so every row, column, and 3×3 house contains 1–9 exactly once. The shared 6×6 area obeys both grids at once.</p><p>A fresh daily puzzle is published on the calendar everyday at midnight UTC.</p>' },
     { title: "Difficulty ratings", body: difficultyGuideHtml },
-    { title: "About", body: '<ul class="about-list"><li>Method names and ratings follow <a href="https://github.com/AImenes/sudokUI">sudokUI</a>.</li><li>Built primarily using ChatGPT Plus.</li><li>All puzzles are computer generated and have a unique solution.</li><li>This website was built by a Sudoku enthusiast.</li><li>New daily puzzles are released at 00:00 UTC.</li></ul>' }
+    { title: "About", body: '<ul class="about-list"><li>Method names and ratings follow <a href="https://github.com/AImenes/sudokUI">sudokUI</a>.</li><li>All puzzles are computer generated and have a unique solution.</li><li>This website was built primarily using ChatGPT Plus.</li></ul>' }
   ];
   let helpPage = 0;
   const renderHelpPage = () => { const page = helpPages[helpPage]; howToPlayDialog.innerHTML = `<button id="closeHowToPlay" class="dialog-close" aria-label="Close">×</button><h2 id="howToPlayTitle">${page.title}</h2><section class="help-page">${page.body}</section><nav class="help-pagination" aria-label="How to play pages"><button id="previousHelpPage" type="button" ${helpPage === 0 ? "disabled" : ""}>‹</button><span>Page ${helpPage + 1} of ${helpPages.length}</span><button id="nextHelpPage" type="button" ${helpPage === helpPages.length - 1 ? "disabled" : ""}>›</button></nav>`; howToPlayDialog.querySelector("#closeHowToPlay").addEventListener("click", () => howToPlayDialog.close()); howToPlayDialog.querySelector("#previousHelpPage").addEventListener("click", () => { helpPage -= 1; renderHelpPage(); }); howToPlayDialog.querySelector("#nextHelpPage").addEventListener("click", () => { helpPage += 1; renderHelpPage(); }); };
@@ -707,21 +708,6 @@ document.querySelector("#difficultyVisibility")?.addEventListener("change", even
 document.querySelector("#givenVisibility")?.addEventListener("change", event => { givenCountVisible = event.target.checked; refresh(); });
 document.querySelector("#autoErrorToggle")?.addEventListener("change", event => { autoMarkConflicts = event.target.checked; refresh(); });
 document.querySelector("#settingsSharedToggle")?.addEventListener("change", event => setSharedHighlight(event.target.checked));
-function addSidebarToggle(sidebar, label) {
-  const button = document.createElement("button");
-  button.type = "button";
-  button.className = "sidebar-toggle";
-  button.setAttribute("aria-label", `Collapse ${label}`);
-  button.setAttribute("aria-expanded", "true");
-  button.textContent = "☰";
-  button.addEventListener("click", () => {
-    const collapsed = sidebar.classList.toggle("sidebar-collapsed");
-    button.setAttribute("aria-expanded", String(!collapsed));
-    button.setAttribute("aria-label", `${collapsed ? "Expand" : "Collapse"} ${label}`);
-  });
-  sidebar.prepend(button);
-}
-addSidebarToggle(document.querySelector(".control-sidebar"), "puzzle controls sidebar");
 const settingsIcon = document.querySelector("#settings svg");
 if (settingsIcon) settingsIcon.innerHTML = '<path d="M9.2 3.5h5.6l.7 2.1c.5.2 1 .5 1.4.8l2.1-.7 2.8 4.8-1.6 1.5c.05.55.05 1.1 0 1.65l1.6 1.5-2.8 4.8-2.1-.7c-.44.34-.91.61-1.4.8l-.7 2.1H9.2l-.7-2.1c-.5-.2-.97-.46-1.4-.8l-2.1.7-2.8-4.8 1.6-1.5a8.2 8.2 0 0 1 0-1.65l-1.6-1.5 2.8-4.8 2.1.7c.43-.33.9-.6 1.4-.8l.7-2.1Z"/><circle cx="12" cy="12" r="3.1"/>';
 const generatorRule = document.querySelector(".generator-rule");

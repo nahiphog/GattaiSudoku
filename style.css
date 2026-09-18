@@ -65,8 +65,8 @@ dialog .unlimited-button{width:100%;margin:20px 0 0;text-align:center}
 .numpad .numpad-zero{grid-column:span 1}
 .numpad .numpad-delete{grid-column:span 2;font-size:24px}
 .numpad button:hover,.numpad button:focus-visible{background:#2da86a}
-.board-card.solver-active{grid-template-columns:minmax(0,650px) minmax(330px,360px);max-width:1090px}
-.board-card.solver-active .control-sidebar{display:none}
+.board-card.solver-active{grid-template-columns:minmax(0,650px) minmax(250px,360px) 150px;max-width:1260px}
+.board-card.solver-active .control-sidebar{display:flex;grid-column:3;grid-row:1}
 .puzzle-surface{min-width:0}
 .puzzle-meta{display:flex;justify-content:center;gap:12px;align-items:center;margin:0 0 8px;font-size:14px;font-weight:700}.puzzle-surface .puzzle-date,.difficulty-label{margin:0}.puzzle-nav{width:28px;height:28px;border:1px solid var(--ink);border-radius:50%;background:transparent;color:var(--ink);display:grid;place-items:center;padding:0;font:700 18px/1 'Nunito',sans-serif;cursor:pointer}.puzzle-nav:hover:not(:disabled),.puzzle-nav:focus-visible:not(:disabled){background:var(--muted)}.puzzle-nav:disabled{opacity:.3;cursor:default}
 .board{display:grid;grid-template-columns:repeat(12,minmax(0,1fr));grid-template-rows:repeat(12,minmax(0,1fr));aspect-ratio:1;width:min(100%,650px);margin:auto;position:relative}
@@ -105,7 +105,7 @@ body.dark .cell.user-color-blue{color:#81bfff}body.dark .cell.user-color-green{c
 .board-footer button{margin:16px 0 0;border:1px solid var(--ink);background:var(--ink);color:var(--surface);padding:8px 11px;cursor:pointer;font:inherit}
 .board-details{display:flex;flex-direction:column;align-items:center;gap:2px;margin-top:15px}.board-footer #givenCount{font-size:13px;white-space:nowrap}.board-footer .difficulty-label{font-size:13px;font-weight:700}
 .board-footer #copyPng{margin-left:auto;background:var(--muted);color:var(--ink)}
-.control-sidebar .sidebar-solution,.control-sidebar #copyPng{position:static;width:auto;margin:0!important;border:1px solid var(--ink);padding:8px;background:var(--ink);color:var(--surface);cursor:pointer;font:inherit;text-align:left}.control-sidebar #copyPng{background:var(--muted);color:var(--ink)}.board-card.solver-active .control-sidebar{display:none}.is-hidden{display:none!important}
+.control-sidebar .sidebar-solution,.control-sidebar #copyPng{position:static;width:auto;margin:0!important;border:1px solid var(--ink);padding:8px;background:var(--ink);color:var(--surface);cursor:pointer;font:inherit;text-align:left}.control-sidebar #copyPng{background:var(--muted);color:var(--ink)}.is-hidden{display:none!important}
 .guide{height:236px;margin-top:14px;padding:16px 18px;background:var(--ink);color:var(--surface);display:flex;flex-direction:column;overflow:hidden}
 .solution-rail{min-width:0}.board-card.solver-active .solution-rail{grid-column:2;grid-row:1;display:flex;flex-direction:column;gap:9px;min-height:0}.solution-rail>.technique-tally{align-self:flex-start;margin:0;border-color:var(--ink);background:var(--muted);color:var(--ink)}.board-card.solver-active .guide{height:100%;min-height:560px;margin:0}
 .guide .eyebrow{color:var(--gold);font-size:12px;letter-spacing:.12em;margin:0 0 4px}
@@ -292,15 +292,18 @@ dialog{font-size:17px}.help-pagination{font-size:14px}.archive-weekdays{font-siz
 .puzzle-meta.solution-active .puzzle-nav{display:none}
 
 /* Keep the guide's labels literal and its column headings visible when read. */
-.difficulty-guide .technique-name{color:#c32626;text-decoration:underline;text-decoration-thickness:1px;text-underline-offset:2px}
-.difficulty-guide thead th{position:sticky;top:0;z-index:2;background:var(--surface)}
+.difficulty-guide .technique-name{color:#c32626}
+#howToPlayDialog .table-wrap{max-height:270px;overflow:auto}
+.difficulty-guide thead{position:sticky;top:0;z-index:2}
+.difficulty-guide thead th{background:var(--surface)}
 
 /* Small screens preserve readable candidates and stack every sidebar section. */
 @media(max-width:820px){
   .board-card.solver-active .puzzle-surface{grid-column:1;grid-row:1}
   .board-card.solver-active .solution-rail{grid-column:1;grid-row:2;order:initial}
+  .board-card.solver-active .control-sidebar{display:flex;grid-column:1;grid-row:3}
   .control-sidebar{flex-direction:column!important;flex-wrap:nowrap!important;align-items:stretch!important;width:100%}
-  .control-sidebar>.sidebar-toggle,.control-sidebar>.entry-panel,.control-sidebar>.sidebar-utilities{width:100%;min-width:0;align-self:stretch}
+  .control-sidebar>.entry-panel,.control-sidebar>.sidebar-utilities{width:100%;min-width:0;align-self:stretch}
   .control-sidebar>.sidebar-utilities{grid-template-columns:1fr}
 }
 @media(max-width:520px){
