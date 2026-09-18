@@ -105,6 +105,11 @@ othersPanel.append(solutionToggle, copyPng);
 controlSidebar.append(othersPanel);
 const entryPanel = controlSidebar.querySelector(".entry-panel");
 entryPanel?.append(controlSidebar.querySelector(".play-actions"), controlSidebar.querySelector(".numpad"));
+const sidebarUtilities = document.createElement("section");
+sidebarUtilities.className = "sidebar-utilities";
+sidebarUtilities.append(controlSidebar.querySelector(".highlight-panel"), othersPanel);
+controlSidebar.append(sidebarUtilities);
+document.querySelector("#verifySolution")?.remove();
 const solutionRail = document.createElement("aside"), stepControls = document.querySelector(".step-controls"), techniqueTallyButton = document.querySelector("#techniqueTally"); solutionRail.className = "solution-rail hidden"; guide.before(solutionRail); solutionRail.append(techniqueTallyButton, guide); guide.prepend(stepControls);
 const historyIcons = { undoMove: '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M9 7 4 12l5 5M5 12h9a5 5 0 0 1 0 10h-1" /></svg>', redoMove: '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="m15 7 5 5-5 5m4-5h-9a5 5 0 0 0 0 10h1" /></svg>' };
 Object.entries(historyIcons).forEach(([id, icon]) => { const button = document.querySelector(`#${id}`), label = id === "undoMove" ? "Undo" : "Redo"; button.classList.add("history-icon"); button.setAttribute("aria-label", label); button.innerHTML = `<span>${label}</span>${icon}`; });
@@ -713,7 +718,7 @@ function addSidebarToggle(sidebar, label) {
 }
 addSidebarToggle(document.querySelector(".control-sidebar"), "puzzle controls sidebar");
 const settingsIcon = document.querySelector("#settings svg");
-if (settingsIcon) settingsIcon.innerHTML = '<circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.7 1.7 0 0 0 .34 1.88l.06.06-2.12 2.12-.06-.06a1.7 1.7 0 0 0-1.88-.34 1.7 1.7 0 0 0-1.04 1.56v.08h-3v-.08A1.7 1.7 0 0 0 10.66 18.7a1.7 1.7 0 0 0-1.88.34l-.06.06-2.12-2.12.06-.06A1.7 1.7 0 0 0 7 15.04a1.7 1.7 0 0 0-1.56-1.04h-.08v-3h.08A1.7 1.7 0 0 0 7 9.96a1.7 1.7 0 0 0-.34-1.88L6.6 8.02 8.72 5.9l.06.06a1.7 1.7 0 0 0 1.88.34A1.7 1.7 0 0 0 11.7 4.74v-.08h3v.08a1.7 1.7 0 0 0 1.04 1.56 1.7 1.7 0 0 0 1.88-.34l.06-.06 2.12 2.12-.06.06a1.7 1.7 0 0 0-.34 1.88A1.7 1.7 0 0 0 20.96 11H21v3h-.08A1.7 1.7 0 0 0 19.4 15Z"/>';
+if (settingsIcon) settingsIcon.innerHTML = '<path d="M9.2 3.5h5.6l.7 2.1c.5.2 1 .5 1.4.8l2.1-.7 2.8 4.8-1.6 1.5c.05.55.05 1.1 0 1.65l1.6 1.5-2.8 4.8-2.1-.7c-.44.34-.91.61-1.4.8l-.7 2.1H9.2l-.7-2.1c-.5-.2-.97-.46-1.4-.8l-2.1.7-2.8-4.8 1.6-1.5a8.2 8.2 0 0 1 0-1.65l-1.6-1.5 2.8-4.8 2.1.7c.43-.33.9-.6 1.4-.8l.7-2.1Z"/><circle cx="12" cy="12" r="3.1"/>';
 const generatorRule = document.querySelector(".generator-rule");
 if (generatorRule) generatorRule.textContent = "Both published weeks are independently rechecked for exactly one solution. The previous week uses paired rotational digging; every listed walkthrough resolves the entire Gattai using named Singles techniques only.";
 const routedEntry = entryFromRoute();
