@@ -445,7 +445,8 @@ function deriveSteps(preferAdvanced = false) {
     continue;
   }
 }
-let steps = deriveSteps(), mode = "human", stepIndex = 0, selectedCell = null, entryMode = "digit", highlightedGrid = null, unlimitedSolution = null, unlimitedGenerationMilliseconds = 0, unlimitedRated = false;
+let steps = deriveSteps(), mode = "human", stepIndex = 0, selectedCell = null, entryMode = "digit", highlightedGrid = null, unlimitedSolution = null, unlimitedGenerationMilliseconds = 0, unlimitedRated = false, dailySolution = null;
+const completedDailyPuzzles = new Set();
 function isUnlimited() { return activeDay === "unlimited"; }
 function currentValues() { const values = [...original]; if (mode === "human") human.forEach((value, index) => { if (value) values[index] = value; }); else if (isUnlimited() && unlimitedSolution) return [...unlimitedSolution]; else steps.slice(0, stepIndex + 1).forEach(step => { if (step.index !== null) values[step.index] = step.digit; }); return values; }
 function drawBoardBoundaries() {
@@ -549,8 +550,8 @@ function renderBoard() {
   drawGridOutline(activeStep ? gridForStep(activeStep) : highlightedGrid);
 }
 function renderPuzzleHeading() { const label = document.querySelector("#puzzleDate"); if (!label) return; if (activeDay === "unlimited") { label.textContent = puzzleDate; return; } const match = puzzleDate.match(/^([^,]+),\s*([A-Za-z]+)\s+(\d+),\s*(\d+)$/); const position = currentPuzzlePosition(); if (!match) { label.textContent = `Puzzle ${position + 1}: ${puzzleDate}`; return; } const [, weekday, month, day, year] = match, shortMonth = month.slice(0, 3); label.replaceChildren(); const number = document.createElement("span"), details = document.createElement("span"), date = document.createElement("span"), dayLabel = document.createElement("span"); number.className = "puzzle-number"; details.className = "puzzle-date-details"; date.className = "calendar-date"; dayLabel.className = "weekday"; number.textContent = `Puzzle ${position + 1}:`; date.textContent = `${shortMonth} ${day}, ${year}`; dayLabel.textContent = weekday; details.append(date, dayLabel); label.append(number, details); }
-function refresh() { const showingSolution = mode === "solver", unlimited = isUnlimited(); if (showingSolution) boardCard.append(solutionRail); else puzzleSurface.append(solutionRail); renderStep(); renderBoard(); const givens = original.filter((value, index) => active.includes(index) && value).length, rating = rateSteps(steps); givenCount.textContent = unlimited ? `${givens} given cells · generated in ${(unlimitedGenerationMilliseconds / 1000).toFixed(2)} s` : `${givens} given cells`; renderPuzzleHeading(); updatePuzzleNavigation(); document.querySelector("#difficultyLabel").textContent = unlimited && !unlimitedRated ? "Difficulty: Unrated (unique-only)" : `Difficulty: ${rating.rating} (${rating.score})`; document.querySelector("#difficultyLabel").classList.toggle("is-hidden", !difficultyVisible); givenCount.classList.toggle("is-hidden", !givenCountVisible); solutionToggle.setAttribute("aria-pressed", String(showingSolution)); setSidebarButtonLabel(solutionToggle, unlimited ? (showingSolution ? "Hide final grid" : "Show final grid") : (showingSolution ? "Hide solution" : "Read solution"), searchIcon); guide.classList.toggle("hidden", mode === "human" || unlimited); solutionRail.classList.toggle("hidden", mode === "human" || unlimited); boardCard.classList.toggle("solver-active", showingSolution); document.querySelector(".puzzle-meta")?.classList.toggle("solution-active", showingSolution); document.querySelector(".timer-controls")?.classList.toggle("timer-hidden", showingSolution || !(document.querySelector("#timerVisibility")?.checked ?? true)); document.querySelector("#resetGrid")?.classList.toggle("is-hidden", showingSolution); updateEntryControls(); setTimerRunning(mode === "human"); }
-function loadPuzzle(day, syncRoute = true) { activeDay = day; const selectedWeek = activeWeek === "previous" ? previousWeekPuzzles : dailyPuzzles, selectedPuzzle = (day === "unlimited" ? puzzles : selectedWeek)[day]; rows = selectedPuzzle.rows; puzzleDate = selectedPuzzle.date; original.fill(0); rows.forEach((row, r) => [...row].forEach((value, c) => { if (value !== ".") original[r * 12 + c] = Number(value); })); const key = stateKey(); ensureState(key); human = userInputs[key]; playNotes = userNotes[key]; playColors = userColors[key]; selectedCell = null; steps = deriveSteps(["friday", "saturday", "sunday"].includes(day)); const walked = [...original]; steps.forEach(step => { if (step.index !== null) walked[step.index] = step.digit; }); unlimitedRated = day === "unlimited" && active.every(index => walked[index]); stepIndex = 0; document.querySelector("#unlimitedMode").classList.toggle("active", day === "unlimited"); if (syncRoute) syncPuzzleRoute(); refresh(); }
+function refresh() { const showingSolution = mode === "solver", unlimited = isUnlimited(); if (showingSolution) boardCard.append(solutionRail); else puzzleSurface.append(solutionRail); renderStep(); renderBoard(); const givens = original.filter((value, index) => active.includes(index) && value).length, rating = rateSteps(steps); givenCount.textContent = unlimited ? `${givens} given cells · generated in ${(unlimitedGenerationMilliseconds / 1000).toFixed(2)} s` : `${givens} given cells`; renderPuzzleHeading(); updatePuzzleNavigation(); document.querySelector("#difficultyLabel").textContent = unlimited && !unlimitedRated ? "Difficulty: Unrated (unique-only)" : `Difficulty: ${rating.rating} (${rating.score})`; document.querySelector("#difficultyLabel").classList.toggle("is-hidden", !difficultyVisible); givenCount.classList.toggle("is-hidden", !givenCountVisible); solutionToggle.setAttribute("aria-pressed", String(showingSolution)); setSidebarButtonLabel(solutionToggle, unlimited ? (showingSolution ? "Hide final grid" : "Show final grid") : (showingSolution ? "Hide solution" : "Read solution"), searchIcon); guide.classList.toggle("hidden", mode === "human" || unlimited); solutionRail.classList.toggle("hidden", mode === "human" || unlimited); boardCard.classList.toggle("solver-active", showingSolution); document.querySelector(".puzzle-meta")?.classList.toggle("solution-active", showingSolution); document.querySelector(".timer-controls")?.classList.toggle("timer-hidden", showingSolution || !(document.querySelector("#timerVisibility")?.checked ?? true)); document.querySelector("#resetGrid")?.classList.toggle("is-hidden", showingSolution); updateEntryControls(); setTimerRunning(mode === "human"); announceDailyCompletion(); }
+function loadPuzzle(day, syncRoute = true) { activeDay = day; const selectedWeek = activeWeek === "previous" ? previousWeekPuzzles : dailyPuzzles, selectedPuzzle = (day === "unlimited" ? puzzles : selectedWeek)[day]; rows = selectedPuzzle.rows; puzzleDate = selectedPuzzle.date; original.fill(0); rows.forEach((row, r) => [...row].forEach((value, c) => { if (value !== ".") original[r * 12 + c] = Number(value); })); dailySolution = day === "unlimited" ? unlimitedSolution : findGattaiSolution(original); const key = stateKey(); ensureState(key); human = userInputs[key]; playNotes = userNotes[key]; playColors = userColors[key]; selectedCell = null; steps = deriveSteps(["friday", "saturday", "sunday"].includes(day)); const walked = [...original]; steps.forEach(step => { if (step.index !== null) walked[step.index] = step.digit; }); unlimitedRated = day === "unlimited" && active.every(index => walked[index]); stepIndex = 0; document.querySelector("#unlimitedMode").classList.toggle("active", day === "unlimited"); if (syncRoute) syncPuzzleRoute(); refresh(); }
 const legacyArchiveEntries = [
   ["previous", "monday", 2026, 8, 31], ["previous", "tuesday", 2026, 9, 1], ["previous", "wednesday", 2026, 9, 2], ["previous", "thursday", 2026, 9, 3], ["previous", "friday", 2026, 9, 4], ["previous", "saturday", 2026, 9, 5], ["previous", "sunday", 2026, 9, 6],
   ["current", "monday", 2026, 9, 7], ["current", "tuesday", 2026, 9, 8], ["current", "wednesday", 2026, 9, 9], ["current", "thursday", 2026, 9, 10], ["current", "friday", 2026, 9, 11], ["current", "saturday", 2026, 9, 12], ["current", "sunday", 2026, 9, 13],
@@ -645,10 +646,38 @@ async function generateUnlimitedPuzzle() {
   }
 }
 let elapsedSeconds = 0, timerBase = Date.now(), timerRunning = true;
-function showTimer() { const minutes = Math.floor(elapsedSeconds / 60), seconds = elapsedSeconds % 60; document.querySelector("#timer").textContent = `${String(minutes).padStart(2, "0")}:${String(seconds).padStart(2, "0")}`; }
+function formatElapsedTime(seconds) { const minutes = Math.floor(seconds / 60), remainder = seconds % 60; return `${String(minutes).padStart(2, "0")}:${String(remainder).padStart(2, "0")}`; }
+function showTimer() { document.querySelector("#timer").textContent = formatElapsedTime(elapsedSeconds); }
 function setTimerRunning(running) { if (timerRunning === running) return; if (timerRunning) elapsedSeconds += Math.floor((Date.now() - timerBase) / 1000); timerRunning = running; timerBase = Date.now(); showTimer(); }
 function resetTimer() { elapsedSeconds = 0; timerBase = Date.now(); showTimer(); }
 setInterval(() => { if (timerRunning) { elapsedSeconds += Math.floor((Date.now() - timerBase) / 1000); timerBase = Date.now(); showTimer(); } }, 1000);
+const completionDialog = document.createElement("dialog");
+completionDialog.id = "completionDialog";
+completionDialog.innerHTML = '<button class="dialog-close" type="button" aria-label="Close">×</button><h2>Puzzle complete!</h2><p>Congratulations — you completed today\'s Gattai Sudoku in <strong id="completionTime"></strong>.</p><p>Would you like to share your result?</p><div class="completion-actions"><button id="dismissCompletion" type="button">Not now</button><button id="shareCompletion" class="dialog-primary" type="button">Share result</button></div><p id="completionShareStatus" class="dialog-status" aria-live="polite"></p>';
+document.body.append(completionDialog);
+function announceDailyCompletion() {
+  const key = stateKey();
+  if (mode !== "human" || isUnlimited() || !dailySolution || completedDailyPuzzles.has(key)) return;
+  if (!active.every(index => (original[index] || human[index]) === dailySolution[index])) return;
+  setTimerRunning(false);
+  completedDailyPuzzles.add(key);
+  completionDialog.querySelector("#completionTime").textContent = formatElapsedTime(elapsedSeconds);
+  completionDialog.querySelector("#completionShareStatus").textContent = "";
+  completionDialog.querySelector("#shareCompletion").textContent = "Share result";
+  completionDialog.showModal();
+}
+completionDialog.querySelector(".dialog-close").addEventListener("click", () => completionDialog.close());
+completionDialog.querySelector("#dismissCompletion").addEventListener("click", () => completionDialog.close());
+completionDialog.querySelector("#shareCompletion").addEventListener("click", async () => {
+  const number = currentPuzzlePosition() + 1;
+  const date = puzzleDate.replace(/^[^,]+,\s*/, "");
+  const time = completionDialog.querySelector("#completionTime").textContent;
+  const result = `Gattai Sudoku #${number}: ${date}\nI've completed this puzzle within ${time}\n${window.location.origin}${window.location.pathname}`;
+  const status = completionDialog.querySelector("#completionShareStatus");
+  try { await navigator.clipboard.writeText(result); status.textContent = "Result copied to your clipboard."; status.className = "dialog-status success"; completionDialog.querySelector("#shareCompletion").textContent = "Copied"; }
+  catch { status.textContent = "Unable to copy the result. Please try again."; status.className = "dialog-status error"; }
+});
+completionDialog.addEventListener("click", event => { if (event.target === completionDialog) completionDialog.close(); });
 document.querySelector("#firstStep").addEventListener("click", () => { stepIndex = 0; refresh(); }); document.querySelector("#previousStep").addEventListener("click", () => { if (stepIndex > 0) { stepIndex -= 1; refresh(); } }); document.querySelector("#nextStep").addEventListener("click", () => { if (stepIndex < steps.length - 1) { stepIndex += 1; refresh(); } }); document.querySelector("#lastStep").addEventListener("click", () => { stepIndex = steps.length - 1; refresh(); });
 function toggleSolution() { mode = mode === "human" ? "solver" : "human"; guide.classList.toggle("hidden", mode === "human"); refresh(); }
 document.querySelector("#previousPuzzle").addEventListener("click", () => navigatePuzzle(-1));
@@ -671,6 +700,7 @@ resetGridDialog.querySelector("#cancelGridReset").addEventListener("click", () =
 resetGridDialog.querySelector("#confirmGridReset").addEventListener("click", () => {
   const resetTheTimer = document.querySelector("#resetGridTimerChoice").checked;
   snapshot(); human.fill(0); playNotes.forEach(note => note.clear()); playColors.fill(""); selectedCell = null;
+  completedDailyPuzzles.delete(stateKey());
   if (resetTheTimer) resetTimer();
   resetGridDialog.close(); refresh();
 });

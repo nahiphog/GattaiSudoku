@@ -5,7 +5,7 @@ body{margin:0;background:var(--paper);color:var(--ink);font:16px/1.5 'Nunito',Ar
 body.dark{--ink:#e6f0ed;--paper:#172126;--surface:#172126;--line:#d4e5df;--thin:#688087;--muted:#31454c;--shared:#393a2c;--shadow:#0d1518;--select:#62d795;--red:#ff9276;--gold:#ffd36b;color-scheme:dark}
 header{display:grid;grid-template-columns:1fr auto 1fr;align-items:center;padding:16px clamp(20px,7vw,100px);border-bottom:2px solid var(--ink)}
 .header-start{display:flex;align-items:center;gap:9px}
-.timer-controls{display:flex;align-items:center;gap:8px}.timer-hidden{display:none}
+.timer-controls{display:flex;align-items:center;gap:8px}.timer-hidden{visibility:hidden;pointer-events:none}
 .timer{min-width:55px;font-size:14px;font-weight:500;letter-spacing:.04em;text-align:center}
 .timer-reset{border:1px solid var(--ink);border-radius:50%;background:transparent;color:var(--ink);font:20px/1 'Nunito',sans-serif;cursor:pointer;padding:0;width:34px;height:34px;display:grid;place-items:center}
 .brand{display:flex;align-items:center;justify-content:center;gap:.48em;font:600 22px/1 'Fredoka',sans-serif;letter-spacing:.02em;text-align:center}
@@ -282,6 +282,13 @@ dialog{font-size:17px}.help-pagination{font-size:14px}.archive-weekdays{font-siz
 .reset-grid-actions{display:flex;justify-content:flex-end;gap:8px;margin-top:18px}
 .reset-grid-actions button{border:1px solid var(--ink);background:var(--muted);color:var(--ink);padding:8px 11px;cursor:pointer;font:inherit}
 .reset-grid-actions #confirmGridReset{background:var(--ink);color:var(--surface)}
+
+/* Completion is a brief, share-ready confirmation for a daily puzzle. */
+#completionDialog{width:min(420px,calc(100vw - 24px))}
+#completionDialog p{margin:0 0 12px}
+.completion-actions{display:flex;justify-content:flex-end;gap:8px;margin-top:18px}
+.completion-actions button{border:1px solid var(--ink);background:var(--muted);color:var(--ink);padding:8px 11px;cursor:pointer;font:inherit}
+.completion-actions .dialog-primary{background:var(--ink);color:var(--surface)}
 
 /* Keep Highlight and Others together as one transparent sidebar area. */
 .sidebar-utilities{display:grid;gap:12px;margin-top:auto;background:transparent!important}
