@@ -330,8 +330,9 @@ body.dark .guide .step-controls{border-color:rgba(16,43,59,.3)}
 
 /* Sidebar mode controls: visible symbols make the active input and grid choices clear. */
 .entry-panel>span,.highlight-panel>span,.others-panel>span{text-align:center;width:100%}
-.entry-tabs .entry-button{position:relative;display:flex;align-items:center;justify-content:center;padding-inline:28px}
-.entry-tabs .digit-symbol,.entry-tabs .snyder-symbol{position:absolute;right:8px}
+.entry-tabs .entry-button{position:relative;display:flex;align-items:center;justify-content:center;padding:7px 4px}
+.entry-tabs .entry-button>span{display:none}
+.entry-tabs .digit-symbol,.entry-tabs .snyder-symbol{position:static}
 .entry-tabs .digit-symbol{font:700 18px/1 Arial,sans-serif}
 .entry-tabs .snyder-symbol{display:grid;grid-template-columns:repeat(3,5px);grid-template-rows:repeat(3,5px);gap:1px;font:700 5px/5px Arial,sans-serif;text-align:center}
 .entry-tabs .snyder-symbol i{font:inherit;font-style:normal}
