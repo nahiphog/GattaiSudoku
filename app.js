@@ -114,7 +114,7 @@ if (brandWords.length >= 3) {
 }
 const cameraIcon = '<svg class="button-symbol" viewBox="0 0 24 24" aria-hidden="true"><path d="M4 7h3l1.5-2h7L17 7h3v12H4Z"/><circle cx="12" cy="13" r="3.5"/></svg>';
 const searchIcon = '<svg class="button-symbol" viewBox="0 0 24 24" aria-hidden="true"><circle cx="10.5" cy="10.5" r="5.5"/><path d="m15 15 5 5"/></svg>';
-const restartIcon = '<svg class="button-symbol" viewBox="0 0 24 24" aria-hidden="true"><path d="M5 10V5h5"/><path d="M5.5 5.5A8 8 0 1 1 4 14"/></svg>';
+const restartIcon = '<svg class="button-symbol" viewBox="0 0 24 24" aria-hidden="true"><path d="M3 12a9 9 0 0 1 9-9 9 9 0 0 1 8.5 6"/><path d="M21 3v6h-6"/><path d="M21 12a9 9 0 0 1-9 9 9 9 0 0 1-8.5-6"/><path d="M3 21v-6h6"/></svg>';
 const setSidebarButtonLabel = (button, label, icon) => { button.innerHTML = `<span>${label}</span>${icon}`; };
 setSidebarButtonLabel(copyPng, "Copy grid", cameraIcon);
 const othersPanel = document.createElement("section");
