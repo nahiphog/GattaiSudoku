@@ -32,7 +32,17 @@ if (rotationalArchive) {
   Object.keys(previousWeekPuzzles).forEach(key => delete previousWeekPuzzles[key]);
 }
 const puzzles = { ...dailyPuzzles, unlimited: { date: "Unlimited", rows: Array(12).fill("............") } };
-const defaultDailyKey = rotationalArchive ? Object.keys(rotationalArchive).sort()[0] : "tuesday";
+const defaultDailyKey = rotationalArchive ? (() => {
+  const keys = Object.keys(rotationalArchive).sort();
+  const today = new Date();
+  const todayStr = today.toISOString().slice(0, 10);
+  const yesterday = new Date(today);
+  yesterday.setDate(yesterday.getDate() - 1);
+  const yesterdayStr = yesterday.toISOString().slice(0, 10);
+  return keys.includes(todayStr) ? todayStr
+    : keys.includes(yesterdayStr) ? yesterdayStr
+    : keys.filter(k => k <= todayStr).pop() || keys[keys.length - 1];
+})() : "tuesday";
 let activeWeek = rotationalArchive ? "archive" : "current", activeDay = defaultDailyKey, rows = dailyPuzzles[defaultDailyKey].rows, puzzleDate = dailyPuzzles[defaultDailyKey].date;
 document.body.classList.toggle("dark", localStorage.getItem("gattai-theme") === "dark");
 const digits = [1, 2, 3, 4, 5, 6, 7, 8, 9];
