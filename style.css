@@ -8,12 +8,12 @@ header{display:grid;grid-template-columns:1fr auto 1fr;align-items:center;paddin
 .timer-controls{display:flex;align-items:center;gap:8px}.timer-hidden{visibility:hidden;pointer-events:none}
 .timer{min-width:55px;font-size:14px;font-weight:500;letter-spacing:.04em;text-align:center}
 .timer-reset{border:1px solid var(--ink);border-radius:50%;background:transparent;color:var(--ink);font:20px/1 'Nunito',sans-serif;cursor:pointer;padding:0;width:34px;height:34px;display:grid;place-items:center}
-.brand{display:flex;align-items:center;justify-content:center;gap:.48em;font:600 22px/1 'Fredoka',sans-serif;letter-spacing:.02em;text-align:center}
+.brand{display:flex;align-items:center;justify-content:center;gap:.48em;font:600 22px/1 'Fredoka',sans-serif;letter-spacing:.02em;text-align:center;color:var(--red)}
 .brand-stack{justify-self:center;display:grid;justify-items:center;gap:2px}
 .gattai-logo{width:31px;height:31px;flex:0 0 31px;color:var(--line);overflow:visible}
 .logo-overlap{fill:var(--shared)}
 .logo-lines{fill:none;stroke:currentColor;stroke-width:3;stroke-linecap:round;stroke-linejoin:round}
-.brand span:last-child{color:var(--red)}
+.brand span:last-child{color:inherit}
 .icon-button{width:34px;height:34px;border:1px solid var(--ink);border-radius:50%;background:transparent;color:var(--ink);display:grid;place-items:center;padding:0;cursor:pointer;font:600 18px/1 'Nunito',sans-serif}
 .info-button{justify-self:start;font:600 21px/1 Arial,Helvetica,sans-serif;font-style:normal}
 .header-end{justify-self:end;display:flex;align-items:center;gap:9px}
@@ -151,7 +151,7 @@ a{color:inherit}
 .board-footer{padding:0 2%}
 }
 @media(max-width:520px){header{padding:14px 12px}
-.brand{font-size:16px;letter-spacing:.07em}.gattai-logo{width:25px;height:25px;flex-basis:25px}
+.brand{font-size:16px;letter-spacing:.07em;color:var(--red)}.gattai-logo{width:25px;height:25px;flex-basis:25px}
 .timer{min-width:43px;font-size:12px}.header-start{gap:5px}
 .board-footer{gap:7px}
 .board-footer button{font-size:12px;padding:8px}
@@ -340,9 +340,9 @@ body.dark .guide .step-controls{border-color:rgba(16,43,59,.3)}
 .highlight-panel .grid-button[aria-pressed=false]{opacity:.62}
 
 /* Compact stacked wordmark, with the logo sitting to its left. */
-.brand{display:grid;grid-template-columns:auto auto;grid-template-rows:repeat(2,auto);column-gap:.42em;row-gap:1px;font-size:22px}
+.brand{display:grid;grid-template-columns:auto auto;grid-template-rows:repeat(2,auto);column-gap:.42em;row-gap:1px;font-size:22px;color:var(--red)}
 .brand .gattai-logo{grid-column:1;grid-row:1 / span 2;align-self:center}
-.brand>span:nth-of-type(1){grid-column:2;grid-row:1}.brand>span:nth-of-type(2){grid-column:2;grid-row:2;white-space:nowrap}.brand>span:last-child{color:inherit}.brand em{font-style:normal;color:var(--red)}
+.brand>span:nth-of-type(1){grid-column:2;grid-row:1}.brand>span:nth-of-type(2){grid-column:2;grid-row:2;white-space:nowrap}.brand>span:last-child{color:inherit}.brand em{font-style:normal}
 .puzzle-number{margin-right:4ch}
 
 /* A full-bleed header rule remains intact on narrow displays. */
