@@ -1,0 +1,145 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Printable puzzle packs · Daily Gattai Sudoku</title>
+  <meta name="description" content="Download and print Gattai Sudoku puzzle packs. PDF packs of uniquely solvable overlapping Sudoku grids." />
+  <link rel="stylesheet" href="/style.css" />
+  <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 120 120'%3E%3Cpath fill='%23ed6239' d='M30 30h60v60H30z'/%3E%3Cpath fill='none' stroke='%23ed6239' stroke-width='6' d='M10 0v90M20 0v90M30 0v120M40 0v120M50 0v120M60 0v120M70 0v120M80 0v120M90 0v120M100 30v90M110 30v90M0 10h90M0 20h90M0 30h120M0 40h120M0 50h120M0 60h120M0 70h120M0 80h120M0 90h120M30 100h90M30 110h90'/%3E%3C/svg%3E" />
+  <style>
+    .packs-header{display:flex;align-items:center;justify-content:space-between;padding:16px clamp(20px,7vw,100px);border-bottom:2px solid var(--ink)}
+    .packs-header .brand{display:flex;align-items:center;gap:.48em;font:600 22px/1 'Fredoka',sans-serif;letter-spacing:.02em;color:var(--red)}
+    .packs-header a{color:var(--ink);font-size:13px;font-weight:700}
+    .packs-main{max-width:960px;margin:0 auto;padding:32px 24px}
+    .packs-main h1{font:600 34px/1.1 'Fredoka',sans-serif;margin:0 0 6px}
+    .packs-main .subtitle{color:var(--thin);margin:0 0 28px;font-size:14px}
+    .pack-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(260px,1fr));gap:18px;margin-bottom:32px}
+    .pack-card{border:1px solid var(--ink);padding:20px;background:var(--surface)}
+    .pack-card h2{margin:0 0 4px;font:600 18px/1.2 'Fredoka',sans-serif}
+    .pack-card .pack-meta{font-size:12px;color:var(--thin);margin:0 0 14px}
+    .pack-card .pack-price{font-size:22px;font-weight:700;margin:0 0 6px}
+    .pack-card .pack-price small{font-size:13px;font-weight:400;color:var(--thin)}
+    .pack-card button{width:100%;border:1px solid var(--ink);background:var(--ink);color:var(--paper);padding:9px;cursor:pointer;font:600 13px/1 'Nunito',Arial,sans-serif}
+    .pack-card .preview-btn{background:var(--muted);color:var(--ink);margin-bottom:6px}
+    .preview-section{margin-top:28px}
+    .preview-section h2{font:600 22px/1.1 'Fredoka',sans-serif;margin:0 0 12px}
+    .preview-toolbar{display:flex;gap:8px;margin-bottom:14px;flex-wrap:wrap}
+    .preview-toolbar button{border:1px solid var(--ink);background:var(--muted);color:var(--ink);padding:7px 11px;cursor:pointer;font:600 12px/1 'Nunito',Arial,sans-serif}
+    .print-preview-canvas{max-width:100%;border:1px solid var(--thin);background:#fff}
+    @media print{body{background:#fff}.packs-header,.preview-toolbar,.pack-grid,.preview-section h2{display:none}.print-preview-canvas{border:0;max-width:none}}
+  </style>
+</head>
+<body>
+  <div class="packs-header"><a href="/">← Puzzle</a><span class="brand">Printable packs</span></div>
+  <main class="packs-main">
+    <h1>Printable puzzle packs</h1>
+    <p class="subtitle">Download PDF packs of Gattai Sudoku puzzles. Print at home on A4 or Letter paper.</p>
+
+    <div class="pack-grid" id="packGrid"></div>
+
+    <section class="preview-section">
+      <h2>Preview</h2>
+      <div class="preview-toolbar">
+        <button id="previewEasy5" type="button">Preview Easy 5-pack</button>
+        <button id="previewMedium4" type="button">Preview Medium 4-pack</button>
+        <button id="preview6up" type="button">Preview 6-up page layout</button>
+      </div>
+      <div id="previewArea"></div>
+    </section>
+  </main>
+  <script src="/puzzle-database.js"></script>
+  <script src="/print-puzzle.js"></script>
+  <script>
+    (() => {
+      const database = window.ROTATIONAL_PUZZLE_DATABASE || [];
+      const packGrid = document.querySelector("#packGrid");
+      const previewArea = document.querySelector("#previewArea");
+
+      const packs = [
+        { name: "Easy 50-pack", desc: "50 Monday–Tuesday difficulty puzzles", meta: "50 puzzles · Easy · 36–38 given cells", priceFree: true, filter: p => p.rating === "Easy", count: 50 },
+        { name: "Medium 40-pack", desc: "40 Wednesday–Thursday difficulty puzzles", meta: "40 puzzles · Medium · 30–36 given cells", priceFree: false, filter: p => p.rating === "Medium", count: 40 },
+        { name: "Hard 30-pack", desc: "30 Friday–Saturday difficulty puzzles", meta: "30 puzzles · Hard · 26–34 given cells", priceFree: false, filter: p => p.rating === "Hard", count: 30 },
+        { name: "Mixed 50-pack", desc: "A hand-picked variety across all difficulty levels", meta: "50 puzzles · Mixed difficulties", priceFree: false, filter: p => true, count: 50 }
+      ];
+
+      const difficultyRank = { Beginner: 0, Easy: 1, Medium: 2, Tricky: 3, Hard: 4, Unfair: 5, Extreme: 6, Nightmare: 7 };
+      const sorted = [...database].sort((a, b) => (difficultyRank[a.rating] - difficultyRank[b.rating]) || a.score - b.score);
+
+      packs.forEach(pack => {
+        const card = document.createElement("div");
+        card.className = "pack-card";
+        card.innerHTML = `
+          <h2>${pack.name}</h2>
+          <p class="pack-meta">${pack.meta}</p>
+          <p class="pack-price">${pack.priceFree ? "Free" : "$2.99"} <small>${pack.priceFree ? "" : "one-time"}</small></p>
+          <button class="preview-btn" data-pack-name="${pack.name}">Preview</button>
+          <button ${pack.priceFree ? "" : "disabled"}>${pack.priceFree ? "Download PDF" : "Coming soon"}</button>
+        `;
+        packGrid.append(card);
+      });
+
+      function selectPuzzles(filter, count) {
+        return sorted.filter(filter).slice(0, count);
+      }
+
+      function renderPreview(title, puzzles) {
+        previewArea.innerHTML = "";
+        const heading = document.createElement("p");
+        heading.style.cssText = "font-size:13px;margin:0 0 8px";
+        heading.textContent = `${title} — showing first ${puzzles.length} puzzles`;
+        previewArea.append(heading);
+
+        const puzzlesPerPage = 6;
+        const pageCount = Math.ceil(puzzles.length / puzzlesPerPage);
+
+        for (let page = 0; page < Math.min(pageCount, 2); page += 1) {
+          const pagePuzzles = puzzles.slice(page * puzzlesPerPage, (page + 1) * puzzlesPerPage).map((p, i) => ({
+            ...p,
+            label: `#${p.id} · ${p.rating} (${p.score})`,
+            meta: `${p.givens} givens`
+          }));
+          const canvas = document.createElement("canvas");
+          canvas.className = "print-preview-canvas";
+          canvas.style.cssText = "margin-bottom:16px;width:100%;height:auto";
+          previewArea.append(canvas);
+          window.printPuzzle.renderPuzzlePage(canvas, pagePuzzles, {
+            cellSize: 32, margin: 24, title: page === 0 ? `Gattai Sudoku — ${title}` : ""
+          });
+        }
+
+        if (pageCount > 2) {
+          const note = document.createElement("p");
+          note.style.cssText = "font-size:12px;color:var(--thin)";
+          note.textContent = `… and ${puzzles.length - 12} more puzzles (${pageCount} total pages)`;
+          previewArea.append(note);
+        }
+      }
+
+      function handlePreview(packName) {
+        const pack = packs.find(p => p.name === packName);
+        if (!pack) return;
+        const selected = selectPuzzles(pack.filter, pack.count);
+        renderPreview(pack.name, selected);
+      }
+
+      packGrid.addEventListener("click", e => {
+        const btn = e.target.closest(".preview-btn");
+        if (btn) handlePreview(btn.dataset.packName);
+      });
+
+      document.querySelector("#previewEasy5").addEventListener("click", () => {
+        renderPreview("Easy 5-pack", selectPuzzles(p => p.rating === "Easy", 5));
+      });
+      document.querySelector("#previewMedium4").addEventListener("click", () => {
+        renderPreview("Medium 4-pack", selectPuzzles(p => p.rating === "Medium", 4));
+      });
+      document.querySelector("#preview6up").addEventListener("click", () => {
+        renderPreview("6-up layout test", sorted.slice(0, 12));
+      });
+
+      renderPreview("Easy 5-pack", selectPuzzles(p => p.rating === "Easy", 5));
+    })();
+  </script>
+</body>
+</html>
