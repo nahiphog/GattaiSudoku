@@ -1,0 +1,130 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Gattai Sudoku Difficulty Scoring: How Puzzles Are Rated · Daily Gattai Sudoku</title>
+  <meta name="description" content="Understand how Gattai Sudoku puzzles are scored from Beginner to Nightmare. Learn about technique-based rating, the Monday–Sunday scale, and how the evaluator works." />
+  <meta property="og:title" content="Gattai Sudoku Difficulty Scoring: How Puzzles Are Rated" />
+  <meta property="og:description" content="Understand how Gattai Sudoku puzzles are scored from Beginner to Nightmare. Technique-based rating explained." />
+  <meta property="og:type" content="article" />
+  <meta property="og:url" content="https://gattaisudoku.com/guides/difficulty-scoring.html" />
+  <meta property="og:locale" content="en_US" />
+  <link rel="canonical" href="https://gattaisudoku.com/guides/difficulty-scoring.html" />
+  <link rel="alternate" hreflang="en" href="https://gattaisudoku.com/guides/difficulty-scoring.html" />
+  <meta name="google-site-verification" content="_YOUR_VERIFICATION_STRING_" />
+  <script async src="https://www.googletagmanager.com/gtag/js?id=G-XXXXXXXXXX"></script>
+  <script>window.dataLayer=window.dataLayer||[];function gtag(){dataLayer.push(arguments)};gtag('js',new Date());gtag('config','G-XXXXXXXXXX');</script>
+  <link rel="stylesheet" href="/style.css" />
+  <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 120 120'%3E%3Cpath fill='%23ed6239' d='M30 30h60v60H30z'/%3E%3Cpath fill='none' stroke='%23ed6239' stroke-width='6' d='M10 0v90M20 0v90M30 0v120M40 0v120M50 0v120M60 0v120M70 0v120M80 0v120M90 0v120M100 30v90M110 30v90M0 10h90M0 20h90M0 30h120M0 40h120M0 50h120M0 60h120M0 70h120M0 80h120M0 90h120M30 100h90M30 110h90'/%3E%3C/svg%3E" />
+  <style>
+    .guide-page{max-width:800px;margin:0 auto;padding:32px 24px 64px}
+    .guide-page h1{font:600 40px/1.1 'Fredoka',sans-serif;margin:0 0 8px}
+    .guide-page .byline{color:var(--thin);font-size:14px;margin:0 0 32px}
+    .guide-page h2{font:600 28px/1.2 'Fredoka',sans-serif;margin:42px 0 12px}
+    .guide-page h3{font:600 20px/1.2 'Fredoka',sans-serif;margin:28px 0 8px;color:var(--red)}
+    .guide-page p,.guide-page li{line-height:1.7;margin:0 0 14px}
+    .guide-page ul,.guide-page ol{padding-left:24px;margin:0 0 18px}
+    .guide-page li{margin:0 0 6px}
+    .guide-page table{width:100%;border-collapse:collapse;margin:24px 0;font-size:15px}
+    .guide-page th,.guide-page td{padding:10px 12px;border:1px solid var(--thin);text-align:left;vertical-align:top}
+    .guide-page thead th{background:var(--muted);font-weight:700;border-bottom:2px solid var(--ink)}
+    .guide-page .callout{padding:16px 20px;border-left:4px solid var(--red);background:var(--muted);margin:24px 0;font-size:15px}
+    .guide-page .callout strong{color:var(--red)}
+    .guide-page .cta-box{text-align:center;padding:32px;border:2px solid var(--ink);margin:36px 0 0;background:var(--surface)}
+    .guide-page .cta-box h2{margin:0 0 10px}
+    .guide-page .cta-box p{margin:0 0 18px}
+    .guide-page .cta-button{display:inline-block;border:1px solid var(--ink);background:var(--ink);color:var(--surface);padding:10px 22px;font:600 15px/1 'Nunito',sans-serif;text-decoration:none}
+    .guide-page .cta-button:hover{background:var(--red);border-color:var(--red)}
+    .guide-nav{display:flex;align-items:center;gap:16px;padding:16px clamp(20px,7vw,100px);border-bottom:2px solid var(--ink)}
+    .guide-nav a{font-size:13px;font-weight:700;color:var(--ink);text-decoration:none}
+    .guide-nav a:hover{text-decoration:underline}
+    .guide-nav .brand{font:600 22px/1 'Fredoka',sans-serif;color:var(--red);margin-left:auto}
+    @media(max-width:600px){
+      .guide-page h1{font-size:30px}
+      .guide-page h2{font-size:24px}
+      .guide-page table{font-size:13px}
+      .guide-page th,.guide-page td{padding:7px 8px}
+    }
+  </style>
+</head>
+<body>
+  <nav class="guide-nav">
+    <a href="/">← Daily puzzle</a>
+    <a href="/guides/what-is-gattai-sudoku.html">Guides</a>
+    <span class="brand">Gattai Sudoku</span>
+  </nav>
+  <main class="guide-page">
+    <h1>How Gattai Sudoku Difficulty Scoring Works</h1>
+    <p class="byline">Every puzzle on this site is assigned a difficulty rating based on the techniques required to solve it, not on subjective feel or solver time.</p>
+
+    <p>The evaluator walks through the puzzle's solution step by step, recording which technique each deduction uses and how much it contributes to the cumulative score. The final rating depends on both the <strong>most advanced technique required</strong> and the <strong>total score accumulated</strong>.</p>
+
+    <h2>Technique categories</h2>
+    <p>Deductions are grouped into bands that correspond to the difficulty tiers:</p>
+
+    <table>
+      <thead>
+        <tr><th>Band</th><th>Techniques</th><th>Score range</th></tr>
+      </thead>
+      <tbody>
+        <tr><td><strong>Beginner</strong></td><td>Full House, Naked Single, Hidden Single</td><td>4–14 points each</td></tr>
+        <tr><td><strong>Easy</strong></td><td>All Beginner methods; cumulative score can reach Easy</td><td>≤800 total</td></tr>
+        <tr><td><strong>Medium</strong></td><td>Intersections (Pointing, Claiming), Naked/Hidden Pair, Naked/Hidden Triple</td><td>≤1000 total</td></tr>
+        <tr><td><strong>Tricky</strong></td><td>One advanced technique from the Hard band (Fish, Wing, Single-Digit Pattern)</td><td>≤1150 total</td></tr>
+        <tr><td><strong>Hard</strong></td><td>Two or more Fish, Wings, or Single-Digit Patterns; higher cumulative score</td><td>≤1600 total</td></tr>
+        <tr><td><strong>Unfair</strong></td><td>Forcing chains, Nishio, Bowman Bingo, and other trial-and-error methods</td><td>≤2000 total</td></tr>
+        <tr><td><strong>Extreme</strong></td><td>Colouring, ALS (Almost Locked Sets), complex chains</td><td>≤2500 total</td></tr>
+        <tr><td><strong>Nightmare</strong></td><td>Last-resort patterns, nested chains, or any solve path requiring deep search</td><td>&gt;2500 total</td></tr>
+      </tbody>
+    </table>
+
+    <h2>The daily schedule</h2>
+    <p>The daily puzzle feed follows a weekly progression designed to match solver skill growth:</p>
+    <table>
+      <thead>
+        <tr><th>Day</th><th>Rating band</th><th>What to expect</th></tr>
+      </thead>
+      <tbody>
+        <tr><td><strong>Monday</strong></td><td>Easy</td><td>Singles only — a warm-up. Usually 36+ given cells.</td></tr>
+        <tr><td><strong>Tuesday</strong></td><td>Easy</td><td>Slightly sparser, but still solvable with singles alone.</td></tr>
+        <tr><td><strong>Wednesday</strong></td><td>Medium</td><td>First introduction to pairs and intersections.</td></tr>
+        <tr><td><strong>Thursday</strong></td><td>Medium</td><td>More pairs, possibly a triple.</td></tr>
+        <tr><td><strong>Friday</strong></td><td>Hard</td><td>First X-Wing or Swordfish appears. Requires scanning patterns across both grids.</td></tr>
+        <tr><td><strong>Saturday</strong></td><td>Hard</td><td>Multiple advanced techniques needed.</td></tr>
+        <tr><td><strong>Sunday</strong></td><td>Tricky+</td><td>At least one technically Hard step, or a high cumulative score. The week's toughest puzzle.</td></tr>
+      </tbody>
+    </table>
+
+    <h2>Score calculation</h2>
+    <p>The solver assigns a point value to each technique based on its complexity, then sums them across the entire solve path:</p>
+    <ul>
+      <li><strong>Full House:</strong> 4 points — a cell with only one candidate remaining</li>
+      <li><strong>Naked Single:</strong> 4 points — a cell whose only possible digit is clear from its house peers</li>
+      <li><strong>Hidden Single:</strong> 14 points — a digit that can only go in one cell of a house, even though that cell has multiple candidates</li>
+      <li><strong>Intersections:</strong> 30–60 points</li>
+      <li><strong>Pairs &amp; Triples:</strong> 80–140 points</li>
+      <li><strong>Fish (X-Wing, Swordfish, Jellyfish):</strong> 150–350 points</li>
+      <li><strong>Wings (XY-Wing, XYZ-Wing):</strong> 200–400 points</li>
+      <li><strong>Single-Digit Patterns:</strong> 180–300 points</li>
+    </ul>
+    <p>The evaluator always chooses the <strong>cheapest applicable technique</strong> at each step, mirroring how a human solver would naturally proceed.</p>
+
+    <h2>How puzzles are designed</h2>
+    <p>Puzzles are created by a process called <strong>rotational-pair digging</strong>:</p>
+    <ol>
+      <li>Start with a fully solved, compatible Gattai grid pair.</li>
+      <li>Remove clues one rotational pair at a time (a givens and its 180° partner).</li>
+      <li>After each removal, verify the puzzle still has exactly one solution.</li>
+      <li>Stop when no further rotational pair can be removed without creating multiple solutions.</li>
+    </ol>
+    <p>The result is a <strong>pair-minimal</strong> puzzle — removing any remaining rotational pair would break uniqueness. This ensures every puzzle is as lean as possible while remaining solvable by logic alone.</p>
+
+    <div class="cta-box">
+      <h2>Browse rated puzzles</h2>
+      <p>The puzzle database contains 500 puzzles sorted by difficulty. Preview any puzzle before playing.</p>
+      <a class="cta-button" href="/database.html">Browse the database →</a>
+    </div>
+  </main>
+</body>
+</html>
