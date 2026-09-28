@@ -1,0 +1,119 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Gattai Sudoku vs Regular Sudoku: What's the Difference? · Daily Gattai Sudoku</title>
+  <meta name="description" content="Compare Gattai Sudoku (overlapping two-grid) with standard 9×9 Sudoku. Learn how clue counts, solving strategy, and difficulty differ between the two formats." />
+  <meta property="og:title" content="Gattai Sudoku vs Regular Sudoku: What's the Difference?" />
+  <meta property="og:description" content="Compare Gattai Sudoku (overlapping two-grid) with standard 9×9 Sudoku. Learn how clue counts, solving strategy, and difficulty differ." />
+  <meta property="og:type" content="article" />
+  <meta property="og:url" content="https://gattaisudoku.com/guides/gattai-vs-regular-sudoku.html" />
+  <meta property="og:locale" content="en_US" />
+  <link rel="canonical" href="https://gattaisudoku.com/guides/gattai-vs-regular-sudoku.html" />
+  <link rel="alternate" hreflang="en" href="https://gattaisudoku.com/guides/gattai-vs-regular-sudoku.html" />
+  <meta name="google-site-verification" content="_YOUR_VERIFICATION_STRING_" />
+  <script async src="https://www.googletagmanager.com/gtag/js?id=G-XXXXXXXXXX"></script>
+  <script>window.dataLayer=window.dataLayer||[];function gtag(){dataLayer.push(arguments)};gtag('js',new Date());gtag('config','G-XXXXXXXXXX');</script>
+  <link rel="stylesheet" href="/style.css" />
+  <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 120 120'%3E%3Cpath fill='%23ed6239' d='M30 30h60v60H30z'/%3E%3Cpath fill='none' stroke='%23ed6239' stroke-width='6' d='M10 0v90M20 0v90M30 0v120M40 0v120M50 0v120M60 0v120M70 0v120M80 0v120M90 0v120M100 30v90M110 30v90M0 10h90M0 20h90M0 30h120M0 40h120M0 50h120M0 60h120M0 70h120M0 80h120M0 90h120M30 100h90M30 110h90'/%3E%3C/svg%3E" />
+  <style>
+    .guide-page{max-width:800px;margin:0 auto;padding:32px 24px 64px}
+    .guide-page h1{font:600 40px/1.1 'Fredoka',sans-serif;margin:0 0 8px}
+    .guide-page .byline{color:var(--thin);font-size:14px;margin:0 0 32px}
+    .guide-page h2{font:600 28px/1.2 'Fredoka',sans-serif;margin:42px 0 12px}
+    .guide-page h3{font:600 20px/1.2 'Fredoka',sans-serif;margin:28px 0 8px;color:var(--red)}
+    .guide-page p,.guide-page li{line-height:1.7;margin:0 0 14px}
+    .guide-page ul,.guide-page ol{padding-left:24px;margin:0 0 18px}
+    .guide-page li{margin:0 0 6px}
+    .guide-page table{width:100%;border-collapse:collapse;margin:24px 0;font-size:15px}
+    .guide-page th,.guide-page td{padding:10px 12px;border:1px solid var(--thin);text-align:left;vertical-align:top}
+    .guide-page thead th{background:var(--muted);font-weight:700;border-bottom:2px solid var(--ink)}
+    .guide-page .callout{padding:16px 20px;border-left:4px solid var(--red);background:var(--muted);margin:24px 0;font-size:15px}
+    .guide-page .callout strong{color:var(--red)}
+    .guide-page .cta-box{text-align:center;padding:32px;border:2px solid var(--ink);margin:36px 0 0;background:var(--surface)}
+    .guide-page .cta-box h2{margin:0 0 10px}
+    .guide-page .cta-box p{margin:0 0 18px}
+    .guide-page .cta-button{display:inline-block;border:1px solid var(--ink);background:var(--ink);color:var(--surface);padding:10px 22px;font:600 15px/1 'Nunito',sans-serif;text-decoration:none}
+    .guide-page .cta-button:hover{background:var(--red);border-color:var(--red)}
+    .guide-nav{display:flex;align-items:center;gap:16px;padding:16px clamp(20px,7vw,100px);border-bottom:2px solid var(--ink)}
+    .guide-nav a{font-size:13px;font-weight:700;color:var(--ink);text-decoration:none}
+    .guide-nav a:hover{text-decoration:underline}
+    .guide-nav .brand{font:600 22px/1 'Fredoka',sans-serif;color:var(--red);margin-left:auto}
+    @media(max-width:600px){
+      .guide-page h1{font-size:30px}
+      .guide-page h2{font-size:24px}
+      .guide-page table{font-size:13px}
+      .guide-page th,.guide-page td{padding:7px 8px}
+    }
+  </style>
+</head>
+<body>
+  <nav class="guide-nav">
+    <a href="/">← Daily puzzle</a>
+    <a href="/guides/what-is-gattai-sudoku.html">Guides</a>
+    <span class="brand">Gattai Sudoku</span>
+  </nav>
+  <main class="guide-page">
+    <h1>Gattai Sudoku vs Regular Sudoku</h1>
+    <p class="byline">A side-by-side comparison of the classic 9×9 format and its overlapping two-grid cousin.</p>
+
+    <p>If you already know how to solve standard Sudoku, you're most of the way to solving Gattai Sudoku. But the overlapping layout creates meaningful differences in strategy, clue design, and difficulty. Here's what changes.</p>
+
+    <h2>At a glance</h2>
+
+    <table>
+      <thead>
+        <tr><th>Feature</th><th>Standard Sudoku</th><th>Gattai Sudoku</th></tr>
+      </thead>
+      <tbody>
+        <tr><td><strong>Grids</strong></td><td>1 × 9×9</td><td>2 × 9×9 (overlapping)</td></tr>
+        <tr><td><strong>Active cells</strong></td><td>81</td><td>126 (36 overlap)</td></tr>
+        <tr><td><strong>Minimum clues</strong></td><td>17 (proven)</td><td>~28 (empirical)</td></tr>
+        <tr><td><strong>Typical givens</strong></td><td>22–30</td><td>30–44</td></tr>
+        <tr><td><strong>Clue symmetry</strong></td><td>Often none required</td><td>Rotational pairs within each grid</td></tr>
+        <tr><td><strong>Shared houses</strong></td><td>N/A</td><td>6 rows, 6 columns, 4 boxes in overlap</td></tr>
+        <tr><td><strong>Solving area</strong></td><td>Single square</td><td>L-shaped, 12×12 bounding box</td></tr>
+      </tbody>
+    </table>
+
+    <h2>More cells, more information</h2>
+    <p>A standard Sudoku has 81 cells. Gattai has 126 — about 56% more. With more cells come more constraints: every digit you place in the shared 6×6 region must satisfy two grids' worth of row, column, and box restrictions. This means:</p>
+    <ul>
+      <li><strong>More given clues are needed</strong> to force a unique solution. Standard Sudoku can be uniquely solvable with 17 clues; a Gattai puzzle typically needs 28 or more.</li>
+      <li><strong>Deductions chain further.</strong> A candidate eliminated by a Grid 1 interaction might also open up a placement in Grid 2, and vice versa.</li>
+      <li><strong>Scanning takes more practice.</strong> You need to track two sets of houses simultaneously for the overlapping cells.</li>
+    </ul>
+
+    <h2>The shared region changes everything</h2>
+    <p>In standard Sudoku, every cell belongs to exactly one row, one column, and one 3×3 box. In Gattai, the 36 cells of the shared 6×6 belong to <em>two</em> rows (one per grid), <em>two</em> columns, and one of four shared 3×3 boxes. A digit in a shared cell must not conflict with:</p>
+    <ul>
+      <li>The row, column, and box constraints of <strong>Grid 1</strong></li>
+      <li><strong>And</strong> the row, column, and box constraints of <strong>Grid 2</strong></li>
+    </ul>
+
+    <div class="callout">
+      <strong>Practical effect:</strong> The overlap makes "hidden" techniques more powerful. A Hidden Single in the shared 6×6 might be hidden in Grid 1's row but naked in Grid 2's column — or the opposite. Good Gattai solvers learn to scan both grids' constraints at once.
+    </div>
+
+    <h2>Clue symmetry</h2>
+    <p>The puzzles on this site use <strong>rotational-pair clue design</strong>. When a clue is removed, its 180° partner within the same grid is also removed. This creates a visually balanced grid and ensures that every puzzle has a well-defined difficulty rating. Standard Sudoku has no such constraint — clue patterns can be arbitrary.</p>
+
+    <h2>Difficulty comparison</h2>
+    <p>Gattai puzzles at the same technique tier tend to feel <strong>slightly easier</strong> than their standard counterparts, because the extra constraints in the overlap give you more information to work with. A standard Sudoku with 28 givens might be Medium; a Gattai with 28 givens is likely Beginner or Easy. That said, the hardest Gattai puzzles (Friday–Sunday) still demand skilled logical chaining.</p>
+
+    <h2>Which one should you play?</h2>
+    <ul>
+      <li><strong>If you're new to Sudoku:</strong> Start with standard Sudoku, then try Gattai Beginner/Easy puzzles once you're comfortable.</li>
+      <li><strong>If you're a regular Sudoku solver looking for a fresh challenge:</strong> Gattai is a natural next step — familiar rules, new spatial thinking.</li>
+      <li><strong>If you enjoy variant Sudoku (Killer, Samurai, Arrow):</strong> Gattai's overlapping-grid structure is a unique twist you'll likely enjoy.</li>
+    </ul>
+
+    <div class="cta-box">
+      <h2>Try Gattai for yourself</h2>
+      <p>Start with today's puzzle — it's free and needs no account.</p>
+      <a class="cta-button" href="/">Play Daily Gattai Sudoku →</a>
+    </div>
+  </main>
+</body>
+</html>

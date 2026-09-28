@@ -1,0 +1,173 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>How to Solve Gattai Sudoku: Techniques &amp; Strategy Guide · Daily Gattai Sudoku</title>
+  <meta name="description" content="Learn how to solve Gattai Sudoku puzzles step by step. From basic singles to advanced fish and wings — with examples from real puzzles and the interactive solver walkthrough." />
+  <meta property="og:title" content="How to Solve Gattai Sudoku: Techniques &amp; Strategy Guide" />
+  <meta property="og:description" content="Learn how to solve Gattai Sudoku puzzles step by step. From basic singles to advanced fish and wings." />
+  <meta property="og:type" content="article" />
+  <meta property="og:url" content="https://gattaisudoku.com/guides/solving-techniques.html" />
+  <meta property="og:locale" content="en_US" />
+  <link rel="canonical" href="https://gattaisudoku.com/guides/solving-techniques.html" />
+  <link rel="alternate" hreflang="en" href="https://gattaisudoku.com/guides/solving-techniques.html" />
+  <meta name="google-site-verification" content="_YOUR_VERIFICATION_STRING_" />
+  <script async src="https://www.googletagmanager.com/gtag/js?id=G-XXXXXXXXXX"></script>
+  <script>window.dataLayer=window.dataLayer||[];function gtag(){dataLayer.push(arguments)};gtag('js',new Date());gtag('config','G-XXXXXXXXXX');</script>
+  <link rel="stylesheet" href="/style.css" />
+  <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 120 120'%3E%3Cpath fill='%23ed6239' d='M30 30h60v60H30z'/%3E%3Cpath fill='none' stroke='%23ed6239' stroke-width='6' d='M10 0v90M20 0v90M30 0v120M40 0v120M50 0v120M60 0v120M70 0v120M80 0v120M90 0v120M100 30v90M110 30v90M0 10h90M0 20h90M0 30h120M0 40h120M0 50h120M0 60h120M0 70h120M0 80h120M0 90h120M30 100h90M30 110h90'/%3E%3C/svg%3E" />
+  <style>
+    .guide-page{max-width:800px;margin:0 auto;padding:32px 24px 64px}
+    .guide-page h1{font:600 40px/1.1 'Fredoka',sans-serif;margin:0 0 8px}
+    .guide-page .byline{color:var(--thin);font-size:14px;margin:0 0 32px}
+    .guide-page h2{font:600 28px/1.2 'Fredoka',sans-serif;margin:42px 0 12px}
+    .guide-page h3{font:600 20px/1.2 'Fredoka',sans-serif;margin:28px 0 8px;color:var(--red)}
+    .guide-page p,.guide-page li{line-height:1.7;margin:0 0 14px}
+    .guide-page ul,.guide-page ol{padding-left:24px;margin:0 0 18px}
+    .guide-page li{margin:0 0 6px}
+    .guide-page .callout{padding:16px 20px;border-left:4px solid var(--red);background:var(--muted);margin:24px 0;font-size:15px}
+    .guide-page .callout strong{color:var(--red)}
+    .guide-page .cta-box{text-align:center;padding:32px;border:2px solid var(--ink);margin:36px 0 0;background:var(--surface)}
+    .guide-page .cta-box h2{margin:0 0 10px}
+    .guide-page .cta-box p{margin:0 0 18px}
+    .guide-page .cta-button{display:inline-block;border:1px solid var(--ink);background:var(--ink);color:var(--surface);padding:10px 22px;font:600 15px/1 'Nunito',sans-serif;text-decoration:none}
+    .guide-page .cta-button:hover{background:var(--red);border-color:var(--red)}
+    .guide-nav{display:flex;align-items:center;gap:16px;padding:16px clamp(20px,7vw,100px);border-bottom:2px solid var(--ink)}
+    .guide-nav a{font-size:13px;font-weight:700;color:var(--ink);text-decoration:none}
+    .guide-nav a:hover{text-decoration:underline}
+    .guide-nav .brand{font:600 22px/1 'Fredoka',sans-serif;color:var(--red);margin-left:auto}
+    .technique-list{margin:0;padding:0;list-style:none}
+    .technique-list li{padding:12px 16px;border-left:3px solid var(--red);background:var(--muted);margin:0 0 10px}
+    .technique-list li strong{display:block;font-size:15px;margin:0 0 4px}
+    .technique-list li span{font-size:14px;color:var(--thin);display:block;margin:0 0 4px}
+    @media(max-width:600px){
+      .guide-page h1{font-size:30px}
+      .guide-page h2{font-size:24px}
+    }
+  </style>
+</head>
+<body>
+  <nav class="guide-nav">
+    <a href="/">← Daily puzzle</a>
+    <a href="/guides/what-is-gattai-sudoku.html">Guides</a>
+    <span class="brand">Gattai Sudoku</span>
+  </nav>
+  <main class="guide-page">
+    <h1>How to Solve Gattai Sudoku</h1>
+    <p class="byline">A technique-by-technique guide to solving overlapping Sudoku puzzles, from basic singles to advanced patterns.</p>
+
+    <p>Every puzzle on this site can be solved by logic alone — no guessing required. The solver built into the site can walk you through any puzzle step by step, showing which technique was used and why. This guide explains each technique so you can recognise them in your own solving.</p>
+
+    <div class="callout">
+      <strong>Tip:</strong> Open any puzzle, click <strong>Read solution</strong>, and use the step controls to follow along. The solver highlights the relevant cells and explains its reasoning for every deduction.
+    </div>
+
+    <h2>Getting started: entry modes</h2>
+    <p>The puzzle board offers two entry modes:</p>
+    <ul>
+      <li><strong>Digit mode:</strong> Enter a single digit into a cell. The site does not maintain pencil marks for you in this mode — it's closest to pen-and-paper solving.</li>
+      <li><strong>Snyder notation:</strong> Mark candidates in each cell as small corner digits. This is the recommended mode for most solvers. The site automatically shows centre marks for cells with only two candidates (a Snyder convention) and full notation for all other cells.</li>
+    </ul>
+    <p>You can switch between modes at any time. Snyder notation is particularly powerful in Gattai because the overlapping region creates so many cross-grid candidate interactions.</p>
+
+    <h2>Techniques by difficulty</h2>
+
+    <h3>Beginner techniques</h3>
+    <ul class="technique-list">
+      <li>
+        <strong>Full House</strong>
+        <span>Score: 4</span>
+        A cell that has only one remaining candidate in its entire 3×3 box. Fill it and move on. Common in the opening phase of Easy puzzles.
+      </li>
+      <li>
+        <strong>Naked Single</strong>
+        <span>Score: 4</span>
+        A cell where only one digit is possible when you check its row, column, and box simultaneously. In the shared 6×6, this means checking <em>two</em> rows, <em>two</em> columns, and both grids' box constraints.
+      </li>
+      <li>
+        <strong>Hidden Single</strong>
+        <span>Score: 14</span>
+        A digit that can only go in one cell of a given house, even though that cell still has other candidates. In Gattai, Hidden Singles in the shared 6×6 are especially common — a digit might be eliminated from most cells by Grid 1 constraints and from the rest by Grid 2.
+      </li>
+    </ul>
+
+    <h3>Medium techniques</h3>
+    <ul class="technique-list">
+      <li>
+        <strong>Intersections (Pointing &amp; Claiming)</strong>
+        <span>Score: 30–60</span>
+        When a candidate is restricted to one row or column within a 3×3 box, you can eliminate it from the rest of that row or column outside the box (and vice versa). In Gattai, the shared 6×6 creates unusual intersection patterns that span both grids.
+      </li>
+      <li>
+        <strong>Naked Pair / Naked Triple</strong>
+        <span>Score: 80–140</span>
+        Two (or three) cells in the same house that contain the same two (or three) candidates. Those candidates can be eliminated from all other cells in that house. These are the first techniques that require active candidate scanning.
+      </li>
+      <li>
+        <strong>Hidden Pair / Hidden Triple</strong>
+        <span>Score: 80–140</span>
+        Two (or three) candidates that only appear in the same two (or three) cells of a house. All other candidates can be eliminated from those cells. Hidden pairs are often easier to spot than naked pairs in dense grids.
+      </li>
+    </ul>
+
+    <h3>Hard techniques</h3>
+    <ul class="technique-list">
+      <li>
+        <strong>X-Wing</strong>
+        <span>Score: 150–250</span>
+        A pattern where the same candidate appears in exactly two rows across the same two columns (or vice versa). The candidate can be eliminated from all other cells in those columns (or rows). X-Wings in Gattai can span the border between the two grids — a powerful pattern unique to the variant.
+      </li>
+      <li>
+        <strong>Swordfish</strong>
+        <span>Score: 250–350</span>
+        An extension of the X-Wing involving three rows and three columns. Rare in Easy and Medium puzzles; the hallmark of a Hard-rated Gattai.
+      </li>
+      <li>
+        <strong>XY-Wing</strong>
+        <span>Score: 200–300</span>
+        Three cells with two candidates each, arranged so one cell (the "pivot") sees the other two ("wings"). The digit common to both wings can be eliminated from any cell that sees both wings. XY-Wings work identically in Gattai but can span the grid boundary.
+      </li>
+      <li>
+        <strong>Single-Digit Patterns</strong>
+        <span>Score: 180–300</span>
+        Patterns like Skyscraper, Two-String Kite, and Empty Rectangle that eliminate candidates by following a single digit across the board. These are especially effective in the shared 6×6.
+      </li>
+    </ul>
+
+    <h3>Advanced techniques (Unfair and above)</h3>
+    <ul class="technique-list">
+      <li>
+        <strong>Forcing Chains</strong>
+        <span>Score: 400+</span>
+        A chain of implications: "if this cell is X, then that cell must be Y, which forces another cell to be Z, which creates a contradiction — therefore the original cell cannot be X."
+      </li>
+      <li>
+        <strong>Colouring</strong>
+        <span>Score: 500+</span>
+        Assign alternating colours to conjugate pairs (cells where a digit must be in one of two positions). If the same colour appears twice in the same house, that colour can be eliminated.
+      </li>
+      <li>
+        <strong>ALS (Almost Locked Sets)</strong>
+        <span>Score: 600+</span>
+        A group of n cells containing n+1 candidates, which interacts with another ALS to force an elimination. The most advanced human-grade technique in the rating system.
+      </li>
+    </ul>
+
+    <h2>Strategy tips for Gattai</h2>
+    <ol>
+      <li><strong>Scan both grids from the start.</strong> Don't focus on Grid 1, then Grid 2. The overlap means a placement in one grid can instantly open up deductions in the other.</li>
+      <li><strong>Use the grid highlight buttons.</strong> Toggle "Grid 1" and "Grid 2" highlights to see which cells belong to which grid. The shared 6×6 is automatically shaded.</li>
+      <li><strong>Check the shared region first.</strong> A digit that resolves a shared cell eliminates candidates in <em>both</em> grids, making it the most valuable type of placement.</li>
+      <li><strong>Snyder notation is your friend.</strong> The site's Snyder mode auto-manages candidates. Let it handle the bookkeeping while you focus on spotting patterns.</li>
+      <li><strong>Walk through the solver.</strong> If you're stuck, click "Read solution" and step through one technique at a time. The solver shows exactly what it's looking at and why the deduction works.</li>
+    </ol>
+
+    <div class="cta-box">
+      <h2>Practise with today's puzzle</h2>
+      <p>Every daily puzzle includes a full solution walkthrough. Pick a difficulty that matches your comfort level.</p>
+      <a class="cta-button" href="/">Play Daily Gattai Sudoku →</a>
+    </div>
+  </main>
+</body>
+</html>

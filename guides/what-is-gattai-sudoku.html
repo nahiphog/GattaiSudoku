@@ -1,0 +1,137 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>What Is Gattai Sudoku? Rules &amp; Beginner's Guide · Daily Gattai Sudoku</title>
+  <meta name="description" content="Learn the rules of Gattai Sudoku — the overlapping two-grid Sudoku variant. A complete beginner's guide with diagrams and a playable Easy puzzle." />
+  <meta property="og:title" content="What Is Gattai Sudoku? Rules &amp; Beginner's Guide" />
+  <meta property="og:description" content="Learn the rules of Gattai Sudoku — the overlapping two-grid Sudoku variant. A complete beginner's guide with diagrams and a playable Easy puzzle." />
+  <meta property="og:type" content="article" />
+  <meta property="og:url" content="https://gattaisudoku.com/guides/what-is-gattai-sudoku.html" />
+  <meta property="og:locale" content="en_US" />
+  <link rel="canonical" href="https://gattaisudoku.com/guides/what-is-gattai-sudoku.html" />
+  <link rel="alternate" hreflang="en" href="https://gattaisudoku.com/guides/what-is-gattai-sudoku.html" />
+  <meta name="google-site-verification" content="_YOUR_VERIFICATION_STRING_" />
+  <script async src="https://www.googletagmanager.com/gtag/js?id=G-XXXXXXXXXX"></script>
+  <script>window.dataLayer=window.dataLayer||[];function gtag(){dataLayer.push(arguments)};gtag('js',new Date());gtag('config','G-XXXXXXXXXX');</script>
+  <link rel="stylesheet" href="/style.css" />
+  <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 120 120'%3E%3Cpath fill='%23ed6239' d='M30 30h60v60H30z'/%3E%3Cpath fill='none' stroke='%23ed6239' stroke-width='6' d='M10 0v90M20 0v90M30 0v120M40 0v120M50 0v120M60 0v120M70 0v120M80 0v120M90 0v120M100 30v90M110 30v90M0 10h90M0 20h90M0 30h120M0 40h120M0 50h120M0 60h120M0 70h120M0 80h120M0 90h120M30 100h90M30 110h90'/%3E%3C/svg%3E" />
+  <style>
+    .guide-page{max-width:800px;margin:0 auto;padding:32px 24px 64px}
+    .guide-page h1{font:600 40px/1.1 'Fredoka',sans-serif;margin:0 0 8px}
+    .guide-page .byline{color:var(--thin);font-size:14px;margin:0 0 32px}
+    .guide-page h2{font:600 28px/1.2 'Fredoka',sans-serif;margin:42px 0 12px}
+    .guide-page h3{font:600 20px/1.2 'Fredoka',sans-serif;margin:28px 0 8px;color:var(--red)}
+    .guide-page p,.guide-page li{line-height:1.7;margin:0 0 14px}
+    .guide-page ul,.guide-page ol{padding-left:24px;margin:0 0 18px}
+    .guide-page li{margin:0 0 6px}
+    .guide-page .callout{padding:16px 20px;border-left:4px solid var(--red);background:var(--muted);margin:24px 0;font-size:15px}
+    .guide-page .callout strong{color:var(--red)}
+    .guide-page .grid-diagram{display:grid;grid-template-columns:repeat(12,32px);grid-template-rows:repeat(12,32px);gap:0;margin:20px auto;width:fit-content;border:2px solid var(--ink)}
+    .guide-page .grid-diagram div{border:1px solid var(--thin);display:grid;place-items:center;font:600 13px/1 Arial,sans-serif;background:var(--paper)}
+    .guide-page .grid-diagram .shared-cell{background:var(--shared)}
+    .guide-page .grid-diagram .empty-cell{background:var(--paper)}
+    .guide-page .grid-diagram .label-cell{background:var(--muted);font-size:10px;color:var(--thin);border-color:var(--thin)}
+    .guide-page .grid-labels{display:flex;gap:32px;justify-content:center;margin:12px 0 24px;font-size:13px}
+    .guide-page .grid-labels span{display:flex;align-items:center;gap:6px}
+    .guide-page .grid-labels .swatch{width:16px;height:16px;border:1px solid var(--thin);display:inline-block}
+    .guide-page .grid-labels .swatch.g1{background:var(--paper)}
+    .guide-page .grid-labels .swatch.shared{background:var(--shared)}
+    .guide-page .cta-box{text-align:center;padding:32px;border:2px solid var(--ink);margin:36px 0 0;background:var(--surface)}
+    .guide-page .cta-box h2{margin:0 0 10px}
+    .guide-page .cta-box p{margin:0 0 18px}
+    .guide-page .cta-button{display:inline-block;border:1px solid var(--ink);background:var(--ink);color:var(--surface);padding:10px 22px;font:600 15px/1 'Nunito',sans-serif;text-decoration:none}
+    .guide-page .cta-button:hover{background:var(--red);border-color:var(--red)}
+    .guide-nav{display:flex;align-items:center;gap:16px;padding:16px clamp(20px,7vw,100px);border-bottom:2px solid var(--ink)}
+    .guide-nav a{font-size:13px;font-weight:700;color:var(--ink);text-decoration:none}
+    .guide-nav a:hover{text-decoration:underline}
+    .guide-nav .brand{font:600 22px/1 'Fredoka',sans-serif;color:var(--red);margin-left:auto}
+    @media(max-width:600px){
+      .guide-page h1{font-size:30px}
+      .guide-page h2{font-size:24px}
+      .guide-page .grid-diagram{grid-template-columns:repeat(12,22px);grid-template-rows:repeat(12,22px)}
+      .guide-page .grid-diagram div{font-size:9px}
+    }
+  </style>
+</head>
+<body>
+  <nav class="guide-nav">
+    <a href="/">← Daily puzzle</a>
+    <a href="/guides/what-is-gattai-sudoku.html">Guides</a>
+    <span class="brand">Gattai Sudoku</span>
+  </nav>
+  <main class="guide-page">
+    <h1>What Is Gattai Sudoku? Rules &amp; Beginner's Guide</h1>
+    <p class="byline">A complete introduction to the overlapping two-grid Sudoku variant — also called Gattai-2 or simply Gattai.</p>
+
+    <p><strong>Gattai Sudoku</strong> (from the Japanese <em>gattai</em>, meaning "combine" or "merge") is a Sudoku variant where two standard 9×9 grids overlap in a shared 6×6 region. Every normal Sudoku rule applies to both grids simultaneously, and the overlapping cells must satisfy both grids at once.</p>
+
+    <h2>Grid layout</h2>
+    <p>Instead of one 9×9 square, a Gattai puzzle uses two overlapping 9×9 grids arranged in an L-shape:</p>
+
+    <ul>
+      <li><strong>Grid 1 (top-left):</strong> occupies columns 1–9 of rows 1–9</li>
+      <li><strong>Grid 2 (bottom-right):</strong> occupies columns 4–12 of rows 4–12</li>
+      <li><strong>Shared 6×6:</strong> the area where both grids overlap (rows 4–9, columns 4–9)</li>
+    </ul>
+
+    <div class="grid-diagram" role="img" aria-label="Diagram of two overlapping 9x9 Sudoku grids showing the shared 6x6 region">
+      <div class="label-cell"></div><div class="label-cell">1</div><div class="label-cell">2</div><div class="label-cell">3</div><div class="label-cell">4</div><div class="label-cell">5</div><div class="label-cell">6</div><div class="label-cell">7</div><div class="label-cell">8</div><div class="label-cell">9</div><div class="label-cell"></div><div class="label-cell"></div>
+      <div class="label-cell">1</div><div></div><div></div><div></div><div></div><div></div><div></div><div></div><div></div><div></div><div class="label-cell"></div><div class="label-cell"></div>
+      <div class="label-cell">2</div><div></div><div></div><div></div><div></div><div></div><div></div><div></div><div></div><div></div><div class="label-cell"></div><div class="label-cell"></div>
+      <div class="label-cell">3</div><div></div><div></div><div></div><div></div><div></div><div></div><div></div><div></div><div></div><div class="label-cell"></div><div class="label-cell"></div>
+      <div class="label-cell">4</div><div></div><div></div><div></div><div class="shared-cell"></div><div class="shared-cell"></div><div class="shared-cell"></div><div class="shared-cell"></div><div class="shared-cell"></div><div class="shared-cell"></div><div></div><div></div>
+      <div class="label-cell">5</div><div></div><div></div><div></div><div class="shared-cell"></div><div class="shared-cell"></div><div class="shared-cell"></div><div class="shared-cell"></div><div class="shared-cell"></div><div class="shared-cell"></div><div></div><div></div>
+      <div class="label-cell">6</div><div></div><div></div><div></div><div class="shared-cell"></div><div class="shared-cell"></div><div class="shared-cell"></div><div class="shared-cell"></div><div class="shared-cell"></div><div class="shared-cell"></div><div></div><div></div>
+      <div class="label-cell">7</div><div></div><div></div><div></div><div class="shared-cell"></div><div class="shared-cell"></div><div class="shared-cell"></div><div class="shared-cell"></div><div class="shared-cell"></div><div class="shared-cell"></div><div></div><div></div>
+      <div class="label-cell">8</div><div></div><div></div><div></div><div class="shared-cell"></div><div class="shared-cell"></div><div class="shared-cell"></div><div class="shared-cell"></div><div class="shared-cell"></div><div class="shared-cell"></div><div></div><div></div>
+      <div class="label-cell">9</div><div></div><div></div><div></div><div class="shared-cell"></div><div class="shared-cell"></div><div class="shared-cell"></div><div class="shared-cell"></div><div class="shared-cell"></div><div class="shared-cell"></div><div></div><div></div>
+      <div class="label-cell"></div><div class="label-cell"></div><div class="label-cell"></div><div class="label-cell"></div><div></div><div></div><div></div><div></div><div></div><div></div><div></div><div></div>
+      <div class="label-cell"></div><div class="label-cell"></div><div class="label-cell"></div><div class="label-cell"></div><div></div><div></div><div></div><div></div><div></div><div></div><div></div><div></div>
+    </div>
+    <div class="grid-labels">
+      <span><span class="swatch g1"></span> Grid 1 only</span>
+      <span><span class="swatch shared"></span> Shared 6×6 (both grids)</span>
+    </div>
+
+    <p>The board has <strong>126 active cells</strong> (two 9×9 grids minus their non-overlapping portions). The 18 remaining positions (marked with dots in puzzle strings) are permanently empty.</p>
+
+    <h2>Basic rules</h2>
+    <ol>
+      <li><strong>Every row</strong> in each 9×9 grid must contain the digits 1–9 exactly once.</li>
+      <li><strong>Every column</strong> in each 9×9 grid must contain the digits 1–9 exactly once.</li>
+      <li><strong>Every 3×3 box</strong> in each 9×9 grid must contain the digits 1–9 exactly once.</li>
+      <li><strong>The shared 6×6 region</strong> belongs to both grids simultaneously. A digit placed in a shared cell must satisfy the row, column, and box constraints of <em>both</em> grids.</li>
+    </ol>
+
+    <div class="callout">
+      <strong>Key difference from standard Sudoku:</strong> In the shared region, cells have two competing sets of row, column, and box neighbours. A candidate digit might be valid in Grid 1 but already present in a Grid 2 house that crosses the same cell — and vice versa.
+    </div>
+
+    <h2>Clue symmetry</h2>
+    <p>Every puzzle on this site uses <strong>rotational-pair clues</strong>. Clues are removed in 180° rotational pairs within each grid: when a clue at position (row, column) is removed, its partner at (10 − row, 10 − column) in the same grid is also removed. This means:</p>
+    <ul>
+      <li>The clue pattern is always <strong>rotationally symmetric</strong> within each grid.</li>
+      <li>Puzzles typically have <strong>30–44 given cells</strong> (compared to 17–30 for standard Sudoku).</li>
+      <li>The higher clue count makes the puzzles <strong>approachable by logic</strong> without computer-assisted solving.</li>
+    </ul>
+
+    <h2>Difficulty tiers</h2>
+    <p>Puzzles are rated from <strong>Beginner</strong> to <strong>Nightmare</strong> based on the techniques required to solve them. The daily feed follows a Monday–Sunday progression:</p>
+    <ul>
+      <li><strong>Monday–Tuesday (Easy):</strong> Singles only — Full House, Naked Single, Hidden Single</li>
+      <li><strong>Wednesday–Thursday (Medium):</strong> Adds intersections, Naked/Hidden Pairs &amp; Triples</li>
+      <li><strong>Friday–Saturday (Hard):</strong> Adds Fish, Wings, Single-Digit Patterns</li>
+      <li><strong>Sunday (Tricky+):</strong> At least one advanced technique required</li>
+    </ul>
+    <p>See the <a href="/guides/difficulty-scoring.html">Difficulty Scoring guide</a> for the full breakdown.</p>
+
+    <div class="cta-box">
+      <h2>Try it now</h2>
+      <p>Play today's Gattai Sudoku puzzle — no sign-up required.</p>
+      <a class="cta-button" href="/">Play Daily Gattai Sudoku →</a>
+    </div>
+  </main>
+</body>
+</html>
