@@ -16,4 +16,8 @@
     <loc>https://gattaisudoku.com/database.html</loc>
     <priority>0.5</priority>
   </url>
+  <url>
+    <loc>https://gattaisudoku.com/packs.html</loc>
+    <priority>0.5</priority>
+  </url>
 </urlset>
