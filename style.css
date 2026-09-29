@@ -340,7 +340,7 @@ body.dark .guide .step-controls{border-color:rgba(16,43,59,.3)}
 .highlight-panel .grid-button[aria-pressed=false]{opacity:.62}
 
 /* Compact stacked wordmark, with the logo sitting to its left. */
-.brand{display:grid;grid-template-columns:auto auto;grid-template-rows:repeat(2,auto);column-gap:.42em;row-gap:1px;font-size:22px;color:var(--red)}
+.brand{display:grid;grid-template-columns:auto auto;grid-template-rows:repeat(2,auto);column-gap:.42em;row-gap:1px;font-size:22px;color:#2f9e63}
 .brand .gattai-logo{grid-column:1;grid-row:1 / span 2;align-self:center}
 .brand>span:nth-of-type(1){grid-column:2;grid-row:1}.brand>span:nth-of-type(2){grid-column:2;grid-row:2;white-space:nowrap}.brand>span:last-child{color:inherit}.brand em{font-style:normal}
 .puzzle-number{margin-right:4ch}
