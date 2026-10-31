@@ -1,5 +1,5 @@
 # Gattai Sudoku Studio
 
-A dependency-free static teaching site for the overlapping 9×9 Gattai Sudoku format. It presents the validated sample grid, a progressive Monday–Sunday difficulty plan, and a concise human-style solving guide.
+A dependency-free static site for the overlapping 9×9 Gattai Sudoku format. The homepage generates uniquely solvable puzzles using digging or build methods, with tools for solution verification and difficulty evaluation.
 
-Open `index.html` in a browser to view it locally.
+Serve this directory with a static web server and open `/` to use it locally. Daily puzzles are paused; their previous routes temporarily redirect to the generator homepage.
