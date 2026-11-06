@@ -1,6 +1,5 @@
 {
-  "redirects": [
-    { "source": "/daily/:path*", "destination": "/", "permanent": false },
-    { "source": "/generate.html", "destination": "/", "permanent": false }
-  ]
+  "git": {
+    "deploymentEnabled": false
+  }
 }
