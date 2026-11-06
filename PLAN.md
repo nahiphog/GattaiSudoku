@@ -1,3 +1,5 @@
+> Historical proposal: the catalogue and printable-pack pages referenced below have been removed. This is not the current implementation plan.
+
 # Gattai Sudoku — Paywall Implementation Plan
 
 ## Overview

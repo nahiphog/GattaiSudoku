@@ -23,7 +23,7 @@ const previousWeekPuzzles = {
   sunday: { date: "Sunday, September 6, 2026", rows: ["8...25......", "..5...3.....", ".7..84......", ".....85...6.", "..263.4.....", ".48.......9.", "....6..3...9", "..7.........", "...8....6.3.", "....2.74....", "........1.53", "....1...284."] }
 };
 // The rotational-pair archive replaces the earlier hand-picked weeks when
-// daily-puzzles.js is available.  Keeping the legacy data as a fallback lets
+// an optional archive is supplied. Keeping the legacy data as a fallback lets
 // the page remain usable if that optional archive file is unavailable.
 const rotationalArchive = window.ROTATIONAL_ARCHIVE || null;
 if (rotationalArchive) {

@@ -9,9 +9,9 @@ const output = join(root, '_site');
 // Publish only browser assets, never server handlers, SQL, environment files,
 // benchmarks, or repository metadata. No package installation is required.
 const files = [
-  'index.html', 'generate.html', 'verify.html', 'database.html', 'packs.html', '404.html',
-  'style.css', 'generate.css', 'generate.js', 'verify.js', 'database.js',
-  'puzzle-database.js', 'print-puzzle.js', 'gattai-logo-minimal.png',
+  'index.html', 'generate.html', 'verify.html', '404.html',
+  'style.css', 'generate.css', 'generate.js', 'verify.js',
+  'gattai-logo-minimal.png',
   'gattai-logo-minimal-dark.png', 'robots.txt', 'sitemap.xml',
   ...readdirSync(join(root, 'guides')).filter(name => name.endsWith('.html')).map(name => `guides/${name}`),
 ];

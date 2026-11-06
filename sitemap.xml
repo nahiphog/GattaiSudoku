@@ -9,14 +9,6 @@
     <priority>0.7</priority>
   </url>
   <url>
-    <loc>https://nahiphog.github.io/GattaiSudoku/database.html</loc>
-    <priority>0.5</priority>
-  </url>
-  <url>
-    <loc>https://nahiphog.github.io/GattaiSudoku/packs.html</loc>
-    <priority>0.5</priority>
-  </url>
-  <url>
     <loc>https://nahiphog.github.io/GattaiSudoku/guides/what-is-gattai-sudoku.html</loc>
     <priority>0.8</priority>
   </url>
