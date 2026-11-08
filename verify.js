@@ -117,8 +117,18 @@ document.body.classList.toggle("dark", localStorage.getItem("gattai-theme") === 
     function xyWing() { for (const pivot of active) { if (notes[pivot]?.size !== 2) continue; const [first, second] = [...notes[pivot]]; for (const [pivotDigit, otherDigit] of [[first, second], [second, first]]) for (const wingA of peersFor(pivot).filter(index => notes[index]?.size === 2 && notes[index].has(pivotDigit))) { const shared = [...notes[wingA]].find(digit => digit !== pivotDigit); if (!shared || shared === otherDigit) continue; for (const wingB of peersFor(pivot)) { if (wingB === wingA || notes[wingB]?.size !== 2 || !notes[wingB].has(otherDigit) || !notes[wingB].has(shared)) continue; const changes = active.filter(index => index !== pivot && index !== wingA && index !== wingB && notes[index]?.has(shared) && peersFor(index).includes(wingA) && peersFor(index).includes(wingB)).map(index => ({ index, digit: shared })); if (eliminate("XY-Wing", changes, `${cellName(pivot)} is the pivot of an XY-Wing; remove ${shared} from cells seeing both wings.`)) return true; } } } return false; }
     function xyzWing() { for (const pivot of active) { if (notes[pivot]?.size !== 3) continue; const pivotDigits = [...notes[pivot]]; for (const shared of pivotDigits) { const [first, second] = pivotDigits.filter(digit => digit !== shared); for (const wingA of peersFor(pivot).filter(index => notes[index]?.size === 2 && notes[index].has(first) && notes[index].has(shared))) for (const wingB of peersFor(pivot)) { if (wingB === wingA || notes[wingB]?.size !== 2 || !notes[wingB].has(second) || !notes[wingB].has(shared)) continue; const changes = active.filter(index => index !== pivot && index !== wingA && index !== wingB && notes[index]?.has(shared) && peersFor(index).includes(pivot) && peersFor(index).includes(wingA) && peersFor(index).includes(wingB)).map(index => ({ index, digit: shared })); if (eliminate("XYZ-Wing", changes, `${cellName(pivot)} is the ${first}/${second}/${shared} pivot; remove ${shared} from cells seeing its pivot and both wings.`)) return true; } } } return false; }
     function wWing() { for (let left = 0; left < active.length; left += 1) for (let right = left + 1; right < active.length; right += 1) { const wingA = active[left], wingB = active[right], peersA = peersFor(wingA), peersB = peersFor(wingB); if (notes[wingA]?.size !== 2 || notes[wingB]?.size !== 2 || peersA.includes(wingB)) continue; const pairA = [...notes[wingA]].sort((a, b) => a - b), pairB = [...notes[wingB]].sort((a, b) => a - b); if (pairA.join() !== pairB.join()) continue; for (const bridge of pairA) { const target = pairA.find(digit => digit !== bridge); for (const [label, house] of units) { const strong = house.filter(index => notes[index]?.has(bridge)); if (strong.length !== 2 || !((peersA.includes(strong[0]) && peersB.includes(strong[1])) || (peersA.includes(strong[1]) && peersB.includes(strong[0])))) continue; const changes = active.filter(index => index !== wingA && index !== wingB && notes[index]?.has(target) && peersFor(index).includes(wingA) && peersFor(index).includes(wingB)).map(index => ({ index, digit: target })); if (eliminate("W-Wing", changes, `${cellName(wingA)} and ${cellName(wingB)} form a W-Wing linked by candidate ${bridge} in ${label}.`)) return true; } } } return false; }
+    function remotePairs() {
+      const result = findRemotePairs(notes, peersFor);
+      if (!result) return false;
+      const { pair, chain, eliminations } = result;
+      const text = `The ${pair.join('/')} bivalue chain ${chain.map(cellName).join(' → ')} alternates between its two digits. Its endpoints must be opposite, so cells seeing both endpoints cannot contain either digit. Remove ${eliminations.map(({ index, digit }) => digit + ' from ' + cellName(index)).join('; ')}.`;
+      return eliminate("Remote Pairs", eliminations, text, {
+        affected: chain,
+        emphasis: chain.flatMap(index => pair.map(digit => ({ index, digit })))
+      });
+    }
     while (active.some(index => !working[index])) {
-      if (fullHouse() || nakedSingle() || hiddenSingle() || nakedSubset(2) || hiddenSubset(2) || intersections() || nakedSubset(3) || hiddenSubset(3) || nakedSubset(4) || hiddenSubset(4) || basicFish() || skyscraper() || twoStringKite() || wWing() || xyWing() || xyzWing()) continue;
+      if (fullHouse() || nakedSingle() || hiddenSingle() || nakedSubset(2) || hiddenSubset(2) || intersections() || nakedSubset(3) || hiddenSubset(3) || nakedSubset(4) || hiddenSubset(4) || basicFish() || skyscraper() || twoStringKite() || wWing() || xyWing() || xyzWing() || remotePairs()) continue;
       const index = active.filter(cell => !working[cell]).sort((left, right) => candidatesFor(left).length - candidatesFor(right).length)[0];
       place("Trial and error", index, solution[index], `${cellName(index)} = ${solution[index]} is a transparent search choice after the currently implemented named techniques are exhausted. The solver then returns to the easiest named technique.`);
     }
@@ -155,7 +165,7 @@ document.body.classList.toggle("dark", localStorage.getItem("gattai-theme") === 
     drawBoundaries(walkthroughGrid);
     const outline = document.createElement("span"); outline.className = `solver-grid-outline solver-grid-${selectedGrid}`; walkthroughGrid.append(outline);
     walkthroughTechnique.textContent = step.technique;
-    walkthroughReasoning.textContent = `Grid ${selectedGrid === "one" ? 1 : 2}: ${step.text.replace(/In Grid [12],\s*/g, "").replace(/\bGrid [12]:?\s*/g, "")}`;
+    walkthroughReasoning.textContent = step.technique === "Remote Pairs" ? step.text : `Grid ${selectedGrid === "one" ? 1 : 2}: ${step.text.replace(/In Grid [12],\s*/g, "").replace(/\bGrid [12]:?\s*/g, "")}`;
     walkthroughStepCount.textContent = `Step ${walkthroughIndex + 1} of ${walkthroughData.length}`;
     document.querySelector("#firstWalkthroughStep").disabled = walkthroughIndex === 0;
     document.querySelector("#previousWalkthroughStep").disabled = walkthroughIndex === 0;
@@ -166,8 +176,8 @@ document.body.classList.toggle("dark", localStorage.getItem("gattai-theme") === 
     const started = performance.now();
     const steps = buildWalkthrough(verifiedSolution, verifiedGivens), tally = new Map();
     steps.forEach((step, index) => { tally.set(step.technique, [...(tally.get(step.technique) || []), index + 1]); });
-    const scores = { "Full House": 4, "Naked Single": 4, "Hidden Single": 14, "Locked Pair": 40, "Locked Triple": 60, "Pointing": 50, "Claiming": 50, "Naked Pair": 60, "Naked Triple": 80, "Hidden Pair": 70, "Hidden Triple": 100, "Naked Quad": 120, "Hidden Quad": 150, "X-Wing": 140, "Swordfish": 150, "Jellyfish": 160, "Skyscraper": 130, "2-String Kite": 150, "W-Wing": 150, "XY-Wing": 160, "XYZ-Wing": 180, "Trial and error": 10000 };
-    const levels = { "Full House": "Beginner", "Naked Single": "Beginner", "Hidden Single": "Beginner", "Locked Pair": "Medium", "Locked Triple": "Medium", "Pointing": "Medium", "Claiming": "Medium", "Naked Pair": "Medium", "Naked Triple": "Medium", "Hidden Pair": "Medium", "Hidden Triple": "Medium", "Naked Quad": "Hard", "Hidden Quad": "Hard", "X-Wing": "Hard", "Swordfish": "Hard", "Jellyfish": "Hard", "Skyscraper": "Hard", "2-String Kite": "Hard", "W-Wing": "Hard", "XY-Wing": "Hard", "XYZ-Wing": "Hard", "Trial and error": "Extreme" };
+    const scores = { "Full House": 4, "Naked Single": 4, "Hidden Single": 14, "Locked Pair": 40, "Locked Triple": 60, "Pointing": 50, "Claiming": 50, "Naked Pair": 60, "Naked Triple": 80, "Hidden Pair": 70, "Hidden Triple": 100, "Naked Quad": 120, "Hidden Quad": 150, "X-Wing": 140, "Swordfish": 150, "Jellyfish": 160, "Skyscraper": 130, "2-String Kite": 150, "W-Wing": 150, "XY-Wing": 160, "XYZ-Wing": 180, "Remote Pairs": 200, "Trial and error": 10000 };
+    const levels = { "Full House": "Beginner", "Naked Single": "Beginner", "Hidden Single": "Beginner", "Locked Pair": "Medium", "Locked Triple": "Medium", "Pointing": "Medium", "Claiming": "Medium", "Naked Pair": "Medium", "Naked Triple": "Medium", "Hidden Pair": "Medium", "Hidden Triple": "Medium", "Naked Quad": "Hard", "Hidden Quad": "Hard", "X-Wing": "Hard", "Swordfish": "Hard", "Jellyfish": "Hard", "Skyscraper": "Hard", "2-String Kite": "Hard", "W-Wing": "Hard", "XY-Wing": "Hard", "XYZ-Wing": "Hard", "Remote Pairs": "Hard", "Trial and error": "Extreme" };
     const order = ["Beginner", "Easy", "Medium", "Tricky", "Hard", "Unfair", "Extreme", "Nightmare"], caps = { Beginner: 400, Easy: 800, Medium: 1000, Tricky: 1150, Hard: 1600, Unfair: 1800, Extreme: 3000, Nightmare: Number.MAX_SAFE_INTEGER }; let score = 0, rating = "Beginner", hardSteps = 0;
     steps.forEach(step => { const level = levels[step.technique] || "Nightmare", floor = level === "Hard" ? "Tricky" : level; score += scores[step.technique] || 0; if (order.indexOf(floor) > order.indexOf(rating)) rating = floor; if (level === "Hard") hardSteps += 1; });
     if (hardSteps >= 2 && order.indexOf("Hard") > order.indexOf(rating)) rating = "Hard";
@@ -181,7 +191,8 @@ document.body.classList.toggle("dark", localStorage.getItem("gattai-theme") === 
       if (["X-Wing", "Swordfish", "Jellyfish"].includes(technique)) return 3;
       if (["Skyscraper", "2-String Kite"].includes(technique)) return 4;
       if (["W-Wing", "XY-Wing", "XYZ-Wing"].includes(technique)) return 5;
-      return 6;
+      if (technique === "Remote Pairs") return 6;
+      return 7;
     };
     tallyResults.innerHTML = `<table><thead><tr><th>Technique</th><th>Steps</th></tr></thead><tbody>${[...tally.entries()].sort(([left], [right]) => familyRank(left) - familyRank(right) || (scores[left] || 0) - (scores[right] || 0) || left.localeCompare(right)).map(([technique, stepsForTechnique]) => `<tr><td>${technique}</td><td>${stepsForTechnique.join(", ")}</td></tr>`).join("")}</tbody></table>`;
     inputTechniqueTally.hidden = false;
