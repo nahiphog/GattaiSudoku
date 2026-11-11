@@ -4,7 +4,7 @@ import fs from 'node:fs';
 import vm from 'node:vm';
 function page(file) {
   const html=fs.readFileSync(new URL('../'+file,import.meta.url),'utf8');
-  function node() { return {style:{},dataset:{},value:'',hidden:false,disabled:false,children:[],events:{},textContent:'',innerHTML:'',classList:{add(){},toggle(){}},append(...items){this.children.push(...items)},replaceChildren(){this.children=[];this.innerHTML=''},setAttribute(){},addEventListener(name,fn){this.events[name]=fn},click(){return this.events.click?.()}}; }
+  function node() { return {style:{},dataset:{},value:'',hidden:false,disabled:false,children:[],events:{},textContent:'',innerHTML:'',classList:{add(){},toggle(){}},contains(button){return this.innerHTML.includes('data-step="'+button.dataset.step+'"')},focus(){this.focused=true},scrollIntoView(){this.scrolled=true},append(...items){this.children.push(...items)},replaceChildren(){this.children=[];this.innerHTML=''},setAttribute(){},addEventListener(name,fn){this.events[name]=fn},click(){return this.events.click?.()}}; }
   const elements=Object.fromEntries([...html.matchAll(/id="([^"]+)"/g)].map(([,id])=>['#'+id,node()]));
   const document={body:node(),createElement:node,querySelector(id){assert(elements[id],`Missing element ${id}`);return elements[id]},querySelectorAll(){return []}};
   const context=vm.createContext({document,localStorage:{getItem(){}},window:{setTimeout,location:{search:''}},navigator:{clipboard:{writeText(){}}},setTimeout,performance,URLSearchParams,console});
@@ -22,6 +22,13 @@ for(const mode of ['single','dual']) test(`${mode} digging automatically evaluat
   e['#nextWalkthroughStep'].click();assert.equal(e['#walkthroughStepCount'].textContent,'Step 2 of 2');
   assert.equal(e['#nextWalkthroughStep'].disabled,true);
   e['#firstWalkthroughStep'].click();assert.equal(e['#walkthroughStepCount'].textContent,'Step 1 of 2');
+  assert.match(e['#tallyResults'].innerHTML, /button type="button" class="tally-step" data-step="2"/);
+  e['#tallyResults'].events.click({target:{closest(){return {dataset:{step:'2'}}}}});
+  assert.equal(e['#walkthroughStepCount'].textContent,'Step 2 of 2');
+  assert.equal(e['#nextWalkthroughStep'].disabled,true);
+  assert.equal(e['#walkthroughTechnique'].focused,true);
+  assert.equal(e['#walkthrough'].scrolled,true);
+  e['#previousWalkthroughStep'].click();assert.equal(e['#walkthroughStepCount'].textContent,'Step 1 of 2');
   e['#digStopAt'].value='126';await e['#startDigging'].click();
   assert.equal(e['#walkthroughStepCount'].textContent,'0 steps');
   assert.equal(e['#walkthroughTechnique'].textContent,'Already complete');
@@ -37,5 +44,7 @@ test('verifier still imports, checks uniqueness, and uses the same walkthrough',
   assert.equal(e['#evaluateDifficulty'].hidden,false);e['#evaluateDifficulty'].click();
   assert.equal(e['#walkthroughRating'].textContent,generated['#walkthroughRating'].textContent);
   assert.equal(e['#walkthroughStepCount'].textContent,'Step 1 of 2');
+  e['#tallyResults'].events.click({target:{closest(){return {dataset:{step:'2'}}}}});
+  assert.equal(e['#walkthroughStepCount'].textContent,'Step 2 of 2');
   e['#clearGrid'].click();assert.equal(e['#walkthrough'].hidden,true);
 });

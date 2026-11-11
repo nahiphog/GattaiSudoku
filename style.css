@@ -345,3 +345,5 @@ body.dark .guide .step-controls{border-color:rgba(16,43,59,.3)}
 /* A full-bleed header rule remains intact on narrow displays. */
 @media(max-width:520px){header{border-bottom:0;position:relative;width:100%}header::after{content:"";position:absolute;left:50%;bottom:0;width:100vw;height:2px;background:var(--ink);transform:translateX(-50%)}.brand{font-size:21px}}
 .settings-button svg{width:22px;height:22px;stroke-width:2.25;stroke-linecap:round;stroke-linejoin:round}
+
+.tally-step{border:1px solid var(--thin);border-radius:3px;background:var(--paper);color:var(--ink);font:inherit;min-width:30px;min-height:30px;padding:4px 6px;margin:2px;cursor:pointer;text-decoration:underline}.tally-step:hover{background:var(--muted)}.tally-step:focus-visible{outline:2px solid var(--ink);outline-offset:2px}

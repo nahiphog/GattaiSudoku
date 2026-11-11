@@ -156,11 +156,22 @@ function createGattaiWalkthrough(root) {
       if (technique === "Remote Pairs") return 6;
       return 7;
     };
-    tallyResults.innerHTML = `<table><thead><tr><th>Technique</th><th>Steps</th></tr></thead><tbody>${[...tally.entries()].sort(([left], [right]) => familyRank(left) - familyRank(right) || (scores[left] || 0) - (scores[right] || 0) || left.localeCompare(right)).map(([technique, stepsForTechnique]) => `<tr><td>${technique}</td><td>${stepsForTechnique.join(", ")}</td></tr>`).join("")}</tbody></table>`;
+    tallyResults.innerHTML = `<table><thead><tr><th>Technique</th><th>Steps</th></tr></thead><tbody>${[...tally.entries()].sort(([left], [right]) => familyRank(left) - familyRank(right) || (scores[left] || 0) - (scores[right] || 0) || left.localeCompare(right)).map(([technique, stepsForTechnique]) => `<tr><td>${technique}</td><td>${stepsForTechnique.map(step => `<button type="button" class="tally-step" data-step="${step}" aria-label="Go to step ${step}: ${technique}">${step}</button>`).join(" ")}</td></tr>`).join("")}</tbody></table>`;
     inputTechniqueTally.hidden = false;
     walkthrough.hidden = false;
     walkthroughData = steps; walkthroughIndex = 0; renderWalkthroughStep();
   }
+  tallyResults.addEventListener("click", event => {
+    const button = event.target.closest('button[data-step]');
+    if (!button || !tallyResults.contains(button)) return;
+    const index = Number(button.dataset.step) - 1;
+    if (!Number.isInteger(index) || index < 0 || index >= walkthroughData.length) return;
+    walkthroughIndex = index;
+    renderWalkthroughStep();
+    walkthroughTechnique.setAttribute('tabindex', '-1');
+    walkthroughTechnique.focus({ preventScroll: true });
+    walkthrough.scrollIntoView({ block: 'start' });
+  });
   root.querySelector("#firstWalkthroughStep").addEventListener("click", () => { walkthroughIndex = 0; renderWalkthroughStep(); });
   root.querySelector("#previousWalkthroughStep").addEventListener("click", () => { if (walkthroughIndex > 0) { walkthroughIndex -= 1; renderWalkthroughStep(); } });
   root.querySelector("#nextWalkthroughStep").addEventListener("click", () => { if (walkthroughIndex < walkthroughData.length - 1) { walkthroughIndex += 1; renderWalkthroughStep(); } });
