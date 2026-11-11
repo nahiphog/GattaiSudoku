@@ -57,7 +57,7 @@
   <main class="guide-page">
     <h1>How Gattai Sudoku Difficulty Scoring Works</h1>
     <p class="byline">Ratings describe the current walkthrough's solve path, using technique points and difficulty floors.</p>
-    <p>Generation checks that a puzzle has exactly one solution. Difficulty evaluation is a separate step: select <strong>Evaluate puzzle difficulty</strong> after generation, or enter a puzzle on <a href="../verify.html">Verify a solution</a>, select <strong>Check uniqueness</strong>, then evaluate it once uniqueness is confirmed.</p>
+    <p>Generation checks that a puzzle has exactly one solution. The difficulty rating and walkthrough appear automatically below each generated result. To evaluate your own puzzle, enter it on <a href="../verify.html">Verify a solution</a>, select <strong>Check uniqueness</strong>, then evaluate it once uniqueness is confirmed.</p>
     <p>The evaluator records each placement or candidate-elimination step. Its rating describes the path this solver found; it does not prove that every human solver would need the same techniques or find the puzzle equally difficult.</p>
     <h2>Rating thresholds</h2>
     <table><thead><tr><th>Rating</th><th>Maximum total score</th></tr></thead><tbody>
@@ -105,7 +105,7 @@
     <p><strong>Digging</strong> removes single clues or rotational pairs while preserving uniqueness. <strong>Build a puzzle</strong> adds individual clues while respecting your required-clue and required-blank cells. Neither method targets a selected difficulty tier or guarantees that the named logical techniques will finish the puzzle.</p>
     <p>Completing an unrestricted digging pass produces a puzzle with no further removable single clue or rotational pair, according to the chosen mode. A time cap, Halt, or a Stop at givens limit can leave additional removable clues. This minimality is relative to the chosen removal mode; it is not a proof of the smallest possible clue count.</p>
     <p>Read the <a href="./solving-techniques.html">solving techniques guide</a> for explanations of the deductions.</p>
-    <div class="cta-box"><h2>Try it yourself</h2><p>Generate a puzzle, then select <strong>Evaluate puzzle difficulty</strong> to open its walkthrough.</p><a class="cta-button" href="../">Generate a puzzle →</a></div>
+    <div class="cta-box"><h2>Try it yourself</h2><p>Generate a puzzle to see its difficulty and solution walkthrough automatically below the result.</p><a class="cta-button" href="../">Generate a puzzle →</a></div>
   </main>
 </body>
 </html>

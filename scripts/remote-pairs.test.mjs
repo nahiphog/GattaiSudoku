@@ -58,7 +58,7 @@ test('empty notes or no actual elimination returns null', () => {
   assert.equal(findRemotePairs(makeNotes([[18,pair],[13,pair],[24,pair],[60,pair],[66,[1,2,3]]]),peersFor),null);
 });
 test('walkthrough adapter records chain, eliminations, emphasis, and grid coordinates', () => {
-  const source = readFileSync(new URL('../verify.js',import.meta.url),'utf8');
+  const source = readFileSync(new URL('../walkthrough.js',import.meta.url),'utf8');
   const adapter = source.slice(source.indexOf('    function remotePairs()'),source.indexOf('    while (active.some'));
   let recorded;
   const notes = makeNotes([[16,pair],[52,pair],[58,pair],[94,pair],[88,[1,4,5]]]);

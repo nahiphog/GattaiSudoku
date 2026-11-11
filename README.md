@@ -13,3 +13,5 @@ Daily puzzles are paused. `generate.html` redirects to the homepage, and the cus
 `vercel.json` disables future automatic Vercel Git deployments. The old hosted project is shut down separately in Vercel; this file alone does not stop an existing deployment.
 
 The solution walkthrough includes Remote Pairs: even-length chains of at least four cells with the same two candidates. It highlights the chain and eliminations, supports chains crossing the overlapping grids, and tries the technique before trial and error. Remote Pairs contributes 200 points at the Hard technique level to the existing difficulty calculation. Run `node --test scripts/remote-pairs.test.mjs` for its regression tests (also run by the Pages workflow).
+
+Generated puzzles automatically show their rating, walkthrough, and technique tally below the result. The generator and verifier share `walkthrough.js`. Run `node --test scripts/remote-pairs.test.mjs scripts/walkthrough.test.mjs` to check techniques and both page flows.

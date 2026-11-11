@@ -66,14 +66,21 @@ document.body.classList.toggle("dark", localStorage.getItem("gattai-theme") === 
   const buildGrid = document.querySelector("#buildGrid"), keep = new Set(), empty = new Set(), buildCounts = document.querySelector("#buildCounts"); let mark = "keep";
   function renderBuildGrid() { buildGrid.replaceChildren(); for (let row = 0; row < 12; row += 1) for (let column = 0; column < 12; column += 1) { const index = row * 12 + column, node = document.createElement("button"); node.type = "button"; node.className = "generator-cell pick"; node.style.gridRowStart = row + 1; node.style.gridColumnStart = column + 1; if (!hasCell(row, column)) node.classList.add("inactive"); else { if (keep.has(index)) node.classList.add("keep"); if (empty.has(index)) node.classList.add("empty"); node.addEventListener("click", () => { const target = mark === "keep" ? keep : empty, other = mark === "keep" ? empty : keep; target.has(index) ? target.delete(index) : (other.delete(index), target.add(index)); renderBuildGrid(); }); } buildGrid.append(node); } addLines(buildGrid); buildCounts.textContent = `${keep.size} must keep · ${empty.size} must be empty`; }
   function renderResult(target, values, clues, solved) { target.replaceChildren(); for (let row = 0; row < 12; row += 1) for (let column = 0; column < 12; column += 1) { const index = row * 12 + column, node = document.createElement("span"); node.className = "generator-cell"; node.style.gridRowStart = row + 1; node.style.gridColumnStart = column + 1; if (!hasCell(row, column)) node.classList.add("inactive"); else if (values[index]) { node.textContent = values[index]; if (solved && !clues[index]) node.classList.add("solved"); } target.append(node); } addLines(target); }
-  const resultPanel = document.querySelector("#resultPanel"), resultPuzzle = document.querySelector("#puzzleResult"), resultSolution = document.querySelector("#solutionResult"), resultGivens = document.querySelector("#resultGivens"), resultUnique = document.querySelector("#resultUnique"), evaluateGenerated = document.querySelector("#evaluateGenerated"); let lastPuzzle = null;
-  function present(puzzle, solution) { renderResult(resultPuzzle, puzzle, puzzle, false); renderResult(resultSolution, solution, puzzle, true); resultGivens.textContent = `${countGivens(puzzle)} given cells`; resultUnique.textContent = "Unique solution: confirmed"; resultPanel.hidden = false; lastPuzzle = puzzle; }
+  const resultPanel = document.querySelector("#resultPanel"), resultPuzzle = document.querySelector("#puzzleResult"), resultSolution = document.querySelector("#solutionResult"), resultGivens = document.querySelector("#resultGivens"), resultUnique = document.querySelector("#resultUnique"); let lastPuzzle = null;
+  const walkthroughView = createGattaiWalkthrough(document);
+  const evaluationStatus = document.querySelector("#generationEvaluationStatus");
+  let evaluationVersion = 0;
+  function clearEvaluation() { evaluationVersion += 1; walkthroughView.clear(); evaluationStatus.hidden = true; }
+  async function present(puzzle, solution) { renderResult(resultPuzzle, puzzle, puzzle, false); renderResult(resultSolution, solution, puzzle, true); resultGivens.textContent = `${countGivens(puzzle)} given cells`; resultUnique.textContent = "Unique solution: confirmed"; resultPanel.hidden = false; lastPuzzle = puzzle;
+    clearEvaluation();
+    const version = evaluationVersion;
+    evaluationStatus.hidden = false; evaluationStatus.textContent = 'Evaluating puzzle difficulty…';
+    await pause();
+    if (version !== evaluationVersion) return;
+    try { walkthroughView.show(solution, puzzle); evaluationStatus.hidden = true; }
+    catch { walkthroughView.clear(); evaluationStatus.textContent = 'Difficulty evaluation could not finish. You can copy this puzzle into Verify a solution to try again.'; }
+  }
   document.querySelector("#copyResult").addEventListener("click", async () => { if (!lastPuzzle) return; const text = lastPuzzle.map((value, index) => active.includes(index) ? value || "." : ".").join(""); try { await navigator.clipboard.writeText(text); document.querySelector("#copyResult").textContent = "Copied"; } catch { document.querySelector("#copyResult").textContent = "Copy unavailable"; } setTimeout(() => { document.querySelector("#copyResult").textContent = "Copy 144-character string"; }, 1500); });
-  evaluateGenerated.addEventListener("click", () => {
-    if (!lastPuzzle) return;
-    const text = lastPuzzle.map((value, index) => active.includes(index) ? value || "." : ".").join("");
-    window.location.assign(`./verify.html?puzzle=${encodeURIComponent(text)}&evaluate=1`);
-  });
   const digStatus = document.querySelector("#digStatus"), startDig = document.querySelector("#startDigging"), haltDig = document.querySelector("#haltDigging"); let stopDigging = false;
   haltDig.addEventListener("click", () => { stopDigging = true; haltDig.disabled = true; });
   startDig.addEventListener("click", async () => {
@@ -84,7 +91,7 @@ document.body.classList.toggle("dark", localStorage.getItem("gattai-theme") === 
     stopDigging = false;
     startDig.disabled = true;
     haltDig.disabled = false;
-    resultPanel.hidden = true;
+    resultPanel.hidden = true; clearEvaluation();
     try {
       const solution = fullGattai(), puzzle = [...solution];
       // Removing clues can only add solutions. A rejected cell or disjoint
@@ -102,7 +109,7 @@ document.body.classList.toggle("dark", localStorage.getItem("gattai-theme") === 
         await pause();
       }
       if (countSolutions(puzzle, 2) === 1) {
-        present(puzzle, solution);
+        await present(puzzle, solution);
         digStatus.textContent = `Finished in ${Math.floor((performance.now() - began) / 1000)}s.`;
       } else {
         digStatus.textContent = "Generation halted before a uniquely solvable puzzle was ready.";
@@ -118,7 +125,7 @@ document.body.classList.toggle("dark", localStorage.getItem("gattai-theme") === 
   for (let extra = 0; extra <= 30; extra += 1) { const option = document.createElement("option"); option.value = extra; option.textContent = extra; if (extra === 30) option.selected = true; document.querySelector("#buildExtra").append(option); }
   document.querySelectorAll("[data-mark]").forEach(button => button.addEventListener("click", () => { mark = button.dataset.mark; document.querySelectorAll("[data-mark]").forEach(item => item.setAttribute("aria-pressed", String(item === button))); }));
   haltBuild.addEventListener("click", () => { stopBuild = true; haltBuild.disabled = true; });
-  startBuild.addEventListener("click", async () => { const began = performance.now(), maximum = Number(document.querySelector("#buildExtra").value); stopBuild = false; startBuild.disabled = true; haltBuild.disabled = false; resultPanel.hidden = true; let attempt = 0; try { while (!stopBuild) { attempt += 1; const solution = fullGattai(), puzzle = Array(144).fill(0); keep.forEach(index => { puzzle[index] = solution[index]; }); const available = shuffle(active.filter(index => !keep.has(index) && !empty.has(index))); let added = 0; while (!stopBuild && countSolutions(puzzle, 2) !== 1 && available.length && added < maximum) { const cell = available.pop(); puzzle[cell] = solution[cell]; added += 1; buildStatus.textContent = `Building · attempt ${attempt} · ${countGivens(puzzle)} givens · ${Math.floor((performance.now() - began) / 1000)}s`; await pause(); } if (stopBuild) break; if (countSolutions(puzzle, 2) === 1) { present(puzzle, solution); buildStatus.textContent = `Finished with a verified unique solution in ${Math.floor((performance.now() - began) / 1000)}s.`; break; } buildStatus.textContent = `Restarting with a new solution · attempt ${attempt + 1}`; await pause(); } if (stopBuild) buildStatus.textContent = `Build halted after ${Math.floor((performance.now() - began) / 1000)}s.`; } catch { buildStatus.textContent = "Build failed. Please try again."; } finally { startBuild.disabled = false; haltBuild.disabled = true; } });
-  document.querySelectorAll("[data-mode]").forEach(button => button.addEventListener("click", () => { const digging = button.dataset.mode === "digging"; document.querySelector("#diggingPanel").hidden = !digging; document.querySelector("#buildPanel").hidden = digging; document.querySelectorAll("[data-mode]").forEach(item => item.setAttribute("aria-selected", String(item === button))); resultPanel.hidden = true; }));
+  startBuild.addEventListener("click", async () => { const began = performance.now(), maximum = Number(document.querySelector("#buildExtra").value); stopBuild = false; startBuild.disabled = true; haltBuild.disabled = false; resultPanel.hidden = true; clearEvaluation(); let attempt = 0; try { while (!stopBuild) { attempt += 1; const solution = fullGattai(), puzzle = Array(144).fill(0); keep.forEach(index => { puzzle[index] = solution[index]; }); const available = shuffle(active.filter(index => !keep.has(index) && !empty.has(index))); let added = 0; while (!stopBuild && countSolutions(puzzle, 2) !== 1 && available.length && added < maximum) { const cell = available.pop(); puzzle[cell] = solution[cell]; added += 1; buildStatus.textContent = `Building · attempt ${attempt} · ${countGivens(puzzle)} givens · ${Math.floor((performance.now() - began) / 1000)}s`; await pause(); } if (stopBuild) break; if (countSolutions(puzzle, 2) === 1) { await present(puzzle, solution); buildStatus.textContent = `Finished with a verified unique solution in ${Math.floor((performance.now() - began) / 1000)}s.`; break; } buildStatus.textContent = `Restarting with a new solution · attempt ${attempt + 1}`; await pause(); } if (stopBuild) buildStatus.textContent = `Build halted after ${Math.floor((performance.now() - began) / 1000)}s.`; } catch { buildStatus.textContent = "Build failed. Please try again."; } finally { startBuild.disabled = false; haltBuild.disabled = true; } });
+  document.querySelectorAll("[data-mode]").forEach(button => button.addEventListener("click", () => { const digging = button.dataset.mode === "digging"; document.querySelector("#diggingPanel").hidden = !digging; document.querySelector("#buildPanel").hidden = digging; document.querySelectorAll("[data-mode]").forEach(item => item.setAttribute("aria-selected", String(item === button))); resultPanel.hidden = true; clearEvaluation(); }));
   renderBuildGrid();
 })();

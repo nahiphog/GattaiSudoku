@@ -1,0 +1,192 @@
+// Shared walkthrough and rating used by the generator and verifier.
+function createGattaiWalkthrough(root) {
+  const digits = [1, 2, 3, 4, 5, 6, 7, 8, 9];
+  const units = [];
+  for (const [name, rowOffset, columnOffset] of [["Grid 1", 0, 0], ["Grid 2", 3, 3]]) {
+    for (let number = 0; number < 9; number += 1) {
+      units.push([`${name} row ${number + 1}`, Array.from({ length: 9 }, (_, column) => (rowOffset + number) * 12 + columnOffset + column)]);
+      units.push([`${name} column ${number + 1}`, Array.from({ length: 9 }, (_, row) => (rowOffset + row) * 12 + columnOffset + number)]);
+    }
+    for (let boxRow = 0; boxRow < 3; boxRow += 1) for (let boxColumn = 0; boxColumn < 3; boxColumn += 1) {
+      units.push([`${name} house ${boxRow + 1},${boxColumn + 1}`, Array.from({ length: 9 }, (_, cell) => (rowOffset + boxRow * 3 + Math.floor(cell / 3)) * 12 + columnOffset + boxColumn * 3 + cell % 3)]);
+    }
+  }
+  const active = [...new Set(units.flatMap(([, unit]) => unit))];
+  const activeSet = new Set(active);
+  const housesFor = Object.fromEntries(active.map(index => [index, units.filter(([, unit]) => unit.includes(index)).map(([, unit]) => unit)]));
+  const walkthrough = root.querySelector("#walkthrough");
+  const walkthroughRating = root.querySelector("#walkthroughRating");
+  const evaluationTime = root.querySelector("#evaluationTime");
+  const walkthroughGrid = root.querySelector("#walkthroughGrid");
+  const walkthroughTechnique = root.querySelector("#walkthroughTechnique");
+  const walkthroughReasoning = root.querySelector("#walkthroughReasoning");
+  const walkthroughStepCount = root.querySelector("#walkthroughStepCount");
+  const inputTechniqueTally = root.querySelector("#inputTechniqueTally");
+  const tallyResults = root.querySelector("#tallyResults");
+
+  let verifiedSolution = null, verifiedGivens = new Set(), walkthroughData = [], walkthroughIndex = 0;
+  function drawBoundaries(target) {
+    [["horizontal", "h-0"], ["horizontal", "h-3"], ["horizontal", "h-6"], ["horizontal", "h-9"], ["horizontal", "h-12"], ["vertical", "v-0"], ["vertical", "v-3"], ["vertical", "v-6"], ["vertical", "v-9"], ["vertical", "v-12"]].forEach(([direction, position]) => {
+      const line = document.createElement("span"); line.className = `board-boundary ${direction} ${position}`; target.append(line);
+    });
+  }
+  function cellName(index) { const row = Math.floor(index / 12), column = index % 12; return row < 9 && column < 9 ? `Grid 1: R${row + 1}C${column + 1}` : `Grid 2: R${row - 2}C${column - 2}`; }
+  function buildWalkthrough(solution, givens) {
+    const working = Array(144).fill(0), steps = []; givens.forEach(index => { working[index] = solution[index]; });
+    const peersFor = index => [...new Set(housesFor[index].flat().filter(other => other !== index))];
+    const candidatesFor = index => { const used = new Set(); peersFor(index).forEach(other => { if (working[other]) used.add(working[other]); }); return digits.filter(digit => !used.has(digit)); };
+    const notes = Object.fromEntries(active.filter(index => !working[index]).map(index => [index, new Set(candidatesFor(index))]));
+    const combinations = (items, size) => size === 0 ? [[]] : items.length < size ? [] : combinations(items.slice(1), size - 1).map(group => [items[0], ...group]).concat(combinations(items.slice(1), size));
+    const snapshot = () => ({ values: [...working], notes: Object.fromEntries(Object.entries(notes).map(([index, candidates]) => [index, [...candidates]])) });
+    const add = (technique, text, index = null, digit = null, before = snapshot(), affected = [], eliminations = [], emphasis = []) => steps.push({ technique, text, index, digit, before, values: [...working], notes: Object.fromEntries(Object.entries(notes).map(([cell, candidates]) => [cell, [...candidates]])), affected, eliminations, emphasis });
+    const place = (technique, index, digit, text) => { const before = snapshot(); working[index] = digit; delete notes[index]; peersFor(index).forEach(peer => notes[peer]?.delete(digit)); add(technique, text, index, digit, before, [index]); };
+    const eliminate = (technique, changes, text, context = {}) => { const actual = changes.filter(({ index, digit }) => notes[index]?.has(digit)); if (!actual.length) return false; const before = snapshot(); actual.forEach(({ index, digit }) => notes[index].delete(digit)); const affected = [...new Set([...(context.affected || []), ...actual.map(({ index }) => index)])]; add(technique, text, null, null, before, affected, actual, context.emphasis || []); return true; };
+    function fullHouse() { for (const [label, house] of units) { const blanks = house.filter(index => !working[index]), missing = digits.filter(digit => !house.some(index => working[index] === digit)); if (blanks.length === 1 && missing.length === 1) { place("Full House", blanks[0], missing[0], `${label} has one empty cell: ${cellName(blanks[0])} = ${missing[0]}.`); return true; } } return false; }
+    function nakedSingle() { for (const index of active) if (!working[index] && notes[index]?.size === 1) { const digit = [...notes[index]][0]; place("Naked Single", index, digit, `${cellName(index)} has only one candidate: ${digit}.`); return true; } return false; }
+    function hiddenSingle() { for (const [label, house] of units) for (const digit of digits) { if (house.some(index => working[index] === digit)) continue; const places = house.filter(index => !working[index] && notes[index]?.has(digit)); if (places.length === 1) { place("Hidden Single", places[0], digit, `${digit} appears in only one open cell of ${label}: ${cellName(places[0])}.`); return true; } } return false; }
+    function nakedSubset(size) { for (const [label, house] of units) { const blanks = house.filter(index => notes[index]); for (const group of combinations(blanks, size)) { const union = new Set(group.flatMap(index => [...notes[index]])); if (union.size !== size || group.some(index => notes[index].size < 2 || notes[index].size > size)) continue; const changes = blanks.filter(index => !group.includes(index)).flatMap(index => [...union].filter(digit => notes[index].has(digit)).map(digit => ({ index, digit }))); if (eliminate(`Naked ${["", "", "Pair", "Triple", "Quad"][size]}`, changes, `${[...union].join(", ")} are confined to ${group.map(cellName).join(" and ")} in ${label}.`)) return true; } } return false; }
+    function hiddenSubset(size) { for (const [label, house] of units) { const blanks = house.filter(index => notes[index]), missing = digits.filter(digit => !house.some(index => working[index] === digit)); for (const digitsGroup of combinations(missing, size)) { const cells = [...new Set(digitsGroup.flatMap(digit => blanks.filter(index => notes[index].has(digit))))]; if (cells.length !== size) continue; const changes = cells.flatMap(index => [...notes[index]].filter(digit => !digitsGroup.includes(digit)).map(digit => ({ index, digit }))); if (eliminate(`Hidden ${["", "", "Pair", "Triple", "Quad"][size]}`, changes, `${digitsGroup.join(", ")} can appear only in ${cells.map(cellName).join(" and ")} in ${label}.`)) return true; } } return false; }
+    function intersections() { for (const [grid, rowOffset, columnOffset] of [["Grid 1", 0, 0], ["Grid 2", 3, 3]]) { for (let boxRow = 0; boxRow < 3; boxRow += 1) for (let boxColumn = 0; boxColumn < 3; boxColumn += 1) { const box = units.find(([label]) => label === `${grid} house ${boxRow + 1},${boxColumn + 1}`)[1]; for (const digit of digits) { const positions = box.filter(index => notes[index]?.has(digit)); if (positions.length < 2) continue; const rows = [...new Set(positions.map(index => Math.floor(index / 12) - rowOffset))], columns = [...new Set(positions.map(index => index % 12 - columnOffset))]; if (rows.length === 1) { const row = units.find(([label]) => label === `${grid} row ${rows[0] + 1}`)[1], changes = row.filter(index => !box.includes(index) && notes[index]?.has(digit)).map(index => ({ index, digit })); if (eliminate("Pointing", changes, `In ${grid} house ${boxRow + 1},${boxColumn + 1}, ${digit} is confined to row ${rows[0] + 1}.`)) return true; } if (columns.length === 1) { const column = units.find(([label]) => label === `${grid} column ${columns[0] + 1}`)[1], changes = column.filter(index => !box.includes(index) && notes[index]?.has(digit)).map(index => ({ index, digit })); if (eliminate("Pointing", changes, `In ${grid} house ${boxRow + 1},${boxColumn + 1}, ${digit} is confined to column ${columns[0] + 1}.`)) return true; } } }
+      for (const axis of ["row", "column"]) for (let number = 0; number < 9; number += 1) for (const digit of digits) { const house = units.find(([label]) => label === `${grid} ${axis} ${number + 1}`)[1], positions = house.filter(index => notes[index]?.has(digit)); if (positions.length < 2) continue; const boxRows = [...new Set(positions.map(index => Math.floor((Math.floor(index / 12) - rowOffset) / 3)))], boxColumns = [...new Set(positions.map(index => Math.floor((index % 12 - columnOffset) / 3)))]; if (boxRows.length !== 1 || boxColumns.length !== 1) continue; const box = units.find(([label]) => label === `${grid} house ${boxRows[0] + 1},${boxColumns[0] + 1}`)[1], changes = box.filter(index => !house.includes(index) && notes[index]?.has(digit)).map(index => ({ index, digit })); if (eliminate("Claiming", changes, `In ${grid} ${axis} ${number + 1}, ${digit} is confined to one house.`)) return true; }
+    } return false; }
+    function basicFish() {
+      const names = { 2: "X-Wing", 3: "Swordfish", 4: "Jellyfish" };
+      for (const [grid, rowOffset, columnOffset] of [["Grid 1", 0, 0], ["Grid 2", 3, 3]]) for (const digit of digits) for (const size of [2, 3, 4]) for (const byRows of [true, false]) {
+        const patterns = [];
+        for (let base = 0; base < 9; base += 1) {
+          const covers = Array.from({ length: 9 }, (_, cover) => cover).filter(cover => {
+            const row = byRows ? base : cover, column = byRows ? cover : base;
+            return notes[(rowOffset + row) * 12 + columnOffset + column]?.has(digit);
+          });
+          if (covers.length >= 2 && covers.length <= size) patterns.push({ base, covers });
+        }
+        for (const group of combinations(patterns, size)) {
+          const coverSet = new Set(group.flatMap(pattern => pattern.covers));
+          if (coverSet.size !== size) continue;
+          const bases = new Set(group.map(pattern => pattern.base)), changes = [];
+          for (const cover of coverSet) for (let base = 0; base < 9; base += 1) {
+            if (bases.has(base)) continue;
+            const row = byRows ? base : cover, column = byRows ? cover : base, index = (rowOffset + row) * 12 + columnOffset + column;
+            if (notes[index]?.has(digit)) changes.push({ index, digit });
+          }
+          if (eliminate(names[size], changes, `In ${grid}, candidate ${digit} forms a ${names[size]} using ${byRows ? "rows" : "columns"} ${group.map(pattern => pattern.base + 1).join(", ")}.`)) return true;
+        }
+      }
+      return false;
+    }
+    function skyscraper() { for (const [grid, rowOffset, columnOffset] of [["Grid 1", 0, 0], ["Grid 2", 3, 3]]) for (const digit of digits) for (const byRows of [true, false]) { const pairs = []; for (let unit = 0; unit < 9; unit += 1) { const positions = Array.from({ length: 9 }, (_, position) => position).filter(position => { const row = byRows ? unit : position, column = byRows ? position : unit; return notes[(rowOffset + row) * 12 + columnOffset + column]?.has(digit); }); if (positions.length === 2) pairs.push({ unit, positions }); } for (const first of pairs) for (const second of pairs) { if (first.unit >= second.unit) continue; const shared = first.positions.filter(position => second.positions.includes(position)); if (shared.length !== 1) continue; const cellFor = (unit, position) => { const row = byRows ? unit : position, column = byRows ? position : unit; return (rowOffset + row) * 12 + columnOffset + column; }; const bases = [cellFor(first.unit, shared[0]), cellFor(second.unit, shared[0])]; const roofs = [cellFor(first.unit, first.positions.find(position => position !== shared[0])), cellFor(second.unit, second.positions.find(position => position !== shared[0]))]; const pattern = [...bases, ...roofs]; const changes = active.filter(index => !pattern.includes(index) && notes[index]?.has(digit) && peersFor(index).includes(roofs[0]) && peersFor(index).includes(roofs[1])).map(index => ({ index, digit })); if (eliminate("Skyscraper", changes, `In ${grid}, candidate ${digit} forms a Skyscraper using ${byRows ? "rows" : "columns"} ${first.unit + 1} and ${second.unit + 1}.`, { affected: pattern, emphasis: pattern.map(index => ({ index, digit })) })) return true; } } return false; }
+    function twoStringKite() { for (const [grid, rowOffset, columnOffset] of [["Grid 1", 0, 0], ["Grid 2", 3, 3]]) for (const digit of digits) { const rowPairs = [], columnPairs = []; for (let row = 0; row < 9; row += 1) { const columns = Array.from({ length: 9 }, (_, column) => column).filter(column => notes[(rowOffset + row) * 12 + columnOffset + column]?.has(digit)); if (columns.length === 2) rowPairs.push({ row, columns }); } for (let column = 0; column < 9; column += 1) { const rows = Array.from({ length: 9 }, (_, row) => row).filter(row => notes[(rowOffset + row) * 12 + columnOffset + column]?.has(digit)); if (rows.length === 2) columnPairs.push({ column, rows }); } for (const rowPair of rowPairs) for (const columnPair of columnPairs) for (const rowColumn of rowPair.columns) for (const columnRow of columnPair.rows) { if (Math.floor(rowPair.row / 3) !== Math.floor(columnRow / 3) || Math.floor(rowColumn / 3) !== Math.floor(columnPair.column / 3)) continue; const baseA = (rowOffset + rowPair.row) * 12 + columnOffset + rowColumn, baseB = (rowOffset + columnRow) * 12 + columnOffset + columnPair.column; if (baseA === baseB) continue; const roofA = (rowOffset + rowPair.row) * 12 + columnOffset + rowPair.columns.find(column => column !== rowColumn), roofB = (rowOffset + columnPair.rows.find(row => row !== columnRow)) * 12 + columnOffset + columnPair.column, changes = active.filter(index => index !== roofA && index !== roofB && notes[index]?.has(digit) && peersFor(index).includes(roofA) && peersFor(index).includes(roofB)).map(index => ({ index, digit })); if (eliminate("2-String Kite", changes, `In ${grid}, candidate ${digit} forms a 2-String Kite from one row and one column strong link.`)) return true; } } return false; }
+    function xyWing() { for (const pivot of active) { if (notes[pivot]?.size !== 2) continue; const [first, second] = [...notes[pivot]]; for (const [pivotDigit, otherDigit] of [[first, second], [second, first]]) for (const wingA of peersFor(pivot).filter(index => notes[index]?.size === 2 && notes[index].has(pivotDigit))) { const shared = [...notes[wingA]].find(digit => digit !== pivotDigit); if (!shared || shared === otherDigit) continue; for (const wingB of peersFor(pivot)) { if (wingB === wingA || notes[wingB]?.size !== 2 || !notes[wingB].has(otherDigit) || !notes[wingB].has(shared)) continue; const changes = active.filter(index => index !== pivot && index !== wingA && index !== wingB && notes[index]?.has(shared) && peersFor(index).includes(wingA) && peersFor(index).includes(wingB)).map(index => ({ index, digit: shared })); if (eliminate("XY-Wing", changes, `${cellName(pivot)} is the pivot of an XY-Wing; remove ${shared} from cells seeing both wings.`)) return true; } } } return false; }
+    function xyzWing() { for (const pivot of active) { if (notes[pivot]?.size !== 3) continue; const pivotDigits = [...notes[pivot]]; for (const shared of pivotDigits) { const [first, second] = pivotDigits.filter(digit => digit !== shared); for (const wingA of peersFor(pivot).filter(index => notes[index]?.size === 2 && notes[index].has(first) && notes[index].has(shared))) for (const wingB of peersFor(pivot)) { if (wingB === wingA || notes[wingB]?.size !== 2 || !notes[wingB].has(second) || !notes[wingB].has(shared)) continue; const changes = active.filter(index => index !== pivot && index !== wingA && index !== wingB && notes[index]?.has(shared) && peersFor(index).includes(pivot) && peersFor(index).includes(wingA) && peersFor(index).includes(wingB)).map(index => ({ index, digit: shared })); if (eliminate("XYZ-Wing", changes, `${cellName(pivot)} is the ${first}/${second}/${shared} pivot; remove ${shared} from cells seeing its pivot and both wings.`)) return true; } } } return false; }
+    function wWing() { for (let left = 0; left < active.length; left += 1) for (let right = left + 1; right < active.length; right += 1) { const wingA = active[left], wingB = active[right], peersA = peersFor(wingA), peersB = peersFor(wingB); if (notes[wingA]?.size !== 2 || notes[wingB]?.size !== 2 || peersA.includes(wingB)) continue; const pairA = [...notes[wingA]].sort((a, b) => a - b), pairB = [...notes[wingB]].sort((a, b) => a - b); if (pairA.join() !== pairB.join()) continue; for (const bridge of pairA) { const target = pairA.find(digit => digit !== bridge); for (const [label, house] of units) { const strong = house.filter(index => notes[index]?.has(bridge)); if (strong.length !== 2 || !((peersA.includes(strong[0]) && peersB.includes(strong[1])) || (peersA.includes(strong[1]) && peersB.includes(strong[0])))) continue; const changes = active.filter(index => index !== wingA && index !== wingB && notes[index]?.has(target) && peersFor(index).includes(wingA) && peersFor(index).includes(wingB)).map(index => ({ index, digit: target })); if (eliminate("W-Wing", changes, `${cellName(wingA)} and ${cellName(wingB)} form a W-Wing linked by candidate ${bridge} in ${label}.`)) return true; } } } return false; }
+    function remotePairs() {
+      const result = findRemotePairs(notes, peersFor);
+      if (!result) return false;
+      const { pair, chain, eliminations } = result;
+      const text = `The ${pair.join('/')} bivalue chain ${chain.map(cellName).join(' → ')} alternates between its two digits. Its endpoints must be opposite, so cells seeing both endpoints cannot contain either digit. Remove ${eliminations.map(({ index, digit }) => digit + ' from ' + cellName(index)).join('; ')}.`;
+      return eliminate("Remote Pairs", eliminations, text, {
+        affected: chain,
+        emphasis: chain.flatMap(index => pair.map(digit => ({ index, digit })))
+      });
+    }
+    while (active.some(index => !working[index])) {
+      if (fullHouse() || nakedSingle() || hiddenSingle() || nakedSubset(2) || hiddenSubset(2) || intersections() || nakedSubset(3) || hiddenSubset(3) || nakedSubset(4) || hiddenSubset(4) || basicFish() || skyscraper() || twoStringKite() || wWing() || xyWing() || xyzWing() || remotePairs()) continue;
+      const index = active.filter(cell => !working[cell]).sort((left, right) => candidatesFor(left).length - candidatesFor(right).length)[0];
+      place("Trial and error", index, solution[index], `${cellName(index)} = ${solution[index]} is a transparent search choice after the currently implemented named techniques are exhausted. The solver then returns to the easiest named technique.`);
+    }
+    return steps;
+  }
+  function walkthroughGridFor(step) {
+    if (/\bGrid 2\b/.test(step.text)) return "two";
+    const index = step.index ?? step.affected?.[0];
+    if (index !== undefined && index !== null) {
+      const row = Math.floor(index / 12), column = index % 12;
+      if (row >= 3 && column >= 3 && (row >= 9 || column >= 9)) return "two";
+    }
+    return "one";
+  }
+  function makeWalkthroughCandidates(candidates, index, eliminations, emphasis = []) {
+    const notation = document.createElement("span"), removed = new Set(eliminations.filter(item => item.index === index).map(item => item.digit)), emphasized = new Set(emphasis.filter(item => item.index === index).map(item => item.digit));
+    notation.className = "snyder";
+    [...new Set([...(candidates || []), ...removed])].sort((left, right) => left - right).forEach(digit => {
+      const mark = document.createElement("i"); mark.className = `candidate-${digit}${removed.has(digit) ? " eliminated" : ""}${emphasized.has(digit) ? " emphasized" : ""}`; mark.textContent = digit; notation.append(mark);
+    });
+    return notation;
+  }
+  function renderWalkthroughStep() {
+    const step = walkthroughData[walkthroughIndex]; if (!step) return;
+    const selectedGrid = walkthroughGridFor(step), affected = new Set(step.affected || []);
+    walkthroughGrid.replaceChildren();
+    for (let row = 0; row < 12; row += 1) for (let column = 0; column < 12; column += 1) {
+      const index = row * 12 + column; if (!activeSet.has(index)) continue;
+      const cell = document.createElement("span"); cell.className = `cell${verifiedGivens.has(index) ? " given" : ""}${affected.has(index) ? " affected-house" : ""}${step.index === index ? " focus" : ""}`;
+      cell.style.gridRowStart = row + 1; cell.style.gridColumnStart = column + 1;
+      if (step.values[index]) cell.textContent = step.values[index]; else cell.append(makeWalkthroughCandidates(step.before.notes[index], index, step.eliminations || [], step.emphasis || []));
+      walkthroughGrid.append(cell);
+    }
+    drawBoundaries(walkthroughGrid);
+    const outline = document.createElement("span"); outline.className = `solver-grid-outline solver-grid-${selectedGrid}`; walkthroughGrid.append(outline);
+    walkthroughTechnique.textContent = step.technique;
+    walkthroughReasoning.textContent = step.technique === "Remote Pairs" ? step.text : `Grid ${selectedGrid === "one" ? 1 : 2}: ${step.text.replace(/In Grid [12],\s*/g, "").replace(/\bGrid [12]:?\s*/g, "")}`;
+    walkthroughStepCount.textContent = `Step ${walkthroughIndex + 1} of ${walkthroughData.length}`;
+    root.querySelector("#firstWalkthroughStep").disabled = walkthroughIndex === 0;
+    root.querySelector("#previousWalkthroughStep").disabled = walkthroughIndex === 0;
+    root.querySelector("#nextWalkthroughStep").disabled = walkthroughIndex === walkthroughData.length - 1;
+    root.querySelector("#lastWalkthroughStep").disabled = walkthroughIndex === walkthroughData.length - 1;
+  }
+  function renderWalkthrough() {
+    const started = performance.now();
+    const steps = buildWalkthrough(verifiedSolution, verifiedGivens), tally = new Map();
+    steps.forEach((step, index) => { tally.set(step.technique, [...(tally.get(step.technique) || []), index + 1]); });
+    const scores = { "Full House": 4, "Naked Single": 4, "Hidden Single": 14, "Locked Pair": 40, "Locked Triple": 60, "Pointing": 50, "Claiming": 50, "Naked Pair": 60, "Naked Triple": 80, "Hidden Pair": 70, "Hidden Triple": 100, "Naked Quad": 120, "Hidden Quad": 150, "X-Wing": 140, "Swordfish": 150, "Jellyfish": 160, "Skyscraper": 130, "2-String Kite": 150, "W-Wing": 150, "XY-Wing": 160, "XYZ-Wing": 180, "Remote Pairs": 200, "Trial and error": 10000 };
+    const levels = { "Full House": "Beginner", "Naked Single": "Beginner", "Hidden Single": "Beginner", "Locked Pair": "Medium", "Locked Triple": "Medium", "Pointing": "Medium", "Claiming": "Medium", "Naked Pair": "Medium", "Naked Triple": "Medium", "Hidden Pair": "Medium", "Hidden Triple": "Medium", "Naked Quad": "Hard", "Hidden Quad": "Hard", "X-Wing": "Hard", "Swordfish": "Hard", "Jellyfish": "Hard", "Skyscraper": "Hard", "2-String Kite": "Hard", "W-Wing": "Hard", "XY-Wing": "Hard", "XYZ-Wing": "Hard", "Remote Pairs": "Hard", "Trial and error": "Extreme" };
+    const order = ["Beginner", "Easy", "Medium", "Tricky", "Hard", "Unfair", "Extreme", "Nightmare"], caps = { Beginner: 400, Easy: 800, Medium: 1000, Tricky: 1150, Hard: 1600, Unfair: 1800, Extreme: 3000, Nightmare: Number.MAX_SAFE_INTEGER }; let score = 0, rating = "Beginner", hardSteps = 0;
+    steps.forEach(step => { const level = levels[step.technique] || "Nightmare", floor = level === "Hard" ? "Tricky" : level; score += scores[step.technique] || 0; if (order.indexOf(floor) > order.indexOf(rating)) rating = floor; if (level === "Hard") hardSteps += 1; });
+    if (hardSteps >= 2 && order.indexOf("Hard") > order.indexOf(rating)) rating = "Hard";
+    while (order.indexOf(rating) < order.length - 1 && score > caps[rating]) rating = order[order.indexOf(rating) + 1];
+    walkthroughRating.textContent = `Difficulty: ${rating} (${score})`;
+    evaluationTime.textContent = `Difficulty evaluation: ${Math.max(1, Math.round(performance.now() - started))} ms`;
+    const familyRank = technique => {
+      if (["Full House", "Naked Single", "Hidden Single"].includes(technique)) return 0;
+      if (["Locked Pair", "Locked Triple", "Pointing", "Claiming"].includes(technique)) return 1;
+      if (/^(Naked|Hidden) (Pair|Triple|Quad)$/.test(technique)) return 2;
+      if (["X-Wing", "Swordfish", "Jellyfish"].includes(technique)) return 3;
+      if (["Skyscraper", "2-String Kite"].includes(technique)) return 4;
+      if (["W-Wing", "XY-Wing", "XYZ-Wing"].includes(technique)) return 5;
+      if (technique === "Remote Pairs") return 6;
+      return 7;
+    };
+    tallyResults.innerHTML = `<table><thead><tr><th>Technique</th><th>Steps</th></tr></thead><tbody>${[...tally.entries()].sort(([left], [right]) => familyRank(left) - familyRank(right) || (scores[left] || 0) - (scores[right] || 0) || left.localeCompare(right)).map(([technique, stepsForTechnique]) => `<tr><td>${technique}</td><td>${stepsForTechnique.join(", ")}</td></tr>`).join("")}</tbody></table>`;
+    inputTechniqueTally.hidden = false;
+    walkthrough.hidden = false;
+    walkthroughData = steps; walkthroughIndex = 0; renderWalkthroughStep();
+  }
+  root.querySelector("#firstWalkthroughStep").addEventListener("click", () => { walkthroughIndex = 0; renderWalkthroughStep(); });
+  root.querySelector("#previousWalkthroughStep").addEventListener("click", () => { if (walkthroughIndex > 0) { walkthroughIndex -= 1; renderWalkthroughStep(); } });
+  root.querySelector("#nextWalkthroughStep").addEventListener("click", () => { if (walkthroughIndex < walkthroughData.length - 1) { walkthroughIndex += 1; renderWalkthroughStep(); } });
+  root.querySelector("#lastWalkthroughStep").addEventListener("click", () => { if (walkthroughData.length) { walkthroughIndex = walkthroughData.length - 1; renderWalkthroughStep(); } });
+  function clear() {
+    walkthrough.hidden = true;
+    inputTechniqueTally.hidden = true;
+    walkthroughData = []; walkthroughIndex = 0;
+    walkthroughGrid.replaceChildren(); tallyResults.replaceChildren();
+    walkthroughRating.textContent = ''; evaluationTime.textContent = '';
+    walkthroughTechnique.textContent = ''; walkthroughReasoning.textContent = '';
+    walkthroughStepCount.textContent = '';
+  }
+  return {
+    clear,
+    show(solution, puzzle) {
+      clear();
+      verifiedSolution = solution;
+      verifiedGivens = new Set(active.filter(index => puzzle[index]));
+      renderWalkthrough();
+      if (!walkthroughData.length) {
+        walkthroughTechnique.textContent = 'Already complete';
+        walkthroughReasoning.textContent = 'Every active cell is given; no solving steps are needed.';
+        walkthroughStepCount.textContent = '0 steps';
+        for (const id of ['firstWalkthroughStep', 'previousWalkthroughStep', 'nextWalkthroughStep', 'lastWalkthroughStep']) root.querySelector('#' + id).disabled = true;
+      }
+    }
+  };
+}
