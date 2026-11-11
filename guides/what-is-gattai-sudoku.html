@@ -28,16 +28,20 @@
     .guide-page li{margin:0 0 6px}
     .guide-page .callout{padding:16px 20px;border-left:4px solid var(--red);background:var(--muted);margin:24px 0;font-size:15px}
     .guide-page .callout strong{color:var(--red)}
-    .guide-page .grid-diagram{display:grid;grid-template-columns:repeat(12,32px);grid-template-rows:repeat(12,32px);gap:0;margin:20px auto;width:fit-content;border:2px solid var(--ink)}
+    .guide-page .grid-diagram{display:grid;grid-template-columns:repeat(12,32px);grid-template-rows:repeat(12,32px);gap:0;margin:20px auto;width:fit-content}
     .guide-page .grid-diagram div{border:1px solid var(--thin);display:grid;place-items:center;font:600 13px/1 Arial,sans-serif;background:var(--paper)}
     .guide-page .grid-diagram .shared-cell{background:var(--shared)}
-    .guide-page .grid-diagram .empty-cell{background:var(--paper)}
-    .guide-page .grid-diagram .label-cell{background:var(--muted);font-size:10px;color:var(--thin);border-color:var(--thin)}
-    .guide-page .grid-labels{display:flex;gap:32px;justify-content:center;margin:12px 0 24px;font-size:13px}
+    .guide-page .grid-diagram .inaccessible{border:0;background:var(--muted)}
+    .guide-page .grid-diagram .box-top{border-top:2px solid var(--ink)}
+    .guide-page .grid-diagram .box-left{border-left:2px solid var(--ink)}
+    .guide-page .grid-diagram .edge-right{border-right:2px solid var(--ink)}
+    .guide-page .grid-diagram .edge-bottom{border-bottom:2px solid var(--ink)}
+    .guide-page .grid-labels{display:flex;flex-wrap:wrap;gap:12px 24px;justify-content:center;margin:12px 0 24px;font-size:13px}
     .guide-page .grid-labels span{display:flex;align-items:center;gap:6px}
     .guide-page .grid-labels .swatch{width:16px;height:16px;border:1px solid var(--thin);display:inline-block}
     .guide-page .grid-labels .swatch.g1{background:var(--paper)}
     .guide-page .grid-labels .swatch.shared{background:var(--shared)}
+    .guide-page .grid-labels .swatch.inaccessible{background:var(--muted);border:0}
     .guide-page .cta-box{text-align:center;padding:32px;border:2px solid var(--ink);margin:36px 0 0;background:var(--surface)}
     .guide-page .cta-box h2{margin:0 0 10px}
     .guide-page .cta-box p{margin:0 0 18px}
@@ -68,7 +72,7 @@
     <p><strong>Gattai Sudoku</strong> (from the Japanese <em>gattai</em>, meaning "combine" or "merge") is a Sudoku variant where two standard 9×9 grids overlap in a shared 6×6 region. Every normal Sudoku rule applies to both grids simultaneously, and the overlapping cells must satisfy both grids at once.</p>
 
     <h2>Grid layout</h2>
-    <p>Instead of one 9×9 square, a Gattai puzzle uses two overlapping 9×9 grids arranged in an L-shape:</p>
+    <p>Instead of one 9×9 square, a Gattai puzzle uses two overlapping 9×9 grids arranged on a 12×12 board, with two inaccessible 3×3 regions in the top-right and bottom-left corners:</p>
 
     <ul>
       <li><strong>Grid 1 (top-left):</strong> occupies columns 1–9 of rows 1–9</li>
@@ -76,26 +80,27 @@
       <li><strong>Shared 6×6:</strong> the area where both grids overlap (rows 4–9, columns 4–9)</li>
     </ul>
 
-    <div class="grid-diagram" role="img" aria-label="Diagram of two overlapping 9x9 Sudoku grids showing the shared 6x6 region">
-      <div class="label-cell"></div><div class="label-cell">1</div><div class="label-cell">2</div><div class="label-cell">3</div><div class="label-cell">4</div><div class="label-cell">5</div><div class="label-cell">6</div><div class="label-cell">7</div><div class="label-cell">8</div><div class="label-cell">9</div><div class="label-cell"></div><div class="label-cell"></div>
-      <div class="label-cell">1</div><div></div><div></div><div></div><div></div><div></div><div></div><div></div><div></div><div></div><div class="label-cell"></div><div class="label-cell"></div>
-      <div class="label-cell">2</div><div></div><div></div><div></div><div></div><div></div><div></div><div></div><div></div><div></div><div class="label-cell"></div><div class="label-cell"></div>
-      <div class="label-cell">3</div><div></div><div></div><div></div><div></div><div></div><div></div><div></div><div></div><div></div><div class="label-cell"></div><div class="label-cell"></div>
-      <div class="label-cell">4</div><div></div><div></div><div></div><div class="shared-cell"></div><div class="shared-cell"></div><div class="shared-cell"></div><div class="shared-cell"></div><div class="shared-cell"></div><div class="shared-cell"></div><div></div><div></div>
-      <div class="label-cell">5</div><div></div><div></div><div></div><div class="shared-cell"></div><div class="shared-cell"></div><div class="shared-cell"></div><div class="shared-cell"></div><div class="shared-cell"></div><div class="shared-cell"></div><div></div><div></div>
-      <div class="label-cell">6</div><div></div><div></div><div></div><div class="shared-cell"></div><div class="shared-cell"></div><div class="shared-cell"></div><div class="shared-cell"></div><div class="shared-cell"></div><div class="shared-cell"></div><div></div><div></div>
-      <div class="label-cell">7</div><div></div><div></div><div></div><div class="shared-cell"></div><div class="shared-cell"></div><div class="shared-cell"></div><div class="shared-cell"></div><div class="shared-cell"></div><div class="shared-cell"></div><div></div><div></div>
-      <div class="label-cell">8</div><div></div><div></div><div></div><div class="shared-cell"></div><div class="shared-cell"></div><div class="shared-cell"></div><div class="shared-cell"></div><div class="shared-cell"></div><div class="shared-cell"></div><div></div><div></div>
-      <div class="label-cell">9</div><div></div><div></div><div></div><div class="shared-cell"></div><div class="shared-cell"></div><div class="shared-cell"></div><div class="shared-cell"></div><div class="shared-cell"></div><div class="shared-cell"></div><div></div><div></div>
-      <div class="label-cell"></div><div class="label-cell"></div><div class="label-cell"></div><div class="label-cell"></div><div></div><div></div><div></div><div></div><div></div><div></div><div></div><div></div>
-      <div class="label-cell"></div><div class="label-cell"></div><div class="label-cell"></div><div class="label-cell"></div><div></div><div></div><div></div><div></div><div></div><div></div><div></div><div></div>
+    <div class="grid-diagram" role="img" aria-label="12 by 12 Gattai Sudoku board: two overlapping 9 by 9 grids share the central 6 by 6 region. The top-right and bottom-left 3 by 3 regions are inaccessible.">
+      <div class="box-top box-left"></div><div class="box-top"></div><div class="box-top"></div><div class="box-top box-left"></div><div class="box-top"></div><div class="box-top"></div><div class="box-top box-left"></div><div class="box-top"></div><div class="box-top edge-right"></div><div class="inaccessible"></div><div class="inaccessible"></div><div class="inaccessible"></div>
+      <div class="box-left"></div><div></div><div></div><div class="box-left"></div><div></div><div></div><div class="box-left"></div><div></div><div class="edge-right"></div><div class="inaccessible"></div><div class="inaccessible"></div><div class="inaccessible"></div>
+      <div class="box-left"></div><div></div><div></div><div class="box-left"></div><div></div><div></div><div class="box-left"></div><div></div><div class="edge-right"></div><div class="inaccessible"></div><div class="inaccessible"></div><div class="inaccessible"></div>
+      <div class="box-top box-left"></div><div class="box-top"></div><div class="box-top"></div><div class="shared-cell box-top box-left"></div><div class="shared-cell box-top"></div><div class="shared-cell box-top"></div><div class="shared-cell box-top box-left"></div><div class="shared-cell box-top"></div><div class="shared-cell box-top"></div><div class="box-top box-left"></div><div class="box-top"></div><div class="box-top edge-right"></div>
+      <div class="box-left"></div><div></div><div></div><div class="shared-cell box-left"></div><div class="shared-cell"></div><div class="shared-cell"></div><div class="shared-cell box-left"></div><div class="shared-cell"></div><div class="shared-cell"></div><div class="box-left"></div><div></div><div class="edge-right"></div>
+      <div class="box-left"></div><div></div><div></div><div class="shared-cell box-left"></div><div class="shared-cell"></div><div class="shared-cell"></div><div class="shared-cell box-left"></div><div class="shared-cell"></div><div class="shared-cell"></div><div class="box-left"></div><div></div><div class="edge-right"></div>
+      <div class="box-top box-left"></div><div class="box-top"></div><div class="box-top"></div><div class="shared-cell box-top box-left"></div><div class="shared-cell box-top"></div><div class="shared-cell box-top"></div><div class="shared-cell box-top box-left"></div><div class="shared-cell box-top"></div><div class="shared-cell box-top"></div><div class="box-top box-left"></div><div class="box-top"></div><div class="box-top edge-right"></div>
+      <div class="box-left"></div><div></div><div></div><div class="shared-cell box-left"></div><div class="shared-cell"></div><div class="shared-cell"></div><div class="shared-cell box-left"></div><div class="shared-cell"></div><div class="shared-cell"></div><div class="box-left"></div><div></div><div class="edge-right"></div>
+      <div class="box-left edge-bottom"></div><div class="edge-bottom"></div><div class="edge-bottom"></div><div class="shared-cell box-left"></div><div class="shared-cell"></div><div class="shared-cell"></div><div class="shared-cell box-left"></div><div class="shared-cell"></div><div class="shared-cell"></div><div class="box-left"></div><div></div><div class="edge-right"></div>
+      <div class="inaccessible"></div><div class="inaccessible"></div><div class="inaccessible"></div><div class="box-top box-left"></div><div class="box-top"></div><div class="box-top"></div><div class="box-top box-left"></div><div class="box-top"></div><div class="box-top"></div><div class="box-top box-left"></div><div class="box-top"></div><div class="box-top edge-right"></div>
+      <div class="inaccessible"></div><div class="inaccessible"></div><div class="inaccessible"></div><div class="box-left"></div><div></div><div></div><div class="box-left"></div><div></div><div></div><div class="box-left"></div><div></div><div class="edge-right"></div>
+      <div class="inaccessible"></div><div class="inaccessible"></div><div class="inaccessible"></div><div class="box-left edge-bottom"></div><div class="edge-bottom"></div><div class="edge-bottom"></div><div class="box-left edge-bottom"></div><div class="edge-bottom"></div><div class="edge-bottom"></div><div class="box-left edge-bottom"></div><div class="edge-bottom"></div><div class="edge-right edge-bottom"></div>
     </div>
     <div class="grid-labels">
-      <span><span class="swatch g1"></span> Grid 1 only</span>
+      <span><span class="swatch g1"></span> One grid only</span>
       <span><span class="swatch shared"></span> Shared 6×6 (both grids)</span>
+      <span><span class="swatch inaccessible"></span> Inaccessible</span>
     </div>
 
-    <p>The board has <strong>126 active cells</strong> (two 9×9 grids minus their non-overlapping portions). The 18 remaining positions (marked with dots in puzzle strings) are permanently empty.</p>
+    <p>The board has <strong>126 active cells</strong> (81 + 81 − 36 shared cells). The 18 remaining positions form the two inaccessible 3×3 corners and are never filled.</p>
 
     <h2>Basic rules</h2>
     <ol>
