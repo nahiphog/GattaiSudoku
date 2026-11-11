@@ -4,9 +4,9 @@
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title>Gattai Sudoku vs Regular Sudoku: What's the Difference? · Gattai Sudoku</title>
-  <meta name="description" content="Compare Gattai Sudoku (overlapping two-grid) with standard 9×9 Sudoku. Learn how clue counts, solving strategy, and difficulty differ between the two formats." />
+  <meta name="description" content="Compare the current Gattai board, overlap rules, optional rotational symmetry, generation modes, and difficulty evaluation with standard Sudoku." />
   <meta property="og:title" content="Gattai Sudoku vs Regular Sudoku: What's the Difference?" />
-  <meta property="og:description" content="Compare Gattai Sudoku (overlapping two-grid) with standard 9×9 Sudoku. Learn how clue counts, solving strategy, and difficulty differ." />
+  <meta property="og:description" content="Compare the current Gattai board, overlap rules, optional rotational symmetry, generation modes, and difficulty evaluation with standard Sudoku." />
   <meta property="og:type" content="article" />
   <meta property="og:url" content="https://nahiphog.github.io/GattaiSudoku/guides/gattai-vs-regular-sudoku.html" />
   <meta property="og:locale" content="en_US" />
@@ -56,64 +56,31 @@
   </nav>
   <main class="guide-page">
     <h1>Gattai Sudoku vs Regular Sudoku</h1>
-    <p class="byline">A side-by-side comparison of the classic 9×9 format and its overlapping two-grid cousin.</p>
-
-    <p>If you already know how to solve standard Sudoku, you're most of the way to solving Gattai Sudoku. But the overlapping layout creates meaningful differences in strategy, clue design, and difficulty. Here's what changes.</p>
-
+    <p class="byline">How this site's overlapping two-grid format changes the board, constraints, and solving workflow.</p>
+    <p>The digits and nine-cell house rules are familiar from standard Sudoku. The difference is that two grids share cells, so a deduction in one grid can affect the other.</p>
     <h2>At a glance</h2>
-
-    <table>
-      <thead>
-        <tr><th>Feature</th><th>Standard Sudoku</th><th>Gattai Sudoku</th></tr>
-      </thead>
-      <tbody>
-        <tr><td><strong>Grids</strong></td><td>1 × 9×9</td><td>2 × 9×9 (overlapping)</td></tr>
-        <tr><td><strong>Active cells</strong></td><td>81</td><td>126 (36 overlap)</td></tr>
-        <tr><td><strong>Minimum clues</strong></td><td>17 (proven)</td><td>~28 (empirical)</td></tr>
-        <tr><td><strong>Typical givens</strong></td><td>22–30</td><td>30–44</td></tr>
-        <tr><td><strong>Clue symmetry</strong></td><td>Often none required</td><td>Rotational pairs within each grid</td></tr>
-        <tr><td><strong>Shared houses</strong></td><td>N/A</td><td>6 rows, 6 columns, 4 boxes in overlap</td></tr>
-        <tr><td><strong>Solving area</strong></td><td>Single square</td><td>L-shaped, 12×12 bounding box</td></tr>
-      </tbody>
-    </table>
-
-    <h2>More cells, more information</h2>
-    <p>A standard Sudoku has 81 cells. Gattai has 126 — about 56% more. With more cells come more constraints: every digit you place in the shared 6×6 region must satisfy two grids' worth of row, column, and box restrictions. This means:</p>
-    <ul>
-      <li><strong>More given clues are needed</strong> to force a unique solution. Standard Sudoku can be uniquely solvable with 17 clues; a Gattai puzzle typically needs 28 or more.</li>
-      <li><strong>Deductions chain further.</strong> A candidate eliminated by a Grid 1 interaction might also open up a placement in Grid 2, and vice versa.</li>
-      <li><strong>Scanning takes more practice.</strong> You need to track two sets of houses simultaneously for the overlapping cells.</li>
-    </ul>
-
-    <h2>The shared region changes everything</h2>
-    <p>In standard Sudoku, every cell belongs to exactly one row, one column, and one 3×3 box. In Gattai, the 36 cells of the shared 6×6 belong to <em>two</em> rows (one per grid), <em>two</em> columns, and one of four shared 3×3 boxes. A digit in a shared cell must not conflict with:</p>
-    <ul>
-      <li>The row, column, and box constraints of <strong>Grid 1</strong></li>
-      <li><strong>And</strong> the row, column, and box constraints of <strong>Grid 2</strong></li>
-    </ul>
-
-    <div class="callout">
-      <strong>Practical effect:</strong> The overlap makes "hidden" techniques more powerful. A Hidden Single in the shared 6×6 might be hidden in Grid 1's row but naked in Grid 2's column — or the opposite. Good Gattai solvers learn to scan both grids' constraints at once.
-    </div>
-
-    <h2>Clue symmetry</h2>
-    <p>The puzzles on this site use <strong>rotational-pair clue design</strong>. When a clue is removed, its 180° partner within the same grid is also removed. This creates a visually balanced grid and ensures that every puzzle has a well-defined difficulty rating. Standard Sudoku has no such constraint — clue patterns can be arbitrary.</p>
-
-    <h2>Difficulty comparison</h2>
-    <p>Gattai puzzles at the same technique tier tend to feel <strong>slightly easier</strong> than their standard counterparts, because the extra constraints in the overlap give you more information to work with. A standard Sudoku with 28 givens might be Medium; a Gattai with 28 givens is likely Beginner or Easy. That said, the hardest Gattai puzzles (Friday–Sunday) still demand skilled logical chaining.</p>
-
-    <h2>Which one should you play?</h2>
-    <ul>
-      <li><strong>If you're new to Sudoku:</strong> Start with standard Sudoku, then try Gattai Beginner/Easy puzzles once you're comfortable.</li>
-      <li><strong>If you're a regular Sudoku solver looking for a fresh challenge:</strong> Gattai is a natural next step — familiar rules, new spatial thinking.</li>
-      <li><strong>If you enjoy variant Sudoku (Killer, Samurai, Arrow):</strong> Gattai's overlapping-grid structure is a unique twist you'll likely enjoy.</li>
-    </ul>
-
-    <div class="cta-box">
-      <h2>Try Gattai for yourself</h2>
-      <p>Generate a puzzle — it is free and needs no account.</p>
-      <a class="cta-button" href="../">Generate a Gattai Sudoku puzzle →</a>
-    </div>
+    <table><thead><tr><th>Feature</th><th>Standard Sudoku</th><th>This site's Gattai Sudoku</th></tr></thead><tbody>
+      <tr><td>Grids</td><td>One 9×9 grid</td><td>Two overlapping 9×9 grids</td></tr>
+      <tr><td>Active cells</td><td>81</td><td>126, including 36 shared cells</td></tr>
+      <tr><td>Board layout</td><td>9×9 square</td><td>12×12 with inaccessible top-right and bottom-left 3×3 corners</td></tr>
+      <tr><td>Overlap</td><td>None</td><td>Central 6×6 region: four shared boxes, plus overlapping portions of each grid's rows and columns</td></tr>
+      <tr><td>Clue symmetry</td><td>Not required by the rules</td><td>Optional: Dual cell digging uses 180° pairs across the whole 12×12 board</td></tr>
+      <tr><td>Clue count</td><td>Depends on puzzle design</td><td>Depends on generation mode, constraints, and stopping settings; no fixed range is promised</td></tr>
+    </tbody></table>
+    <h2>How the overlap works</h2>
+    <p>Grid 1 occupies rows 1–9 and columns 1–9. Grid 2 occupies rows 4–12 and columns 4–12. Their shared region is rows 4–9 and columns 4–9, giving 81 + 81 − 36 = <strong>126 active cells</strong>.</p>
+    <p>A shared cell belongs to a nine-cell row and column in each grid. Those row and column segments overlap but are not identical. Its 3×3 box is physically the same box in both grids. The entire 12-cell span is not one house: the 1–9 rule applies separately to each grid's nine-cell houses.</p>
+    <p>See the <a href="./what-is-gattai-sudoku.html">beginner's guide</a> for the board diagram.</p>
+    <h2>Clue symmetry on this site</h2>
+    <p><strong>Single cell</strong> digging removes clues individually and does not enforce symmetry. <strong>Dual cell — rotational pairs</strong> removes partners related by a 180° rotation of the whole 12×12 board: (row, column) maps to (13 − row, 13 − column), using one-based board coordinates. This is not a separate rotation inside each 9×9 grid.</p>
+    <p><strong>Build a puzzle</strong> lets you mark required clues and required blanks, then adds individual clues until it finds a unique solution within the selected extra-clue allowance. It does not enforce rotational symmetry.</p>
+    <h2>Clue counts and difficulty</h2>
+    <p>The site does not establish a minimum possible clue count for this Gattai format. A small clue count does not by itself establish a difficulty tier, and extra overlap constraints do not guarantee that Gattai is easier than standard Sudoku.</p>
+    <p>The current evaluator rates its own walkthrough using technique scores and floors. Generation guarantees uniqueness for displayed results, but not completion by the named logical techniques. Read <a href="./difficulty-scoring.html">Difficulty Scoring</a> for the rating rules and search fallback.</p>
+    <h2>What is available now?</h2>
+    <p>The homepage is the generator. You can create a puzzle, view its completed solution, copy its 144-character string, and send it to the verifier for evaluation. The verifier also accepts manually entered or imported puzzles and reports no solution, a unique solution, or multiple solutions.</p>
+    <p>Daily puzzles are paused. The Database catalogue and its entries have been removed from the site; there is no current weekday difficulty schedule or catalogue browser.</p>
+    <div class="cta-box"><h2>Try it yourself</h2><p>Generate a puzzle, then select <strong>Evaluate puzzle difficulty</strong> to open its walkthrough.</p><a class="cta-button" href="../">Generate a puzzle →</a></div>
   </main>
 </body>
 </html>

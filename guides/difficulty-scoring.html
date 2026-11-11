@@ -4,9 +4,9 @@
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title>Gattai Sudoku Difficulty Scoring: How Puzzles Are Rated · Gattai Sudoku</title>
-  <meta name="description" content="Understand how Gattai Sudoku puzzles are scored from Beginner to Nightmare. Learn about technique-based rating, the Monday–Sunday scale, and how the evaluator works." />
+  <meta name="description" content="See the current Gattai walkthrough technique scores, rating thresholds, evaluation controls, and trial-and-error fallback." />
   <meta property="og:title" content="Gattai Sudoku Difficulty Scoring: How Puzzles Are Rated" />
-  <meta property="og:description" content="Understand how Gattai Sudoku puzzles are scored from Beginner to Nightmare. Technique-based rating explained." />
+  <meta property="og:description" content="See the current Gattai walkthrough technique scores, rating thresholds, evaluation controls, and trial-and-error fallback." />
   <meta property="og:type" content="article" />
   <meta property="og:url" content="https://nahiphog.github.io/GattaiSudoku/guides/difficulty-scoring.html" />
   <meta property="og:locale" content="en_US" />
@@ -56,58 +56,56 @@
   </nav>
   <main class="guide-page">
     <h1>How Gattai Sudoku Difficulty Scoring Works</h1>
-    <p class="byline">Every puzzle on this site is assigned a difficulty rating based on the techniques required to solve it, not on subjective feel or solver time.</p>
-
-    <p>The evaluator walks through the puzzle's solution step by step, recording which technique each deduction uses and how much it contributes to the cumulative score. The final rating depends on both the <strong>most advanced technique required</strong> and the <strong>total score accumulated</strong>.</p>
-
-    <h2>Technique categories</h2>
-    <p>Deductions are grouped into bands that correspond to the difficulty tiers:</p>
-
-    <table>
-      <thead>
-        <tr><th>Band</th><th>Techniques</th><th>Score range</th></tr>
-      </thead>
-      <tbody>
-        <tr><td><strong>Beginner</strong></td><td>Full House, Naked Single, Hidden Single</td><td>4–14 points each</td></tr>
-        <tr><td><strong>Easy</strong></td><td>All Beginner methods; cumulative score can reach Easy</td><td>≤800 total</td></tr>
-        <tr><td><strong>Medium</strong></td><td>Intersections (Pointing, Claiming), Naked/Hidden Pair, Naked/Hidden Triple</td><td>≤1000 total</td></tr>
-        <tr><td><strong>Tricky</strong></td><td>One advanced technique from the Hard band (Fish, Wing, Single-Digit Pattern)</td><td>≤1150 total</td></tr>
-        <tr><td><strong>Hard</strong></td><td>Two or more Fish, Wings, or Single-Digit Patterns; higher cumulative score</td><td>≤1600 total</td></tr>
-        <tr><td><strong>Unfair</strong></td><td>Forcing chains, Nishio, Bowman Bingo, and other trial-and-error methods</td><td>≤2000 total</td></tr>
-        <tr><td><strong>Extreme</strong></td><td>Colouring, ALS (Almost Locked Sets), complex chains</td><td>≤2500 total</td></tr>
-        <tr><td><strong>Nightmare</strong></td><td>Last-resort patterns, nested chains, or any solve path requiring deep search</td><td>&gt;2500 total</td></tr>
-      </tbody>
-    </table>
-
-    <h2>Score calculation</h2>
-    <p>The solver assigns a point value to each technique based on its complexity, then sums them across the entire solve path:</p>
+    <p class="byline">Ratings describe the current walkthrough's solve path, using technique points and difficulty floors.</p>
+    <p>Generation checks that a puzzle has exactly one solution. Difficulty evaluation is a separate step: select <strong>Evaluate puzzle difficulty</strong> after generation, or enter a puzzle on <a href="../verify.html">Verify a solution</a>, select <strong>Check uniqueness</strong>, then evaluate it once uniqueness is confirmed.</p>
+    <p>The evaluator records each placement or candidate-elimination step. Its rating describes the path this solver found; it does not prove that every human solver would need the same techniques or find the puzzle equally difficult.</p>
+    <h2>Rating thresholds</h2>
+    <table><thead><tr><th>Rating</th><th>Maximum total score</th></tr></thead><tbody>
+      <tr><td>Beginner</td><td>400</td></tr><tr><td>Easy</td><td>800</td></tr>
+      <tr><td>Medium</td><td>1000</td></tr><tr><td>Tricky</td><td>1150</td></tr>
+      <tr><td>Hard</td><td>1600</td></tr><tr><td>Unfair</td><td>1800</td></tr>
+      <tr><td>Extreme</td><td>3000</td></tr><tr><td>Nightmare</td><td>No upper limit</td></tr>
+    </tbody></table>
+    <p>The rating starts at Beginner, applies the technique floors below, then moves upward while the total exceeds the current tier's maximum. The thresholds are inclusive: 400 points alone does not move a puzzle to Easy.</p>
     <ul>
-      <li><strong>Full House:</strong> 4 points — a cell with only one candidate remaining</li>
-      <li><strong>Naked Single:</strong> 4 points — a cell whose only possible digit is clear from its house peers</li>
-      <li><strong>Hidden Single:</strong> 14 points — a digit that can only go in one cell of a house, even though that cell has multiple candidates</li>
-      <li><strong>Intersections:</strong> 30–60 points</li>
-      <li><strong>Pairs &amp; Triples:</strong> 80–140 points</li>
-      <li><strong>Fish (X-Wing, Swordfish, Jellyfish):</strong> 150–350 points</li>
-      <li><strong>Wings (XY-Wing, XYZ-Wing):</strong> 200–400 points</li>
-      <li><strong>Single-Digit Patterns:</strong> 180–300 points</li>
+      <li>Pointing, Claiming, and naked or hidden pairs and triples set a minimum of <strong>Medium</strong>.</li>
+      <li>Naked/Hidden Quad, X-Wing, Swordfish, Jellyfish, Skyscraper, 2-String Kite, W-Wing, XY-Wing, XYZ-Wing, and Remote Pairs are Hard-level techniques. One such step sets a minimum of <strong>Tricky</strong>; two or more set a minimum of <strong>Hard</strong>, even if the same technique repeats.</li>
+      <li>A <strong>Trial and error</strong> step contributes 10,000 points, so any walkthrough using it reaches <strong>Nightmare</strong>.</li>
     </ul>
-    <p>The evaluator always chooses the <strong>cheapest applicable technique</strong> at each step, mirroring how a human solver would naturally proceed.</p>
-
-    <h2>How puzzles are designed</h2>
-    <p>Puzzles are created by a process called <strong>rotational-pair digging</strong>:</p>
-    <ol>
-      <li>Start with a fully solved, compatible Gattai grid pair.</li>
-      <li>Remove clues one rotational pair at a time (a givens and its 180° partner).</li>
-      <li>After each removal, verify the puzzle still has exactly one solution.</li>
-      <li>Stop when no further rotational pair can be removed without creating multiple solutions.</li>
-    </ol>
-    <p>The result is a <strong>pair-minimal</strong> puzzle — removing any remaining rotational pair would break uniqueness. This ensures every puzzle is as lean as possible while remaining solvable by logic alone.</p>
-
-    <div class="cta-box">
-      <h2>Generate a puzzle</h2>
-      <p>Generate your own puzzle, then evaluate its difficulty.</p>
-      <a class="cta-button" href="../">Generate a puzzle →</a>
-    </div>
+    <h2>Points per walkthrough step</h2>
+    <p>These are the scores for techniques currently emitted by the walkthrough. A step is counted once, even if it eliminates several candidates.</p>
+    <table><thead><tr><th>Technique</th><th>Points</th></tr></thead><tbody>
+      <tr><td>Full House</td><td>4</td></tr>
+      <tr><td>Naked Single</td><td>4</td></tr>
+      <tr><td>Hidden Single</td><td>14</td></tr>
+      <tr><td>Pointing</td><td>50</td></tr>
+      <tr><td>Claiming</td><td>50</td></tr>
+      <tr><td>Naked Pair</td><td>60</td></tr>
+      <tr><td>Hidden Pair</td><td>70</td></tr>
+      <tr><td>Naked Triple</td><td>80</td></tr>
+      <tr><td>Hidden Triple</td><td>100</td></tr>
+      <tr><td>Naked Quad</td><td>120</td></tr>
+      <tr><td>Hidden Quad</td><td>150</td></tr>
+      <tr><td>X-Wing</td><td>140</td></tr>
+      <tr><td>Swordfish</td><td>150</td></tr>
+      <tr><td>Jellyfish</td><td>160</td></tr>
+      <tr><td>Skyscraper</td><td>130</td></tr>
+      <tr><td>2-String Kite</td><td>150</td></tr>
+      <tr><td>W-Wing</td><td>150</td></tr>
+      <tr><td>XY-Wing</td><td>160</td></tr>
+      <tr><td>XYZ-Wing</td><td>180</td></tr>
+      <tr><td>Remote Pairs</td><td>200</td></tr>
+      <tr><td>Trial and error</td><td>10000</td></tr>
+    </tbody></table>
+    <h2>Technique order and search</h2>
+    <p>The solver follows a fixed order, restarting from Full House after each successful step. It does not choose the lowest point value from every possible deduction.</p>
+    <p>The order is Full House, Naked Single, Hidden Single, Naked Pair, Hidden Pair, Pointing/Claiming, Naked Triple, Hidden Triple, Naked Quad, Hidden Quad, basic fish (X-Wing, Swordfish, Jellyfish), Skyscraper, 2-String Kite, W-Wing, XY-Wing, XYZ-Wing, and Remote Pairs.</p>
+    <p>If these techniques cannot make progress, the walkthrough fills a cell from the verified complete solution and labels that step <strong>Trial and error</strong>. It then resumes the named techniques. The walkthrough does not display the uniqueness search's branching process. Forcing Chains, Colouring, Empty Rectangle, and Almost Locked Sets are not currently implemented as named walkthrough techniques.</p>
+    <h2>Generation and difficulty are separate</h2>
+    <p><strong>Digging</strong> removes single clues or rotational pairs while preserving uniqueness. <strong>Build a puzzle</strong> adds individual clues while respecting your required-clue and required-blank cells. Neither method targets a selected difficulty tier or guarantees that the named logical techniques will finish the puzzle.</p>
+    <p>Completing an unrestricted digging pass produces a puzzle with no further removable single clue or rotational pair, according to the chosen mode. A time cap, Halt, or a Stop at givens limit can leave additional removable clues. This minimality is relative to the chosen removal mode; it is not a proof of the smallest possible clue count.</p>
+    <p>Read the <a href="./solving-techniques.html">solving techniques guide</a> for explanations of the deductions.</p>
+    <div class="cta-box"><h2>Try it yourself</h2><p>Generate a puzzle, then select <strong>Evaluate puzzle difficulty</strong> to open its walkthrough.</p><a class="cta-button" href="../">Generate a puzzle →</a></div>
   </main>
 </body>
 </html>

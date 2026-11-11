@@ -4,9 +4,9 @@
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title>What Is Gattai Sudoku? Rules &amp; Beginner's Guide · Gattai Sudoku</title>
-  <meta name="description" content="Learn the rules of Gattai Sudoku — the overlapping two-grid Sudoku variant. A complete beginner's guide with diagrams and a playable Easy puzzle." />
+  <meta name="description" content="Learn the rules of Gattai Sudoku — the overlapping two-grid Sudoku variant. A beginner’s guide to the board layout, rules, generator, and solution walkthrough." />
   <meta property="og:title" content="What Is Gattai Sudoku? Rules &amp; Beginner's Guide" />
-  <meta property="og:description" content="Learn the rules of Gattai Sudoku — the overlapping two-grid Sudoku variant. A complete beginner's guide with diagrams and a playable Easy puzzle." />
+  <meta property="og:description" content="Learn the rules of Gattai Sudoku — the overlapping two-grid Sudoku variant. A beginner’s guide to the board layout, rules, generator, and solution walkthrough." />
   <meta property="og:type" content="article" />
   <meta property="og:url" content="https://nahiphog.github.io/GattaiSudoku/guides/what-is-gattai-sudoku.html" />
   <meta property="og:locale" content="en_US" />
@@ -114,23 +114,18 @@
       <strong>Key difference from standard Sudoku:</strong> In the shared region, cells have two competing sets of row, column, and box neighbours. A candidate digit might be valid in Grid 1 but already present in a Grid 2 house that crosses the same cell — and vice versa.
     </div>
 
-    <h2>Clue symmetry</h2>
-    <p>Every puzzle on this site uses <strong>rotational-pair clues</strong>. Clues are removed in 180° rotational pairs within each grid: when a clue at position (row, column) is removed, its partner at (10 − row, 10 − column) in the same grid is also removed. This means:</p>
+    <h2>Generate a puzzle</h2>
+    <p>The homepage offers two generation methods. Both check that displayed results have exactly one solution.</p>
     <ul>
-      <li>The clue pattern is always <strong>rotationally symmetric</strong> within each grid.</li>
-      <li>Puzzles typically have <strong>30–44 given cells</strong> (compared to 17–30 for standard Sudoku).</li>
-      <li>The higher clue count makes the puzzles <strong>approachable by logic</strong> without computer-assisted solving.</li>
+      <li><strong>Digging:</strong> starts from a complete grid and removes clues. Single cell mode removes one clue at a time. Dual cell mode removes 180° rotational pairs across the whole 12×12 board: (row, column) maps to (13 − row, 13 − column).</li>
+      <li><strong>Stopping controls:</strong> optionally set a time cap or Stop at givens, or select Halt. Stop at givens prevents removals that would go below the chosen count; it does not guarantee reaching that count. The time cap and Halt are checked between removal attempts, so a running uniqueness check can delay stopping.</li>
+      <li><strong>Build a puzzle:</strong> mark green cells that must contain clues and red cells that must stay blank. Choose 0–30 maximum extra clues (default 30). The builder adds individual clues from a generated solution and retries with new solutions if needed. These marks select positions, not specific digit values; restrictive settings may require Halt and revised constraints.</li>
     </ul>
-
-    <h2>Difficulty tiers</h2>
-    <p>Puzzles are rated from <strong>Beginner</strong> to <strong>Nightmare</strong> based on the techniques required to solve them.</p>
-    <ul>
-      <li><strong>Easy:</strong> Singles only — Full House, Naked Single, Hidden Single</li>
-      <li><strong>Medium:</strong> Adds intersections, Naked/Hidden Pairs &amp; Triples</li>
-      <li><strong>Hard:</strong> Adds Fish, Wings, Single-Digit Patterns</li>
-      <li><strong>Tricky+:</strong> At least one advanced technique required</li>
-    </ul>
-    <p>See the <a href="../guides/difficulty-scoring.html">Difficulty Scoring guide</a> for the full breakdown.</p>
+    <p>Only Dual cell digging enforces rotational symmetry. There is no fixed clue-count range or guaranteed logic-only solve path.</p>
+    <h2>Verify and explore the solution</h2>
+    <p>After generation, select <strong>Evaluate puzzle difficulty</strong> to open the verifier and its solution walkthrough. To check your own puzzle, use <a href="../verify.html">Verify a solution</a>: enter clues or import a 144-character string, select <strong>Check uniqueness</strong>, then evaluate a uniquely solvable result.</p>
+    <p>Ratings run from Beginner through Easy, Medium, Tricky, Hard, Unfair, Extreme, and Nightmare. They depend on the current walkthrough's techniques and cumulative score, not simply the clue count. If the named logical techniques stall, the walkthrough labels its fallback placements <strong>Trial and error</strong>.</p>
+    <p>Read <a href="./solving-techniques.html">Solving Techniques</a>, <a href="./difficulty-scoring.html">Difficulty Scoring</a>, or <a href="./gattai-vs-regular-sudoku.html">Gattai vs Regular Sudoku</a> for more detail. Daily puzzles are paused and the Database catalogue is no longer available.</p>
 
     <div class="cta-box">
       <h2>Try it now</h2>
