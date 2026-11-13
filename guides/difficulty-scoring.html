@@ -69,7 +69,7 @@
     <p>The rating starts at Beginner, applies the technique floors below, then moves upward while the total exceeds the current tier's maximum. The thresholds are inclusive: 400 points alone does not move a puzzle to Easy.</p>
     <ul>
       <li>Pointing, Claiming, and naked or hidden pairs and triples set a minimum of <strong>Medium</strong>.</li>
-      <li>Naked/Hidden Quad, X-Wing, Swordfish, Jellyfish, Skyscraper, 2-String Kite, W-Wing, XY-Wing, XYZ-Wing, and Remote Pairs are Hard-level techniques. One such step sets a minimum of <strong>Tricky</strong>; two or more set a minimum of <strong>Hard</strong>, even if the same technique repeats.</li>
+      <li>Naked/Hidden Quad, X-Wing, Swordfish, Jellyfish, Skyscraper, 2-String Kite, W-Wing, XY-Wing, XYZ-Wing, Remote Pairs, and Phistomefel Ring are Hard-level techniques. One such step sets a minimum of <strong>Tricky</strong>; two or more set a minimum of <strong>Hard</strong>, even if the same technique repeats.</li>
       <li>A <strong>Trial and error</strong> step contributes 10,000 points, so any walkthrough using it reaches <strong>Nightmare</strong>.</li>
     </ul>
     <h2>Points per walkthrough step</h2>
@@ -95,11 +95,12 @@
       <tr><td>XY-Wing</td><td>160</td></tr>
       <tr><td>XYZ-Wing</td><td>180</td></tr>
       <tr><td>Remote Pairs</td><td>200</td></tr>
+      <tr><td>Phistomefel Ring</td><td>200</td></tr>
       <tr><td>Trial and error</td><td>10000</td></tr>
     </tbody></table>
     <h2>Technique order and search</h2>
     <p>The solver follows a fixed order, restarting from Full House after each successful step. It does not choose the lowest point value from every possible deduction.</p>
-    <p>The order is Full House, Naked Single, Hidden Single, Naked Pair, Hidden Pair, Pointing/Claiming, Naked Triple, Hidden Triple, Naked Quad, Hidden Quad, basic fish (X-Wing, Swordfish, Jellyfish), Skyscraper, 2-String Kite, W-Wing, XY-Wing, XYZ-Wing, and Remote Pairs.</p>
+    <p>The order is Full House, Naked Single, Hidden Single, Naked Pair, Hidden Pair, Pointing/Claiming, Naked Triple, Hidden Triple, Naked Quad, Hidden Quad, basic fish (X-Wing, Swordfish, Jellyfish), Skyscraper, 2-String Kite, W-Wing, XY-Wing, XYZ-Wing, Remote Pairs, and Phistomefel Ring.</p>
     <p>If these techniques cannot make progress, the walkthrough fills a cell from the verified complete solution and labels that step <strong>Trial and error</strong>. It then resumes the named techniques. The walkthrough does not display the uniqueness search's branching process. Forcing Chains, Colouring, Empty Rectangle, and Almost Locked Sets are not currently implemented as named walkthrough techniques.</p>
     <h2>Generation and difficulty are separate</h2>
     <p><strong>Digging</strong> removes single clues or rotational pairs while preserving uniqueness. <strong>Build a puzzle</strong> adds individual clues while respecting your required-clue and required-blank cells. Neither method targets a selected difficulty tier or guarantees that the named logical techniques will finish the puzzle.</p>

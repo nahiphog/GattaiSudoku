@@ -79,6 +79,20 @@ function createGattaiWalkthrough(root) {
     function xyWing() { for (const pivot of active) { if (notes[pivot]?.size !== 2) continue; const [first, second] = [...notes[pivot]]; for (const [pivotDigit, otherDigit] of [[first, second], [second, first]]) for (const wingA of peersFor(pivot).filter(index => notes[index]?.size === 2 && notes[index].has(pivotDigit))) { const shared = [...notes[wingA]].find(digit => digit !== pivotDigit); if (!shared || shared === otherDigit) continue; for (const wingB of peersFor(pivot)) { if (wingB === wingA || notes[wingB]?.size !== 2 || !notes[wingB].has(otherDigit) || !notes[wingB].has(shared)) continue; const changes = active.filter(index => index !== pivot && index !== wingA && index !== wingB && notes[index]?.has(shared) && peersFor(index).includes(wingA) && peersFor(index).includes(wingB)).map(index => ({ index, digit: shared })); if (eliminate("XY-Wing", changes, `${cellName(pivot)} is the pivot of an XY-Wing; remove ${shared} from cells seeing both wings.`)) return true; } } } return false; }
     function xyzWing() { for (const pivot of active) { if (notes[pivot]?.size !== 3) continue; const pivotDigits = [...notes[pivot]]; for (const shared of pivotDigits) { const [first, second] = pivotDigits.filter(digit => digit !== shared); for (const wingA of peersFor(pivot).filter(index => notes[index]?.size === 2 && notes[index].has(first) && notes[index].has(shared))) for (const wingB of peersFor(pivot)) { if (wingB === wingA || notes[wingB]?.size !== 2 || !notes[wingB].has(second) || !notes[wingB].has(shared)) continue; const changes = active.filter(index => index !== pivot && index !== wingA && index !== wingB && notes[index]?.has(shared) && peersFor(index).includes(pivot) && peersFor(index).includes(wingA) && peersFor(index).includes(wingB)).map(index => ({ index, digit: shared })); if (eliminate("XYZ-Wing", changes, `${cellName(pivot)} is the ${first}/${second}/${shared} pivot; remove ${shared} from cells seeing its pivot and both wings.`)) return true; } } } return false; }
     function wWing() { for (let left = 0; left < active.length; left += 1) for (let right = left + 1; right < active.length; right += 1) { const wingA = active[left], wingB = active[right], peersA = peersFor(wingA), peersB = peersFor(wingB); if (notes[wingA]?.size !== 2 || notes[wingB]?.size !== 2 || peersA.includes(wingB)) continue; const pairA = [...notes[wingA]].sort((a, b) => a - b), pairB = [...notes[wingB]].sort((a, b) => a - b); if (pairA.join() !== pairB.join()) continue; for (const bridge of pairA) { const target = pairA.find(digit => digit !== bridge); for (const [label, house] of units) { const strong = house.filter(index => notes[index]?.has(bridge)); if (strong.length !== 2 || !((peersA.includes(strong[0]) && peersB.includes(strong[1])) || (peersA.includes(strong[1]) && peersB.includes(strong[0])))) continue; const changes = active.filter(index => index !== wingA && index !== wingB && notes[index]?.has(target) && peersFor(index).includes(wingA) && peersFor(index).includes(wingB)).map(index => ({ index, digit: target })); if (eliminate("W-Wing", changes, `${cellName(wingA)} and ${cellName(wingB)} form a W-Wing linked by candidate ${bridge} in ${label}.`)) return true; } } } return false; }
+    function phistomefelRing() {
+      const result = findPhistomefelRing(working, notes);
+      if (!result) return false;
+      const { offset, digit, regions, counts, target, source, kind, eliminations } = result;
+      const grid = offset === 0 ? 'Grid 1 (A)' : 'Grid 2 (B)';
+      const name = index => 'R' + (Math.floor(index / 12) - offset + 1) + 'C' + (index % 12 - offset + 1);
+      const range = count => count.min === count.max ? String(count.min) : count.min + '–' + count.max;
+      const reason = kind === 'exclude'
+        ? 'The ' + target + ' already contain the maximum ' + digit + ' count allowed by the ' + source + ', so no other cell there can contain ' + digit + '.'
+        : 'Every remaining position for ' + digit + ' in the ' + target + ' is needed to meet the minimum count in the ' + source + '.';
+      return eliminate('Phistomefel Ring', eliminations,
+        grid + ': The 16 ring cells and 16 corner cells contain identical digit counts. For digit ' + digit + ', ring count: ' + range(counts.ring) + '; corner count: ' + range(counts.corners) + '. ' + reason + ' Remove ' + eliminations.map(item => item.digit + ' from ' + name(item.index)).join('; ') + '.',
+        { affected: [...regions.ring, ...regions.corners], emphasis: [...regions.ring, ...regions.corners].filter(index => notes[index]?.has(digit)).map(index => ({ index, digit })) });
+    }
     function remotePairs() {
       const result = findRemotePairs(notes, peersFor);
       if (!result) return false;
@@ -90,7 +104,7 @@ function createGattaiWalkthrough(root) {
       });
     }
     while (active.some(index => !working[index])) {
-      if (fullHouse() || nakedSingle() || hiddenSingle() || nakedSubset(2) || hiddenSubset(2) || intersections() || nakedSubset(3) || hiddenSubset(3) || nakedSubset(4) || hiddenSubset(4) || basicFish() || skyscraper() || twoStringKite() || wWing() || xyWing() || xyzWing() || remotePairs()) continue;
+      if (fullHouse() || nakedSingle() || hiddenSingle() || nakedSubset(2) || hiddenSubset(2) || intersections() || nakedSubset(3) || hiddenSubset(3) || nakedSubset(4) || hiddenSubset(4) || basicFish() || skyscraper() || twoStringKite() || wWing() || xyWing() || xyzWing() || remotePairs() || phistomefelRing()) continue;
       const index = active.filter(cell => !working[cell]).sort((left, right) => candidatesFor(left).length - candidatesFor(right).length)[0];
       place("Trial and error", index, solution[index], `${cellName(index)} = ${solution[index]} is a transparent search choice after the currently implemented named techniques are exhausted. The solver then returns to the easiest named technique.`);
     }
@@ -127,7 +141,7 @@ function createGattaiWalkthrough(root) {
     drawBoundaries(walkthroughGrid);
     const outline = document.createElement("span"); outline.className = `solver-grid-outline solver-grid-${selectedGrid}`; walkthroughGrid.append(outline);
     walkthroughTechnique.textContent = step.technique;
-    walkthroughReasoning.textContent = step.technique === "Remote Pairs" ? step.text : `Grid ${selectedGrid === "one" ? 1 : 2}: ${step.text.replace(/In Grid [12],\s*/g, "").replace(/\bGrid [12]:?\s*/g, "")}`;
+    walkthroughReasoning.textContent = ["Remote Pairs", "Phistomefel Ring"].includes(step.technique) ? step.text : `Grid ${selectedGrid === "one" ? 1 : 2}: ${step.text.replace(/In Grid [12],\s*/g, "").replace(/\bGrid [12]:?\s*/g, "")}`;
     walkthroughStepCount.textContent = `Step ${walkthroughIndex + 1} of ${walkthroughData.length}`;
     root.querySelector("#firstWalkthroughStep").disabled = walkthroughIndex === 0;
     root.querySelector("#previousWalkthroughStep").disabled = walkthroughIndex === 0;
@@ -138,8 +152,8 @@ function createGattaiWalkthrough(root) {
     const started = performance.now();
     const steps = buildWalkthrough(verifiedSolution, verifiedGivens), tally = new Map();
     steps.forEach((step, index) => { tally.set(step.technique, [...(tally.get(step.technique) || []), index + 1]); });
-    const scores = { "Full House": 4, "Naked Single": 4, "Hidden Single": 14, "Locked Pair": 40, "Locked Triple": 60, "Pointing": 50, "Claiming": 50, "Naked Pair": 60, "Naked Triple": 80, "Hidden Pair": 70, "Hidden Triple": 100, "Naked Quad": 120, "Hidden Quad": 150, "X-Wing": 140, "Swordfish": 150, "Jellyfish": 160, "Skyscraper": 130, "2-String Kite": 150, "W-Wing": 150, "XY-Wing": 160, "XYZ-Wing": 180, "Remote Pairs": 200, "Trial and error": 10000 };
-    const levels = { "Full House": "Beginner", "Naked Single": "Beginner", "Hidden Single": "Beginner", "Locked Pair": "Medium", "Locked Triple": "Medium", "Pointing": "Medium", "Claiming": "Medium", "Naked Pair": "Medium", "Naked Triple": "Medium", "Hidden Pair": "Medium", "Hidden Triple": "Medium", "Naked Quad": "Hard", "Hidden Quad": "Hard", "X-Wing": "Hard", "Swordfish": "Hard", "Jellyfish": "Hard", "Skyscraper": "Hard", "2-String Kite": "Hard", "W-Wing": "Hard", "XY-Wing": "Hard", "XYZ-Wing": "Hard", "Remote Pairs": "Hard", "Trial and error": "Extreme" };
+    const scores = { "Full House": 4, "Naked Single": 4, "Hidden Single": 14, "Locked Pair": 40, "Locked Triple": 60, "Pointing": 50, "Claiming": 50, "Naked Pair": 60, "Naked Triple": 80, "Hidden Pair": 70, "Hidden Triple": 100, "Naked Quad": 120, "Hidden Quad": 150, "X-Wing": 140, "Swordfish": 150, "Jellyfish": 160, "Skyscraper": 130, "2-String Kite": 150, "W-Wing": 150, "XY-Wing": 160, "XYZ-Wing": 180, "Remote Pairs": 200, "Phistomefel Ring": 200, "Trial and error": 10000 };
+    const levels = { "Full House": "Beginner", "Naked Single": "Beginner", "Hidden Single": "Beginner", "Locked Pair": "Medium", "Locked Triple": "Medium", "Pointing": "Medium", "Claiming": "Medium", "Naked Pair": "Medium", "Naked Triple": "Medium", "Hidden Pair": "Medium", "Hidden Triple": "Medium", "Naked Quad": "Hard", "Hidden Quad": "Hard", "X-Wing": "Hard", "Swordfish": "Hard", "Jellyfish": "Hard", "Skyscraper": "Hard", "2-String Kite": "Hard", "W-Wing": "Hard", "XY-Wing": "Hard", "XYZ-Wing": "Hard", "Remote Pairs": "Hard", "Phistomefel Ring": "Hard", "Trial and error": "Extreme" };
     const order = ["Beginner", "Easy", "Medium", "Tricky", "Hard", "Unfair", "Extreme", "Nightmare"], caps = { Beginner: 400, Easy: 800, Medium: 1000, Tricky: 1150, Hard: 1600, Unfair: 1800, Extreme: 3000, Nightmare: Number.MAX_SAFE_INTEGER }; let score = 0, rating = "Beginner", hardSteps = 0;
     steps.forEach(step => { const level = levels[step.technique] || "Nightmare", floor = level === "Hard" ? "Tricky" : level; score += scores[step.technique] || 0; if (order.indexOf(floor) > order.indexOf(rating)) rating = floor; if (level === "Hard") hardSteps += 1; });
     if (hardSteps >= 2 && order.indexOf("Hard") > order.indexOf(rating)) rating = "Hard";
@@ -153,7 +167,7 @@ function createGattaiWalkthrough(root) {
       if (["X-Wing", "Swordfish", "Jellyfish"].includes(technique)) return 3;
       if (["Skyscraper", "2-String Kite"].includes(technique)) return 4;
       if (["W-Wing", "XY-Wing", "XYZ-Wing"].includes(technique)) return 5;
-      if (technique === "Remote Pairs") return 6;
+      if (["Remote Pairs", "Phistomefel Ring"].includes(technique)) return 6;
       return 7;
     };
     tallyResults.innerHTML = `<table><thead><tr><th>Technique</th><th>Steps</th></tr></thead><tbody>${[...tally.entries()].sort(([left], [right]) => familyRank(left) - familyRank(right) || (scores[left] || 0) - (scores[right] || 0) || left.localeCompare(right)).map(([technique, stepsForTechnique]) => `<tr><td>${technique}</td><td>${stepsForTechnique.map(step => `<button type="button" class="tally-step" data-step="${step}" aria-label="Go to step ${step}: ${technique}">${step}</button>`).join(" ")}</td></tr>`).join("")}</tbody></table>`;

@@ -23,7 +23,7 @@ jobs:
         with:
           node-version: '24'
       - name: Test walkthrough techniques and generation flow
-        run: node --test scripts/remote-pairs.test.mjs scripts/walkthrough.test.mjs
+        run: node --test scripts/remote-pairs.test.mjs scripts/phistomefel-ring.test.mjs scripts/walkthrough.test.mjs
       - name: Prepare and validate static site
         run: node scripts/build-pages.mjs
       - uses: actions/upload-pages-artifact@56afc609e74202658d3ffba0e8f6dda462b719fa # v3
